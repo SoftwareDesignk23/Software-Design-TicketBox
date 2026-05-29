@@ -190,3 +190,4 @@ dist-ssr
 *.sln
 *.sw?
 .venv
+.venv*

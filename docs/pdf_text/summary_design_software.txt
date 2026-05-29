@@ -1,0 +1,128 @@
+TÓM TẮT ĐỒ ÁN MÔN HỌC: HỆ THỐNG
+TICKETBOX
+Tài liệu Thiết kế & Lộ trình Triển khai
+Ngày 21 tháng 5 năm 2026
+Mục lục
+1 Bối cảnh và Mục tiêu Đồ án 2
+1.1 Bối cảnh thực tế . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+1.2 Mục tiêu hệ thống . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+2 Đối tượng Người dùng (Actors) 2
+3 Yêu cầu Hệ thống & Thách thức Kỹ thuật 2
+3.1 Các tính năng nghiệp vụ cốt lõi . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+3.2 Các thách thức kỹ thuật và giải pháp đề xuất . . . . . . . . . . . . . . . . . . . . 3
+4 Các Giai đoạn Thực hiện (Phases) 3
+4.1 Phase 1: Thiết kế Kiến trúc (Blueprint) . . . . . . . . . . . . . . . . . . . . . . . 3
+4.2 Phase 2: Lập trình và Cài đặt hệ thống . . . . . . . . . . . . . . . . . . . . . . . 4
+4.3 Phase 3: Đóng gói và Nghiệm thu bài làm . . . . . . . . . . . . . . . . . . . . . . 4
+1
+
+1 Bối cảnh và Mục tiêu Đồ án
+1.1 Bối cảnh thực tế
+Trong những năm gần đây, các sự kiện âm nhạc lớn tại Việt Nam thu hút hàng chục nghìn khán
+giả. Khi ban tổ chức mở bán vé, các hệ thống hiện tại thường gặp phải các vấn đề nghiêm trọng:
+•Website bị sập trong vài phút đầu do lượng truy cập đồng thời quá lớn.
+•Khán giả bị trừ tiền ngân hàng hoặc ví điện tử nhưng không nhận được vé.
+•Tình trạng đầu cơ (scalper) dùng bot tự động vét sạch vé trong vài giây rồi bán lại với giá
+chợ đen tăng gấp nhiều lần.
+•Nhiều sự kiện nhỏ vẫn bán vé qua các kênh thủ công (Zalo OA, Google Form, chuyển
+khoản thủ công), dễ xảy ra gian lận và thiếu minh bạch.
+1.2 Mục tiêu hệ thống
+Xây dựng hệ thốngTicketBoxnhằm số hóa toàn bộ quy trình bán vé từ khâu mở bán trực
+tuyến cho đến khâu kiểm soát vé (check-in) tại cổng sự kiện. Hệ thống phải đảm bảo khả năng
+chịu tải cao (hỗ trợ tối thiểu 80.000 người truy cập trong 5 phút đầu tiên), đảm bảo tính công
+bằng và chống gian lận.
+2 Đối tượng Người dùng (Actors)
+Hệ thống quản lý 3 nhóm đối tượng chính với các quyền hạn được phân rã nghiêm ngặt thông
+qua cơ chế RBAC (Role-Based Access Control):
+Bảng 1: Phân quyền và Vai trò Người dùng
+Nhóm người dùng Mô tả vai trò & Quyền hạn
+Khán giảXem thông tin concert, sơ đồ chỗ ngồi, thực hiện đặt và mua
+vé, nhận e-ticket dưới dạng mã QR. Chỉ có quyền xem và
+mua vé công khai.
+Ban tổ chứcSử dụng trang Admin nội bộ để tạo và cấu hình concert,
+quản lý loại vé (giá, số lượng, thời gian mở bán), cập
+nhật/hủy sự kiện và theo dõi thống kê doanh thu.
+Nhân sự soát véSử dụng ứng dụng di động (Mobile App) để quét mã QR
+tại các cổng vào nhằm xác nhận trạng thái vé của khán giả.
+Chỉ có quyền truy cập tính năng quét mã.
+3 Yêu cầu Hệ thống & Thách thức Kỹ thuật
+3.1 Các tính năng nghiệp vụ cốt lõi
+1.Xem và mua vé trực thời gian thực:Khán giả tương tác trực tiếp trên sơ đồ chỗ ngồi
+SVG theo từng khu vực (GA, SVIP, VIP, CAT1, CAT2) và xem số lượng vé còn lại theo
+thời gian thực.
+2.Giới hạn số lượng vé đặt mua:Áp dụng cấu hình giới hạn nghiêm ngặt số vé trên mỗi
+tài khoản (Ví dụ: tối đa 2 vé SVIP/tài khoản). Giới hạn này được tính trên tổng các đơn
+hàng đã thanh toán thành công để tránh lách luật bằng nhiều đơn hàng nhỏ.
+2
+
+3.Hệ thống thông báo đa kênh:Gửi xác nhận kèm e-ticket qua app và email ngay khi
+thanh toán thành công. Tự động gửi nhắc nhở trước sự kiện 24 giờ. Kiến trúc phải dễ
+dàng mở rộng sang các kênh khác như Zalo OA hoặc SMS.
+4.Soát vé ngoại tuyến (Offline Check-in):Ứng dụng soát vé phải cho phép ghi nhận
+thông tin soát vé tạm thời khi mất mạng (do sóng tại các sân vận động thường yếu) và tự
+động đồng bộ lại khi có kết nối lại, đảm bảo một vé không được check-in hai lần.
+5.AI Artist Bio:Cho phép ban tổ chức tải lên file PDF hồ sơ nghệ sĩ hoặc press kit. Hệ
+thống sử dụng AI để tự động trích xuất, làm sạch và tóm tắt thành nội dung ngắn gọn
+hiển thị trên trang chi tiết concert.
+6.Đồng bộ danh sách khách mời VIP:Định kỳ nhập (import) danh sách khách mời từ
+file CSV do nhãn hàng tài trợ gửi vào ban đêm để nhân sự soát vé tại cổng VIP sử dụng,
+hệ thống phải xử lý được file lỗi hoặc trùng lặp dữ liệu.
+3.2 Các thách thức kỹ thuật và giải pháp đề xuất
+•Tranh chấp vé (Concurrency):Tránh tình trạng over-selling khi hàng chục nghìn người
+cùng tranh mua các block vé giới hạn tại cùng một thời điểm.
+•Tải trọng đột biến (Traffic Spike):Bảo vệ Backend API bằng cơ chếRate Limiting
+(Token Bucket, Leaky Bucket hoặc Sliding Window) khi 70% của 80.000 user dồn vào phút
+đầu tiên.
+•Thanh toán bất ổn (Payment Failure):Sử dụng mô hìnhCircuit Breaker(Closed /
+Open / Half-Open) kết hợpGraceful Degradationđể khi cổng thanh toán VNPAY/MoMo
+gặp sự cố, các tính năng xem thông tin, tra cứu vé của hệ thống vẫn hoạt động bình
+thường.
+•Chống trừ tiền hai lần (Double Spending):Áp dụng cơ chếIdempotency Keydựa
+trên việc sinh key duy nhất, lưu trữ tạm thời có thiết lập TTL để chặn các request trùng
+lặp từ client khi bấm mua nhiều lần hoặc mạng chập chờn.
+•Chiến lược Caching hiệu quả:Sử dụngCache-aside với Redischo trang chủ và chi
+tiết concert nhằm giảm tải cho Database. Thông tin sự kiện ít thay đổi sẽ được cache lâu,
+trong khi số lượng vé còn lại cần cấu hình TTL ngắn hoặc thực hiện Invalidate chủ động
+ngay khi giao dịch thành công.
+4 Các Giai đoạn Thực hiện (Phases)
+4.1 Phase 1: Thiết kế Kiến trúc (Blueprint)
+Giai đoạn này tập trung hoàn toàn vào việc xây dựng tài liệu đặc tả kỹ thuật theo framework
+định hướng tài liệu (proposal, design, specs). Các sản phẩm bàn giao bao gồm:
+•Tài liệu System Context & Container (C4 Diagram):Vẽ sơ đồ C4 Cấp độ 1 (Bức
+tranh tổng thể hệ thống và các bên liên quan) và Cấp độ 2 (Phân rã thành Web App,
+Mobile App, Backend API, Database, Message Broker).
+•High-Level Architecture Diagram:Mô tả chi tiết luồng dữ liệu, các điểm tích hợp
+bên thứ ba (AI Model, Cổng thanh toán) và luồng soát vé offline.
+•Thiết kế Cơ sở dữ liệu:Lựa chọn mô hình lưu trữ thích hợp (SQL, NoSQL hoặc Hybrid)
+và thiết kế Schema chi tiết cho các thực thể quan trọng nhất.
+3
+
+•Đặc tả luồng nghiệp vụ chi tiết:Phân tích từng bước, kịch bản lỗi và xử lý ngoại
+lệ cho ít nhất 2 trong 3 luồng: Luồng mua vé toàn trình, Luồng soát vé offline đồng bộ
+ngược, Luồng nhập CSV.
+4.2 Phase 2: Lập trình và Cài đặt hệ thống
+Chuyển đổi toàn bộ thiết kế kiến trúc tại Phase 1 thành mã nguồn phần mềm hoàn chỉnh, có
+khả năng thực thi thực tế:
+•Cài đặt nghiệp vụ đầy đủ:Code toàn bộ các tính năng từ xem vé, đặt vé, thông báo,
+admin điều hành, app soát vé cho tới modul AI và xử lý CSV.
+•Hiện thực hóa giải pháp kỹ thuật:Các cơ chế bảo vệ như Rate Limiting, Circuit
+Breaker, Idempotency Key, và Caching bắt buộc phải được lập trình thực tế trong code,
+không sử dụng stub/mocking hay giả lập bề nổi.
+•Xây dựng bộ dữ liệu mẫu (Seed Data):Tạo sẵn các script khởi tạo dữ liệu mẫu cho
+các sự kiện lớn (Anh Trai Say Hi, Chị Đẹp Đạp Gió Rẽ Sóng...) kèm sơ đồ ghế và cấu hình
+loại vé để sẵn sàng phục vụ việc chấm điểm, vận hành thử nghiệm.
+4.3 Phase 3: Đóng gói và Nghiệm thu bài làm
+Giai đoạn cuối cùng liên quan đến việc chuẩn bị các sản phẩm bàn giao đồng bộ để nộp lên hệ
+thống quản lý học tập:
+•Tổ chức thư mục trên Google Drive public:
+–blueprint/: Chứa tài liệu thiết kế hệ thống dưới dạng một file PDF duy nhất
+(blueprint.pdf)hoặccấutrúccácfileMarkdown(proposal.md,design.md,specs/).
+–src/: Mã nguồn toàn bộ hệ thống, bao gồm thư mụcdata/(chứa seed data/script
+database) và fileREADME.mdhướng dẫn triển khai chi tiết.
+–clips/: Thư mục chứa video trình bày màn hình độ phân giải FullHD (1080p, định
+dạng MP4) quay trực tiếp phần giải trình kỹ thuật và demo chạy code/hệ thống (bắt
+buộc bật camera thấy rõ mặt thành viên thuyết trình).
+•Hìnhthứcnộp:Nộpmộtfiletextduynhấtđượcđặttêntheocúphápmã-nhóm_mssv1_mssv2...txt,
+bên trong chỉ chứa duy nhất một đường link dẫn đến thư mục Google Drive public nêu
+trên.
+4

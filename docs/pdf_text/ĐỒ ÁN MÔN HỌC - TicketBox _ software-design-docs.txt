@@ -1,0 +1,251 @@
+Đ Ồ ÁN MÔN H Ọ C – TicketBox
+View on GitHub
+Đ Ồ ÁN MÔN H Ọ C – TicketBox
+B ối c ả nh
+Các concert âm nh ạ c l ớ n t ạ i Vi ệ t Nam — nh ư  Anh Trai Say Hi , Anh Trai V ư ợ t Ngàn Chông Gai , Em
+Xinh Say Hi , Ch ị Đ ẹ p Đ ạ p Gió R ẽ  Sóng  — thu hút hàng ch ụ c nghìn khán gi ả . Khi ban t ổ  ch ứ c m ở
+bán vé, website th ư ờ ng s ậ p trong vài phút đ ầ u do l ư ợ ng truy c ậ p đ ồ ng th ờ i quá l ớ n; khán gi ả  b ị  tr ừ
+ti ền nh ư ng không nh ậ n đư ợ c vé; scalper dùng bot mua h ế t vé trong vài giây r ồ i bán l ạ i v ớ i giá g ấ p
+nhi ề u l ầ n.
+Hi ện t ạ i nhi ề u s ự  ki ệ n v ẫ n bán vé qua các kênh r ờ i r ạ c: Zalo OA, Google Form, chuy ể n kho ả n th ủ
+công — không đ ả m b ả o tính công b ằ ng và r ấ t d ễ  x ả y ra gian l ậ n.
+Công ty t ổ  ch ứ c s ự  ki ệ n mu ố n xây d ự ng h ệ  th ố ng TicketBox  đ ể s ố  hóa toàn b ộ  quy trình bán vé, t ừ
+lúc m ở  bán đ ế n khi khán gi ả  vào c ổ ng s ự  ki ệ n.
+Ng ư ờ i dùng
+Nhóm Mô t ả
+Khán gi ả Xem thông tin concert, mua vé, nh ậ n e-ticket, check-in t ạ i c ổ ng
+Ban t ổ  ch ứ c T ạo và qu ả n lý concert, c ấ u hình lo ạ i vé, theo dõi doanh thu và l ư ợ ng bán
+Nhân s ự  soát vé Xác nh ậ n vé t ạ i c ổ ng vào b ằ ng mobile app
+Yêu c ầ u h ệ  th ố ng
+Xem và mua vé
+Khán gi ả  có th ể  xem danh sách các concert s ắ p di ễ n ra, bao g ồ m thông tin ngh ệ  s ĩ  bi ể u di ễ n, đ ị a
+đi ểm t ổ  ch ứ c, s ơ  đ ồ  ch ỗ  ng ồ i (s ơ  đ ồ  SVG t ươ ng tác theo khu: GA, SVIP, VIP, CAT1, CAT2) và s ố  vé còn5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 1/9
+
+l ại theo th ờ i gian th ự c cho t ừ ng lo ạ i.
+Khán gi ả  ch ọ n lo ạ i vé và s ố  l ư ợ ng, sau đ ó ti ế n hành thanh toán qua c ổ ng thanh toán (VNPAY,
+MoMo). Sau khi thanh toán thành công, khán gi ả  nh ậ n e-ticket d ư ớ i d ạ ng mã QR dùng đ ể  vào c ổ ng
+s ự ki ệ n.
+M ỗi tài kho ả n ch ỉ  đư ợ c mua t ố i đ a m ộ t s ố  l ư ợ ng vé nh ấ t đ ị nh cho m ỗ i lo ạ i vé, do ban t ổ  ch ứ c c ấ u
+hình khi t ạ o concert (ví d ụ : SVIP t ố i đ a 2 vé/tài kho ả n, CAT1 t ố i đ a 4 vé/tài kho ả n). Gi ớ i h ạ n này áp
+d ụng trên toàn b ộ  các đơ n hàng đ ã thanh toán thành công — khán gi ả  không th ể  lách b ằ ng cách
+t ạo nhi ề u đơ n hàng nh ỏ .
+Thông báo
+Sau khi mua vé thành công, khán gi ả  nh ậ n thông báo xác nh ậ n qua app và email kèm e-ticket. Khi
+concert s ắ p di ễ n ra (tr ư ớ c 24 gi ờ ), h ệ  th ố ng g ử i nh ắ c nh ở  t ự  đ ộ ng. H ệ  th ố ng c ầ n đư ợ c thi ế t k ế  đ ể  d ễ
+dàng b ổ  sung kênh thông báo m ớ i (ví d ụ : Zalo OA, SMS) trong t ươ ng lai mà không c ầ n thay đ ổ i l ớ n.
+Qu ản tr ị
+Ban t ổ  ch ứ c dùng trang web admin đ ể  t ạ o concert m ớ i, c ấ u hình các lo ạ i vé (tên, giá, s ố  l ư ợ ng, th ờ i
+đi ểm m ở  bán), c ậ p nh ậ t thông tin, ho ặ c h ủ y concert. Trang admin ch ỉ  dành cho n ộ i b ộ  và c ầ n ki ể m
+soát truy c ậ p ch ặ t ch ẽ  — ba nhóm ng ư ờ i dùng có quy ề n h ạ n khác nhau: khán gi ả  ch ỉ  có th ể  xem
+thông tin và mua vé; ban t ổ  ch ứ c có quy ề n t ạ o, s ử a, h ủ y concert và xem th ố ng kê doanh thu; nhân
+s ự soát vé ch ỉ  có quy ề n truy c ậ p ch ứ c n ă ng quét mã QR.
+Soát vé t ạ i s ự  ki ệ n
+Nhân s ự  t ạ i c ổ ng vào dùng mobile app đ ể  quét mã QR trên e-ticket c ủ a khán gi ả . Các đ ị a đ i ể m t ổ
+ch ức concert l ớ n (sân v ậ n đ ộ ng, nhà thi đ ấ u) th ư ờ ng có vùng sóng không ổ n đ ị nh khi hàng ch ụ c
+nghìn ng ư ờ i t ậ p trung — app ph ả i cho phép ghi nh ậ n soát vé t ạ m th ờ i khi không có m ạ ng và t ự
+đ ồng b ộ  l ạ i khi k ế t n ố i đư ợ c ph ụ c h ồ i.
+AI Artist Bio
+Ban t ổ  ch ứ c có th ể  t ả i lên file PDF h ồ  s ơ  ngh ệ  s ĩ  ho ặ c press kit c ủ a concert. H ệ  th ố ng t ự  đ ộ ng x ử  lý,
+tách n ộ i dung, làm s ạ ch v ă n b ả n và g ử i sang mô hình AI đ ể  t ạ o b ả n gi ớ i thi ệ u ng ắ n g ọ n hi ể n th ị  trên
+trang chi ti ế t concert.
+Đ ồng b ộ  danh sách khách m ờ i VIP5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 2/9
+
+M ột s ố  concert có khu v ự c Guest List dành cho khách m ờ i c ủ a nhãn hàng tài tr ợ . H ệ  th ố ng qu ả n lý
+khách m ờ i c ủ a nhãn hàng không có API — cách duy nh ấ t là nh ậ n file CSV mà nhãn hàng g ử i vào
+ban đ êm tr ư ớ c ngày di ễ n. TicketBox c ầ n đ ị nh k ỳ  nh ậ p danh sách này đ ể  nhân s ự  soát vé có th ể  xác
+nh ận khách m ờ i t ạ i c ổ ng VIP.
+Các v ấ n đ ề  c ầ n gi ả i quy ế t
+Tranh ch ấ p vé:  M ột s ố  lo ạ i vé SVIP c ủ a concert Anh Trai Say Hi ch ỉ  có 200 ch ỗ  nh ư ng có th ể  có
+hàng ch ụ c nghìn khán gi ả  c ố  mua cùng lúc ngay khi m ở  bán. H ệ  th ố ng ph ả i đ ả m b ả o không có hai
+khán gi ả  nào cùng nh ậ n đư ợ c vé cu ố i cùng.
+T ải tr ọ ng đ ộ t bi ế n: Khi concert Ch ị  Đ ẹ p Đ ạ p Gió R ẽ  Sóng m ở  bán, d ự  ki ế n kho ả ng 80.000 ng ư ờ i
+truy c ậ p trong 5 phút đ ầ u, trong đ ó 70% d ồ n vào phút đ ầ u tiên. H ệ  th ố ng c ầ n có c ơ  ch ế  b ả o v ệ
+backend API kh ỏ i b ị  quá t ả i, ng ă n ch ặ n bot và client g ử i request liên t ụ c, đ ồ ng th ờ i đ ả m b ả o tính
+công b ằ ng gi ữ a các khán gi ả  th ậ t.
+Thanh toán không ổ n đ ị nh: N ếu c ổ ng thanh toán (VNPAY/MoMo) g ặ p s ự  c ố , khán gi ả  v ẫ n ph ả i
+xem đư ợ c thông tin concert và danh sách vé còn l ạ i bình th ư ờ ng. Lu ồ ng mua vé có phí c ầ n x ử  lý
+tình hu ố ng thanh toán timeout mà không gây ra tr ừ  ti ề n hai l ầ n; các tính n ă ng không liên quan đ ế n
+thanh toán v ẫ n ph ả i ho ạ t đ ộ ng bình th ư ờ ng khi c ổ ng thanh toán g ặ p s ự  c ố  kéo dài.
+Soát vé offline:  Nhân s ự  ở  khu v ự c sóng y ế u trong sân v ậ n đ ộ ng v ẫ n ph ả i soát vé đư ợ c cho khán
+gi ả; d ữ  li ệ u không đư ợ c m ấ t khi k ế t n ố i tr ở  l ạ i và không đư ợ c cho phép m ộ t vé vào c ổ ng hai l ầ n.
+Tích h ợ p m ộ t chi ề u: Không th ể  g ọ i API h ệ  th ố ng qu ả n lý khách m ờ i c ủ a nhãn hàng — ch ỉ  có th ể
+đ ọc CSV đư ợ c g ử i theo l ị ch c ố  đ ị nh. Lu ồ ng nh ậ p d ữ  li ệ u ph ả i x ử  lý đư ợ c file l ỗ i, d ữ  li ệ u trùng và
+không làm gián đ o ạ n h ệ  th ố ng đ ang ch ạ y.
+Gi ới h ạ n vé per-user khó enforce d ư ớ i t ả i cao:  Khi hàng ch ụ c nghìn ng ư ờ i mua vé cùng lúc, c ầ n
+đ ảm b ả o gi ớ i h ạ n s ố  vé m ỗ i tài kho ả n đư ợ c áp d ụ ng chính xác — không đ ể  m ộ t ng ư ờ i mua v ư ợ t
+quá gi ớ i h ạ n dù g ử i nhi ề u request đ ồ ng th ờ i. Đ ây là bài toán t ươ ng t ự  tranh ch ấ p ch ỗ  ng ồ i nh ư ng ở
+ph ạm vi per-user thay vì toàn h ệ  th ố ng.
+Trang ch ủ  và trang chi ti ế t concert b ị  quá t ả i: Trang danh sách concert và trang chi ti ế t t ừ ng
+concert b ị  đ ọ c v ớ i t ầ n su ấ t r ấ t cao (hàng nghìn l ầ n/giây trong gi ờ  cao đ i ể m) nh ư ng d ữ  li ệ u thay đ ổ i
+không th ư ờ ng xuyên. N ế u m ỗ i request đ ề u truy v ấ n th ẳ ng vào database, h ệ  th ố ng s ẽ  không ch ị u
+đư ợc t ả i. C ầ n có chi ế n l ư ợ c cache h ợ p lý đ ể  gi ả m t ả i cho database mà v ẫ n đ ả m b ả o d ữ  li ệ u đ ủ  c ậ p
+nh ật (ví d ụ : s ố  vé còn l ạ i ph ả i ph ả n ánh g ầ n đ úng th ự c t ế ).5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 3/9
+
+Các n ộ i dung c ầ n th ự c hi ệ n
+Ph ần 1 — Blueprint
+1. Tài li ệ u thi ế t k ế  h ệ  th ố ng
+Mô t ả  ki ế n trúc t ổ ng th ể  c ủ a h ệ  th ố ng, bao g ồ m các thành ph ầ n chính, cách chúng giao ti ế p và lý do
+l ựa ch ọ n ki ế n trúc đ ó. Tài li ệ u c ầ n tr ả  l ờ i đư ợ c các câu h ỏ i: h ệ  th ố ng g ồ m nh ữ ng ph ầ n nào, ph ầ n
+nào nói chuy ệ n v ớ i nhau nh ư  th ế  nào, và khi m ộ t ph ầ n g ặ p s ự  c ố  thì ph ầ n còn l ạ i b ị  ả nh h ư ở ng ra
+sao.
+2. C4 Diagram
+V ẽ hai c ấ p đ ộ  đ ầ u c ủ a C4 diagram:
+Level 1 – System Context:  th ể hi ệ n TicketBox trong b ứ c tranh toàn c ả nh — ai dùng h ệ  th ố ng,
+h ệ th ố ng ngoài nào đư ợ c tích h ợ p.
+Level 2 – Container:  phân rã h ệ  th ố ng thành các container (ví d ụ : web app, mobile app,
+backend API, database, message broker), ch ỉ  rõ công ngh ệ  đ ề  xu ấ t và cách các container giao
+ti ếp v ớ i nhau.
+3. High-Level Architecture Diagram
+V ẽ s ơ  đ ồ  ki ế n trúc t ổ ng quan th ể  hi ệ n lu ồ ng d ữ  li ệ u và s ự  ph ụ  thu ộ c gi ữ a các thành ph ầ n, đ ặ c bi ệ t ở
+các đ i ể m tích h ợ p (c ổ ng thanh toán, AI model, h ệ  th ố ng khách m ờ i CSV) và lu ồ ng soát vé offline.
+4. Thi ế t k ế  c ơ  s ở  d ữ  li ệ u
+Xác đ ị nh các lo ạ i d ữ  li ệ u chính trong h ệ  th ố ng, đ ề  xu ấ t lo ạ i database phù h ợ p (SQL, NoSQL, ho ặ c
+k ết h ợ p) và gi ả i thích lý do l ự a ch ọ n d ự a trên đ ặ c đ i ể m c ủ a t ừ ng lo ạ i d ữ  li ệ u. Thi ế t k ế  schema cho
+các entity quan tr ọ ng nh ấ t.
+5. Mô t ả  các lu ồ ng nghi ệ p v ụ  quan tr ọ ng
+Mô t ả  chi ti ế t ít nh ấ t hai trong s ố  các lu ồ ng sau:
+Lu ồng mua vé (t ừ  khi b ấ m “Mua vé” đ ế n khi nh ậ n e-ticket)
+Lu ồng soát vé khi m ấ t m ạ ng và đ ồ ng b ộ  l ạ i5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 4/9
+
+Lu ồng nh ậ p danh sách khách m ờ i t ừ  CSV
+V ới m ỗ i lu ồ ng, trình bày các b ư ớ c x ử  lý, các thành ph ầ n tham gia và cách h ệ  th ố ng ph ả n ứ ng khi có
+l ỗi x ả y ra gi ữ a ch ừ ng.
+6. Thi ế t k ế  ki ể m soát truy c ậ p
+Thi ế t k ế  mô hình phân quy ề n cho h ệ  th ố ng. Xác đ ị nh các nhóm ng ư ờ i dùng, quy ề n h ạ n t ươ ng ứ ng
+v ới t ừ ng nhóm, và gi ả i thích cách h ệ  th ố ng ki ể m tra quy ề n t ạ i t ừ ng đ i ể m truy c ậ p (API endpoint,
+trang admin, mobile app soát vé). Nhóm có th ể  tham kh ả o mô hình RBAC (Role-Based Access
+Control)  ho ặ c đ ề  xu ấ t cách ti ế p c ậ n khác n ế u có lý do phù h ợ p.
+7. Thi ế t k ế  các c ơ  ch ế  b ả o v ệ  h ệ  th ố ng
+V ới m ỗ i v ấ n đ ề  k ỹ  thu ậ t d ư ớ i đ ây, trình bày gi ả i pháp nhóm l ự a ch ọ n, gi ả i thích cách nó ho ạ t đ ộ ng
+và lý do phù h ợ p v ớ i bài toán. Các k ỹ  thu ậ t đư ợ c g ợ i ý nh ư ng nhóm có th ể  đ ề  xu ấ t gi ả i pháp thay
+th ế n ế u l ậ p lu ậ n thuy ế t ph ụ c:
+Ki ểm soát t ả i đ ộ t bi ế n: Làm th ế  nào đ ể  backend API không b ị  quá t ả i khi 80.000 ng ư ờ i cùng
+truy c ậ p mua vé trong phút đ ầ u m ở  bán? (g ợi ý: Rate Limiting — Fixed Window, Sliding
+Window, Token Bucket, Leaky Bucket)
+X ử lý c ổ ng thanh toán không ổ n đ ị nh: Làm th ế  nào đ ể  h ệ  th ố ng ph ả n ứ ng khi
+VNPAY/MoMo liên t ụ c l ỗ i mà không kéo s ậ p toàn b ộ  d ị ch v ụ ? (g ợi ý: Circuit Breaker v ớ i các
+tr ạng thái Closed / Open / Half-Open, k ế t h ợ p Graceful Degradation)
+Ch ống tr ừ  ti ề n hai l ầ n: Làm th ế  nào đ ể  đ ả m b ả o m ộ t giao d ị ch mua vé ch ỉ  đư ợ c th ự c hi ệ n
+đúng m ộ t l ầ n dù khán gi ả  b ấ m mua nhi ề u l ầ n ho ặ c m ạ ng b ị  ng ắ t gi ữ a ch ừ ng? (g ợi ý:
+Idempotency Key — c ơ  ch ế  sinh key, n ơ i l ư u tr ữ , cách ki ể m tra trùng l ặ p, th ờ i gian h ế t h ạ n)
+Caching:  Làm th ế  nào đ ể  trang danh sách concert và trang chi ti ế t không làm quá t ả i
+database khi có hàng nghìn request/giây, trong khi v ẫ n ph ả n ánh đ úng s ố  vé còn l ạ i? (g ợi ý:
+Cache-aside v ớ i Redis — xác đ ị nh TTL phù h ợ p cho t ừ ng lo ạ i d ữ  li ệ u: thông tin concert ít thay
+đ ổi có th ể  cache lâu, s ố  vé còn l ạ i c ầ n TTL ng ắ n ho ặ c invalidate ch ủ  đ ộ ng khi có giao d ị ch
+thành công)
+Ph ần 2 — Cài đ ặ t
+Ph ần m ề m hoàn ch ỉ nh, có th ể  ch ạ y đư ợ c, cài đ ặ t toàn b ộ  h ệ  th ố ng đ ã mô t ả  trong Blueprint. Ph ầ n
+cài đ ặ t ph ả i bao g ồ m:
+Tính n ă ng nghi ệ p v ụ  đ ầ y đ ủ : T ất c ả  các ch ứ c n ă ng đư ợ c mô t ả  trong ph ầ n Yêu c ầ u h ệ  th ố ng
+— xem concert, mua vé, thông báo, qu ả n tr ị , soát vé, AI Artist Bio, đ ồ ng b ộ  CSV khách m ờ i.5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 5/9
+
+Các c ơ  ch ế  k ỹ  thu ậ t: Toàn b ộ  gi ả i pháp đ ã thi ế t k ế  trong Blueprint m ụ c 6 và 7 ph ả i đư ợ c cài
+đ ặt th ự c s ự  trong code, không ch ỉ  mô ph ỏ ng ho ặ c stub.
+H ư ớ ng d ẫ n kh ở i ch ạ y: README rõ ràng, đ ủ  đ ể  ng ư ờ i ch ấ m có th ể  clone repository và ch ạ y
+đư ợc h ệ  th ố ng mà không c ầ n h ỏ i thêm.
+D ữ li ệ u m ẫ u: Seed data ho ặ c script t ạ o d ữ  li ệ u ban đ ầ u — bao g ồ m các concert m ẫ u (Anh
+Trai Say Hi, Anh Trai V ư ợ t Ngàn Chông Gai, Em Xinh Say Hi, Ch ị  Đ ẹ p Đ ạ p Gió R ẽ  Sóng) v ớ i đ ầ y
+đ ủ lo ạ i vé, giá và s ơ  đ ồ  ch ỗ  ng ồ i — đ ể  có th ể  thao tác và ki ể m tra ngay sau khi kh ở i ch ạ y.
+Tham kh ả o: Template Blueprint
+Template tham kh ả o theo c ấ u trúc c ủ a OpenSpec  — framework spec-driven development, g ồ m ba
+l ớp tài li ệ u: proposal  (v ấn đ ề  và lý do), design  (gi ải pháp k ỹ  thu ậ t), specs  (k ịch b ả n và ràng bu ộ c
+cho t ừ ng tính n ă ng). Nhóm có th ể  b ổ  sung m ụ c ho ặ c đ i ề u ch ỉ nh c ấ u trúc n ế u phù h ợ p.
+blueprint/
+├── proposal.md          # Bối cảnh, vấn đề, mục tiêu
+├── design.md            # Kiến trúc, sơ đồ, quyết định kỹ thuật
+└── specs/
+    ├── auth.md          # Đặc tả phân quyền
+    ├── payment.md       # Đặc tả luồng thanh toán và chống trừ tiền 2 lần
+    ├── checkin.md       # Đặc tả luồng soát vé offline
+    └── ...              # Đặc tả các tính năng khác
+proposal.md
+# TicketBox — Project Proposal
+## Vấn đề
+<!-- Mô tả vấn đề hiện tại mà hệ thống cần giải quyết.
+     Tại sao các kênh bán vé hiện tại (Zalo OA, Google Form, chuyển khoản) không còn đủ?
+     Hậu quả cụ thể: website sập, trừ tiền không ra vé, scalper bot vét hết vé. -->
+## Mục tiêu
+<!-- Hệ thống cần đạt được gì? Định lượng nếu có thể.
+     Ví dụ: hỗ trợ 80.000 người truy cập trong 5 phút đầu mở bán mà không sập. -->
+## Người dùng và nhu cầu
+<!-- Ai dùng hệ thống? Họ cần làm gì? Điều gì quan trọng nhất với họ? -->
+## Phạm vi
+<!-- Những gì thuộc phạm vi đồ án này.
+     Những gì KHÔNG thuộc phạm vi (ví dụ: tích hợp payment gateway thật, hạ tầng production)5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 6/9
+
+## Rủi ro và ràng buộc
+<!-- Các vấn đề kỹ thuật đã biết trước: tranh chấp vé, tải đột biến,
+     cổng thanh toán không ổn định, soát vé offline, tích hợp một chiều CSV. -->
+design.md
+# TicketBox — Technical Design
+## Kiến trúc tổng thể
+<!-- Mô tả architectural style được chọn và lý do.
+     Hệ thống gồm những thành phần nào? Chúng giao tiếp với nhau như thế nào? -->
+## C4 Diagram
+### Level 1 — System Context
+<!-- Sơ đồ: TicketBox + actors + hệ thống ngoài (VNPAY, MoMo, AI model, CSV nhãn hàng) -->
+### Level 2 — Container
+<!-- Sơ đồ: web app, mobile app soát vé, backend API, database, message broker, ... -->
+## High-Level Architecture Diagram
+<!-- Sơ đồ luồng dữ liệu, đặc biệt tại các điểm tích hợp và luồng soát vé offline -->
+## Thiết kế cơ sở dữ liệu
+<!-- Loại database, lý do lựa chọn, schema các entity chính -->
+## Thiết kế kiểm soát truy cập
+<!-- Mô hình phân quyền, các nhóm người dùng, cách kiểm tra quyền tại từng điểm truy cập -->
+## Thiết kế các cơ chế bảo vệ hệ thống
+### Kiểm soát tải đột biến
+<!-- Giải pháp, thuật toán, ngưỡng, hành vi khi vượt ngưỡng -->
+### Xử lý cổng thanh toán không ổn định
+<!-- Giải pháp, các trạng thái, ngưỡng kích hoạt, hành vi khi lỗi -->
+### Chống trừ tiền hai lần
+<!-- Cơ chế, nơi lưu trữ, TTL, luồng xử lý khi phát hiện trùng lặp -->
+### Caching
+<!-- Xác định các đối tượng cần cache (danh sách concert, chi tiết concert, số vé còn lại).
+     Chiến lược: Cache-aside, Write-through hay Write-back?
+     TTL cho từng loại. Cách invalidate khi dữ liệu thay đổi (đặc biệt: số vé sau mỗi giao d5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 7/9
+
+## Các quyết định kỹ thuật quan trọng (ADR)
+<!-- Với mỗi quyết định lớn: lựa chọn gì, tại sao, đánh đổi gì.
+     Ví dụ: SQL vs NoSQL, JWT vs Session, Kafka vs RabbitMQ, optimistic vs pessimistic locki
+specs/[feature].md
+# Đặc tả: [Tên tính năng]
+## Mô tả
+<!-- Tính năng này làm gì? -->
+## Luồng chính
+<!-- Các bước xử lý theo thứ tự, các thành phần tham gia -->
+## Kịch bản lỗi
+<!-- Điều gì xảy ra khi: timeout, mất mạng, dữ liệu không hợp lệ, ... -->
+## Ràng buộc
+<!-- Giới hạn hiệu năng, bảo mật, tính nhất quán cần đảm bảo -->
+## Tiêu chí chấp nhận
+<!-- Làm thế nào để biết tính năng này hoạt động đúng? -->
+Quy đ ị nh n ộ p bài
+Đ ịnh d ạ ng file n ộ p
+M ỗi nhóm n ộ p m ộ t file text duy nh ấ t lên h ệ  th ố ng.
+Tên file: mã-nhóm_mssv1_mssv2_mssv3_mssv4.txt (ví d ụ :
+N01_21127001_21127002_21127003_21127004.txt).
+N ội dung file: Link Google Drive  public ch ứ a t ấ t c ả  các thành ph ầ n bài làm.
+C ấu trúc th ư  m ụ c trên Google Drive
+Th ư m ụ c Drive c ủ a nhóm ph ả i bao g ồ m đ ủ  ba thành ph ầ n:
+1. Blueprint  — Nhóm có th ể  n ộ p theo m ộ t trong hai hình th ứ c:
+PDF:  M ột file blueprint.pdf duy nh ấ t ch ứ a đ ầ y đ ủ  các thành ph ầ n theo template.5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 8/9
+
+Markdown:  Th ư  m ụ c blueprint/ t ổ ch ứ c theo c ấ u trúc template, upload tr ự c ti ế p lên
+Drive.
+2. Source code  — Th ư  m ụ c src/ ch ứ a toàn b ộ  mã ngu ồ n, kèm th ư  m ụ c data/ ch ứ a seed data
+và script kh ở i t ạ o c ơ  s ở  d ữ  li ệ u, và file README.md v ới h ư ớ ng d ẫ n cài đ ặ t và kh ở i ch ạ y.
+3. Video trình bày  — Th ư  m ụ c clips/ ch ứ a video quay màn hình trình bày các v ấ n đ ề  k ỹ  thu ậ t
+mà nhóm đ ã gi ả i quy ế t (không c ầ n slide). N ộ i dung ph ả i bao g ồ m camera thành viên thuy ế t
+trình  và demo tr ự c ti ế p trên code ho ặ c ứ ng d ụ ng đ ang ch ạ y. Quy đ ị nh k ỹ  thu ậ t: đ ộ  phân
+gi ải FullHD (1080p) , bitrate kho ả ng 720 kbps , đ ịnh d ạ ng MP4.
+software-design-docs  is maintained by nndkhoa .
+This page was generated by GitHub Pages .5/21/26, 8:16 AM ĐỒ ÁN MÔN HỌC – TicketBox | software-design-docs
+https://nndkhoa.github.io/software-design-docs/exercises/project/spec-ticketbox.html?fbclid=IwY2xjawR7OZFleHRuA2FlbQIxMQBicmlkETFWMTk4dT… 9/9
