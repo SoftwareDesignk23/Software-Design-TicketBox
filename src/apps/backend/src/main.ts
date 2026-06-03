@@ -5,6 +5,9 @@ import { AuthHttpExceptionFilter } from './auth/auth.filter.js'
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule)
 	app.useGlobalFilters(new AuthHttpExceptionFilter())
+	app.setGlobalPrefix('api/v1', {
+		exclude: ['health'],
+	})
 	await app.listen(process.env.PORT ?? 3000)
 }
 bootstrap()
