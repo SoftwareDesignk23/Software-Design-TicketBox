@@ -1,0 +1,22 @@
+$kind: http-request
+name: Login
+url: "{{baseURL}}/api/v1/auth/login"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"email\": \"audience@ticketbox.local\",\r
+
+    \    \"password\": \"password123\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "const responseJson = pm.response.json();\r
+
+      pm.environment.set('accessToken', responseJson.accessToken);\r
+
+      pm.environment.set('refreshToken', responseJson.refreshToken);"
+    language: text/javascript
+order: 1780495939078

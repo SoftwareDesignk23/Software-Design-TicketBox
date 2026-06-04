@@ -10,23 +10,26 @@ import { MyTicketsPage } from '../features/tickets/MyTicketsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { AuthPage } from '../features/auth/AuthPage'
 import { NotFoundPage } from '../features/misc/NotFoundPage'
+import { ProtectedRoute } from './ProtectedRoute'
 
 export function AppRoutes() {
-  return (
-    <Routes>
-      <Route element={<AppShell />}>
-        <Route index element={<LandingPage />} />
-        <Route path="/events" element={<EventListPage />} />
-        <Route path="/events/:eventId" element={<EventDetailPage />} />
-        <Route path="/events/:eventId/seats" element={<SeatSelectionPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/tickets" element={<MyTicketsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Route>
-      <Route element={<AuthShell />}>
-        <Route path="/auth" element={<AuthPage />} />
-      </Route>
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-  )
+	return (
+		<Routes>
+			<Route element={<AppShell />}>
+				<Route index element={<LandingPage />} />
+				<Route path="/events" element={<EventListPage />} />
+				<Route path="/events/:eventId" element={<EventDetailPage />} />
+				<Route path="/events/:eventId/seats" element={<SeatSelectionPage />} />
+				<Route path="/checkout" element={<CheckoutPage />} />
+				<Route element={<ProtectedRoute />}>
+					<Route path="/tickets" element={<MyTicketsPage />} />
+					<Route path="/profile" element={<ProfilePage />} />
+				</Route>
+			</Route>
+			<Route element={<AuthShell />}>
+				<Route path="/auth" element={<AuthPage />} />
+			</Route>
+			<Route path="*" element={<NotFoundPage />} />
+		</Routes>
+	)
 }

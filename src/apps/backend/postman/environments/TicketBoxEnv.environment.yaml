@@ -1,0 +1,8 @@
+name: TicketBoxEnv
+values:
+  - key: baseURL
+    value: ''
+  - key: accessToken
+    value: ''
+  - key: refreshToken
+    value: ''

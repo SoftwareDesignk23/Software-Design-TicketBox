@@ -1,122 +1,141 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
+import {
+  clearStoredTokens,
+  currentUser,
+  loadStoredTokens,
+  login as loginRequest,
+  logout as logoutRequest,
+} from "./auth";
+
+const initialState = {
+  status: "loading",
+  user: null,
+  error: null,
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [state, setState] = useState(initialState);
+  const [email, setEmail] = useState("admin@ticketbox.local");
+  const [password, setPassword] = useState("password123");
+
+  useEffect(() => {
+    const restore = async () => {
+      const tokens = loadStoredTokens();
+      if (!tokens?.accessToken) {
+        setState({ status: "unauthenticated", user: null, error: null });
+        return;
+      }
+
+      try {
+        const user = await currentUser(tokens.accessToken);
+        if (user.role !== "ADMIN") {
+          clearStoredTokens();
+          setState({ status: "forbidden", user: null, error: null });
+          return;
+        }
+        setState({ status: "authenticated", user, error: null });
+      } catch (error) {
+        clearStoredTokens();
+        setState({ status: "unauthenticated", user: null, error });
+      }
+    };
+
+    restore();
+  }, []);
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setState((prev) => ({ ...prev, status: "loading", error: null }));
+    try {
+      const response = await loginRequest(email, password);
+      if (response.user.role !== "ADMIN") {
+        clearStoredTokens();
+        setState({ status: "forbidden", user: null, error: null });
+        return;
+      }
+      setState({ status: "authenticated", user: response.user, error: null });
+    } catch (error) {
+      setState({ status: "unauthenticated", user: null, error });
+    }
+  };
+
+  const handleLogout = async () => {
+    const tokens = loadStoredTokens();
+    if (tokens?.refreshToken) {
+      await logoutRequest(tokens.refreshToken);
+    }
+    clearStoredTokens();
+    setState({ status: "unauthenticated", user: null, error: null });
+  };
+
+  if (state.status === "loading") {
+    return (
+      <main className="auth-shell">
+        <div className="panel">Loading admin session...</div>
+      </main>
+    );
+  }
+
+  if (state.status === "forbidden") {
+    return (
+      <main className="auth-shell">
+        <div className="panel">
+          <h1>Forbidden</h1>
+          <p>Your account does not have admin access.</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (state.status !== "authenticated") {
+    return (
+      <main className="auth-shell">
+        <form className="panel" onSubmit={handleLogin}>
+          <h1>Admin sign in</h1>
+          <p>Use your admin credentials to continue.</p>
+          <label>
+            Email
+            <input
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin@ticketbox.local"
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          {state.error ? (
+            <p className="error">
+              {state.error.message ?? "Unable to sign in."}
+            </p>
+          ) : null}
+          <button type="submit">Sign in</button>
+        </form>
+      </main>
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+    <main className="auth-shell">
+      <section className="panel">
+        <h1>Welcome, {state.user.displayName}</h1>
+        <p>Admin overview access granted.</p>
+        <div className="admin-actions">
+          <button type="button">Review pending events</button>
+          <button type="button">Audit check-in staff</button>
+          <button type="button" onClick={handleLogout}>
+            Sign out
+          </button>
         </div>
       </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    </main>
+  );
 }
 
-export default App
+export default App;
