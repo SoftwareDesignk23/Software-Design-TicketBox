@@ -14,15 +14,22 @@ enum Role {
   ADMIN
 }
 
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
 model User {
-  id            String           @id @default(uuid())
-  email         String           @unique
-  displayName   String
-  role          Role
-  passwordHash  String
-  createdAt     DateTime         @default(now())
-  refreshTokens RefreshSession[]
-  assignments   EventAssignment[]
+  id              String            @id @default(uuid())
+  email           String            @unique
+  displayName     String
+  role            Role
+  passwordHash    String
+  createdAt       DateTime          @default(now())
+  refreshTokens   RefreshSession[]
+  assignments     EventAssignment[]
+  organizedEvents Event[]
 }
 
 model RefreshSession {
@@ -48,7 +55,29 @@ model EventAssignment {
   eventId   String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, role, eventId])
   @@index([eventId])
+}
+
+model Event {
+  id             String            @id @default(uuid())
+  title          String
+  description    String?
+  venueName      String
+  venueAddress   String?
+  startsAt       DateTime
+  endsAt         DateTime?
+  salesOpensAt   DateTime?
+  status         EventStatus       @default(DRAFT)
+  heroImageUrl   String?
+  organizerId    String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organizer      User              @relation(fields: [organizerId], references: [id], onDelete: Restrict)
+  assignments    EventAssignment[]
+
+  @@index([organizerId])
+  @@index([status, startsAt])
 }
