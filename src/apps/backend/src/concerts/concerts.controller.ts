@@ -30,7 +30,13 @@ export class ConcertsController {
 	@Patch(':id')
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')
-	updateConcert(@Param('id') _id: string, @Body() _body: unknown) {}
+	updateConcert(
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@CurrentUser() user: AuthTokenPayload,
+	) {
+		return this.concertsService.updateConcert(id, body, user.sub, user.role)
+	}
 
 	@Delete(':id')
 	@UseGuards(JwtAuthGuard, RolesGuard)

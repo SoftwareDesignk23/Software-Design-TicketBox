@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service.js'
-import { createConcertSchema } from './concerts.dto.js'
+import { createConcertSchema, updateConcertSchema } from './concerts.dto.js'
+import type { Role } from '../auth/auth.types.js'
 
 const concertResponseSelect = {
 	id: true,
@@ -55,7 +56,7 @@ export class ConcertsService {
 	}
 
 	createConcert(body: unknown, organizerId: string) {
-		const result = createConcertSchema.safeParse(body) 
+		const result = createConcertSchema.safeParse(body)
 
 		if (!result.success) {
 			throw new BadRequestException({
@@ -73,6 +74,49 @@ export class ConcertsService {
 				status: result.data.status ?? 'DRAFT',
 				organizerId,
 			},
+			select: concertResponseSelect,
+		})
+	}
+
+	async updateConcert(id: string, body: unknown, userId: string, role: Role) {
+		const result = updateConcertSchema.safeParse(body)
+
+		if (!result.success) {
+			throw new BadRequestException({
+				statusCode: 400,
+				error: 'Bad Request',
+				code: 'CONCERT_VALIDATION_FAILED',
+				message: 'Concert payload is invalid.',
+				details: result.error.flatten().fieldErrors,
+			})
+		}
+
+		const concert = await this.prisma.concert.findUnique({
+			where: { id },
+			select: { id: true, organizerId: true },
+		})
+
+		if (!concert) {
+			throw new NotFoundException({
+				statusCode: 404,
+				error: 'Not Found',
+				code: 'CONCERT_NOT_FOUND',
+				message: 'Concert not found.',
+			})
+		}
+
+		if (role !== 'ADMIN' && concert.organizerId !== userId) {
+			throw new ForbiddenException({
+				statusCode: 403,
+				error: 'Forbidden',
+				code: 'CONCERT_FORBIDDEN',
+				message: 'You can only update concerts you organize.',
+			})
+		}
+
+		return this.prisma.concert.update({
+			where: { id },
+			data: result.data,
 			select: concertResponseSelect,
 		})
 	}
