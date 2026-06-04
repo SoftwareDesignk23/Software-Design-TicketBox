@@ -59,6 +59,44 @@ async function main() {
 		skipDuplicates: true,
 	})
 
+	const event = await prisma.event.upsert({
+		where: { id: 'event-1' },
+		update: { name: 'Summer Jam' },
+		create: {
+			id: 'event-1',
+			name: 'Summer Jam',
+		},
+	})
+
+	const general = await prisma.ticketType.upsert({
+		where: { id: 'ticket-general' },
+		update: { name: 'General Admission', totalCapacity: 100 },
+		create: {
+			id: 'ticket-general',
+			eventId: event.id,
+			name: 'General Admission',
+			priceCents: 5000,
+			totalCapacity: 100,
+		},
+	})
+
+	await prisma.ticketInventory.upsert({
+		where: { ticketTypeId: general.id },
+		update: {
+			available: 100,
+			reserved: 0,
+			sold: 0,
+			version: 0,
+		},
+		create: {
+			ticketTypeId: general.id,
+			available: 100,
+			reserved: 0,
+			sold: 0,
+			version: 0,
+		},
+	})
+
 	await prisma.$disconnect()
 }
 

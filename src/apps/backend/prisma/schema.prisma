@@ -14,6 +14,14 @@ enum Role {
   ADMIN
 }
 
+enum ReservationStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  RECONCILIATION_REQUIRED
+}
+
 model User {
   id            String           @id @default(uuid())
   email         String           @unique
@@ -23,6 +31,96 @@ model User {
   createdAt     DateTime         @default(now())
   refreshTokens RefreshSession[]
   assignments   EventAssignment[]
+  reservations  Reservation[]
+  bookings      Booking[]
+}
+
+model Event {
+  id          String       @id @default(uuid())
+  name        String
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime     @default(now())
+  ticketTypes TicketType[]
+  bookings    Booking[]
+}
+
+model TicketType {
+  id            String           @id @default(uuid())
+  eventId       String
+  name          String
+  priceCents    Int?
+  totalCapacity Int
+  createdAt     DateTime         @default(now())
+  event         Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  inventory     TicketInventory?
+  reservations  Reservation[]
+  bookings      Booking[]
+
+  @@index([eventId])
+}
+
+model TicketInventory {
+  id           String     @id @default(uuid())
+  ticketTypeId String     @unique
+  available    Int
+  reserved     Int
+  sold         Int
+  version      Int        @default(0)
+  updatedAt    DateTime   @updatedAt
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+}
+
+model Reservation {
+  id               String            @id @default(uuid())
+  userId           String
+  ticketTypeId     String
+  quantity         Int
+  status           ReservationStatus
+  expiresAt        DateTime
+  inventoryVersion Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketType       TicketType        @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+  booking          Booking?
+
+  @@index([userId])
+  @@index([ticketTypeId])
+  @@index([expiresAt])
+}
+
+model Booking {
+  id            String     @id @default(uuid())
+  reservationId String     @unique
+  userId        String
+  eventId       String
+  ticketTypeId  String
+  quantity      Int
+  createdAt     DateTime   @default(now())
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event         Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketType    TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([ticketTypeId])
+}
+
+model InventoryAudit {
+  id           String   @id @default(uuid())
+  eventId      String
+  ticketTypeId String
+  available    Int
+  reserved     Int
+  sold         Int
+  version      Int
+  reason       String
+  createdAt    DateTime @default(now())
+
+  @@index([eventId])
+  @@index([ticketTypeId])
 }
 
 model RefreshSession {
