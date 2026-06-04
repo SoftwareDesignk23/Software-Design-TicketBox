@@ -1,34 +1,34 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard, RolesGuard } from '../auth/auth.guards.js'
 import { Roles } from '../auth/auth.decorators.js'
-import { EventsService } from './events.service.js'
+import { ConcertsService } from './concerts.service.js'
 
-@Controller('events')
-export class EventsController {
-	constructor(private readonly eventsService: EventsService) {}
+@Controller('concerts')
+export class ConcertsController {
+	constructor(private readonly concertsService: ConcertsService) {}
 
 	@Get()
-	listEvents() {
-		return this.eventsService.listEvents()
+	listConcerts() {
+		return this.concertsService.listConcerts()
 	}
 
 	@Get(':id')
-	getEventById(@Param('id') id: string) {
-		return this.eventsService.getEventById(id)
+	getConcertById(@Param('id') id: string) {
+		return this.concertsService.getConcertById(id)
 	}
 
 	@Post()
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')
-	createEvent(@Body() _body: unknown) {}
+	createConcert(@Body() _body: unknown) {}
 
 	@Patch(':id')
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')
-	updateEvent(@Param('id') _id: string, @Body() _body: unknown) {}
+	updateConcert(@Param('id') _id: string, @Body() _body: unknown) {}
 
 	@Delete(':id')
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')
-	deleteEvent(@Param('id') _id: string) {}
+	deleteConcert(@Param('id') _id: string) {}
 }

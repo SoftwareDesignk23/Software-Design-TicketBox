@@ -23,15 +23,15 @@ export interface RefreshSession {
 	lastUsedAt?: Date
 }
 
-export interface EventAssignment {
+export interface ConcertAssignment {
 	userId: string
 	role: 'ORGANIZER' | 'CHECK_IN_STAFF'
-	eventIds: string[]
+	concertIds: string[]
 }
 
 export interface AssignmentSummary {
-	organizerEventIds: string[]
-	checkInEventIds: string[]
+	organizerConcertIds: string[]
+	checkInConcertIds: string[]
 }
 
 export interface AuthenticatedUserProfile {

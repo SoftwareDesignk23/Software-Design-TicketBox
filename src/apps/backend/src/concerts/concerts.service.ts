@@ -2,11 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service.js'
 
 @Injectable()
-export class EventsService {
+export class ConcertsService {
 	constructor(private readonly prisma: PrismaService) {}
 
-	listEvents() {
-		return this.prisma.event.findMany({
+	listConcerts() {
+		return this.prisma.concert.findMany({
 			where: { status: 'PUBLISHED' },
 			orderBy: { startsAt: 'asc' },
 			select: {
@@ -30,8 +30,8 @@ export class EventsService {
 		})
 	}
 
-	async getEventById(id: string) {
-		const event = await this.prisma.event.findFirst({
+	async getConcertById(id: string) {
+		const concert = await this.prisma.concert.findFirst({
 			where: {
 				id,
 				status: 'PUBLISHED',
@@ -56,15 +56,15 @@ export class EventsService {
 			},
 		})
 
-		if (!event) {
+		if (!concert) {
 			throw new NotFoundException({
 				statusCode: 404,
 				error: 'Not Found',
-				code: 'EVENT_NOT_FOUND',
-				message: 'Event not found.',
+				code: 'CONCERT_NOT_FOUND',
+				message: 'Concert not found.',
 			})
 		}
 
-		return event
+		return concert
 	}
 }

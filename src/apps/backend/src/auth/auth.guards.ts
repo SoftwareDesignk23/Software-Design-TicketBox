@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { Reflector } from '@nestjs/core'
 import { AuthTokenService } from './auth.tokens.js'
 import { AuthStore } from './auth.store.js'
-import { EVENT_SCOPE_METADATA_KEY, ROLE_METADATA_KEY } from './auth.decorators.js'
+import { CONCERT_SCOPE_METADATA_KEY, ROLE_METADATA_KEY } from './auth.decorators.js'
 import { AuthErrorCode, forbidden, unauthorized } from './auth.errors.js'
 import type { Role } from './auth.types.js'
 
@@ -79,14 +79,14 @@ export class RolesGuard implements CanActivate {
 }
 
 @Injectable()
-export class EventScopeGuard implements CanActivate {
+export class ConcertScopeGuard implements CanActivate {
 	constructor(
 		private readonly reflector: Reflector,
 		private readonly store: AuthStore,
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
-		const paramName = this.reflector.getAllAndOverride<string>(EVENT_SCOPE_METADATA_KEY, [
+		const paramName = this.reflector.getAllAndOverride<string>(CONCERT_SCOPE_METADATA_KEY, [
 			context.getHandler(),
 			context.getClass(),
 		])
@@ -97,19 +97,19 @@ export class EventScopeGuard implements CanActivate {
 
 		const request = context.switchToHttp().getRequest()
 		const user = request.user as { sub?: string; role?: Role }
-		const eventId = request.params?.[paramName]
+		const concertId = request.params?.[paramName]
 
 		if (!user?.sub || !user?.role) {
 			unauthorized(AuthErrorCode.AuthRequired, 'Authentication required.')
 		}
 
-		if (!eventId) {
-			forbidden(AuthErrorCode.AuthEventForbidden, 'Missing event scope.')
+		if (!concertId) {
+			forbidden(AuthErrorCode.AuthConcertForbidden, 'Missing concert scope.')
 		}
 
-		const isAssigned = await this.store.isUserAssignedToEvent(user.sub, user.role, eventId)
+		const isAssigned = await this.store.isUserAssignedToConcert(user.sub, user.role, concertId)
 		if (!isAssigned) {
-			forbidden(AuthErrorCode.AuthEventForbidden, 'You are not assigned to this event.')
+			forbidden(AuthErrorCode.AuthConcertForbidden, 'You are not assigned to this concert.')
 		}
 
 		return true
