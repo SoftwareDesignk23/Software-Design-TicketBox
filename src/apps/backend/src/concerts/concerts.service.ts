@@ -120,4 +120,35 @@ export class ConcertsService {
 			select: concertResponseSelect,
 		})
 	}
+
+	async deleteConcert(id: string, userId: string, role: Role) {
+		const concert = await this.prisma.concert.findUnique({
+			where: { id },
+			select: { id: true, organizerId: true },
+		})
+
+		if (!concert) {
+			throw new NotFoundException({
+				statusCode: 404,
+				error: 'Not Found',
+				code: 'CONCERT_NOT_FOUND',
+				message: 'Concert not found.',
+			})
+		}
+
+		if (role !== 'ADMIN' && concert.organizerId !== userId) {
+			throw new ForbiddenException({
+				statusCode: 403,
+				error: 'Forbidden',
+				code: 'CONCERT_FORBIDDEN',
+				message: 'You can only delete concerts you organize.',
+			})
+		}
+
+		await this.prisma.concert.delete({
+			where: { id },
+		})
+
+		return { deleted: true, id }
+	}
 }

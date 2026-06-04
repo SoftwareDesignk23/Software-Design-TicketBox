@@ -41,5 +41,7 @@ export class ConcertsController {
 	@Delete(':id')
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')
-	deleteConcert(@Param('id') _id: string) {}
+	deleteConcert(@Param('id') id: string, @CurrentUser() user: AuthTokenPayload) {
+		return this.concertsService.deleteConcert(id, user.sub, user.role)
+	}
 }
