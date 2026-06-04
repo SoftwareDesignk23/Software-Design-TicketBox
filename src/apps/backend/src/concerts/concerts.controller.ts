@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard, RolesGuard } from '../auth/auth.guards.js'
-import { Roles } from '../auth/auth.decorators.js'
+import { CurrentUser, Roles } from '../auth/auth.decorators.js'
+import type { AuthTokenPayload } from '../auth/auth.types.js'
 import { ConcertsService } from './concerts.service.js'
 
 @Controller('concerts')
@@ -22,7 +23,9 @@ export class ConcertsController {
 	@Post()
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')
-	createConcert(@Body() _body: unknown) {}
+	createConcert(@Body() body: unknown, @CurrentUser() user: AuthTokenPayload) {
+		return this.concertsService.createConcert(body, user.sub)
+	}
 
 	@Patch(':id')
 	@UseGuards(JwtAuthGuard, RolesGuard)

@@ -1,5 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service.js'
+import { createConcertSchema } from './concerts.dto.js'
+
+const concertResponseSelect = {
+	id: true,
+	title: true,
+	description: true,
+	venueName: true,
+	venueAddress: true,
+	startsAt: true,
+	endsAt: true,
+	salesOpensAt: true,
+	status: true,
+	heroImageUrl: true,
+	organizer: {
+		select: {
+			id: true,
+			displayName: true,
+		},
+	},
+} as const
 
 @Injectable()
 export class ConcertsService {
@@ -9,24 +29,7 @@ export class ConcertsService {
 		return this.prisma.concert.findMany({
 			where: { status: 'PUBLISHED' },
 			orderBy: { startsAt: 'asc' },
-			select: {
-				id: true,
-				title: true,
-				description: true,
-				venueName: true,
-				venueAddress: true,
-				startsAt: true,
-				endsAt: true,
-				salesOpensAt: true,
-				status: true,
-				heroImageUrl: true,
-				organizer: {
-					select: {
-						id: true,
-						displayName: true,
-					},
-				},
-			},
+			select: concertResponseSelect,
 		})
 	}
 
@@ -36,24 +39,7 @@ export class ConcertsService {
 				id,
 				status: 'PUBLISHED',
 			},
-			select: {
-				id: true,
-				title: true,
-				description: true,
-				venueName: true,
-				venueAddress: true,
-				startsAt: true,
-				endsAt: true,
-				salesOpensAt: true,
-				status: true,
-				heroImageUrl: true,
-				organizer: {
-					select: {
-						id: true,
-						displayName: true,
-					},
-				},
-			},
+			select: concertResponseSelect,
 		})
 
 		if (!concert) {
@@ -66,5 +52,28 @@ export class ConcertsService {
 		}
 
 		return concert
+	}
+
+	createConcert(body: unknown, organizerId: string) {
+		const result = createConcertSchema.safeParse(body) 
+
+		if (!result.success) {
+			throw new BadRequestException({
+				statusCode: 400,
+				error: 'Bad Request',
+				code: 'CONCERT_VALIDATION_FAILED',
+				message: 'Concert payload is invalid.',
+				details: result.error.flatten().fieldErrors,
+			})
+		}
+
+		return this.prisma.concert.create({
+			data: {
+				...result.data,
+				status: result.data.status ?? 'DRAFT',
+				organizerId,
+			},
+			select: concertResponseSelect,
+		})
 	}
 }
