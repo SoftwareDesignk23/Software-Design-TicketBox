@@ -7,6 +7,8 @@ import { ConcertsService } from './concerts.service.js'
 export class ConcertsController {
 	constructor(private readonly concertsService: ConcertsService) {}
 
+	// Khách hàng vẫn có thể muốn xem danh sách concert trước khi đăng nhập nên không thêm authentication và authorization
+
 	@Get()
 	listConcerts() {
 		return this.concertsService.listConcerts()
