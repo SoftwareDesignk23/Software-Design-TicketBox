@@ -44,28 +44,28 @@ export class AuthStore {
 	}
 
 	async getAssignmentSummary(userId: string): Promise<AssignmentSummary> {
-		const assignments = await this.prisma.eventAssignment.findMany({
+		const assignments = await this.prisma.concertAssignment.findMany({
 			where: { userId },
-			select: { role: true, eventId: true },
+			select: { role: true, concertId: true },
 		})
 
 		return {
-			organizerEventIds: assignments
+			organizerConcertIds: assignments
 				.filter((assignment) => assignment.role === 'ORGANIZER')
-				.map((assignment) => assignment.eventId),
-			checkInEventIds: assignments
+				.map((assignment) => assignment.concertId),
+			checkInConcertIds: assignments
 				.filter((assignment) => assignment.role === 'CHECK_IN_STAFF')
-				.map((assignment) => assignment.eventId),
+				.map((assignment) => assignment.concertId),
 		}
 	}
 
-	async isUserAssignedToEvent(userId: string, role: Role, eventId: string) {
+	async isUserAssignedToConcert(userId: string, role: Role, concertId: string) {
 		if (role === 'ADMIN') {
 			return true
 		}
 
-		const assignment = await this.prisma.eventAssignment.findFirst({
-			where: { userId, role, eventId },
+		const assignment = await this.prisma.concertAssignment.findFirst({
+			where: { userId, role, concertId },
 		})
 
 		return Boolean(assignment)

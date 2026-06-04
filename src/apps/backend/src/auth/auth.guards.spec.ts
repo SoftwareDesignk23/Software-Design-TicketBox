@@ -1,13 +1,13 @@
 import { Reflector } from '@nestjs/core'
-import { EventScopeGuard, RolesGuard } from './auth.guards.js'
+import { ConcertScopeGuard, RolesGuard } from './auth.guards.js'
 import { AuthStore } from './auth.store.js'
 
-const makeContext = (user: { sub: string; role: string }, eventId?: string) =>
+const makeContext = (user: { sub: string; role: string }, concertId?: string) =>
 	({
 		switchToHttp: () => ({
 			getRequest: () => ({
 				user,
-				params: eventId ? { eventId } : {},
+				params: concertId ? { concertId } : {},
 			}),
 		}),
 		getHandler: () => undefined,
@@ -37,24 +37,24 @@ describe('Authorization guards', () => {
 		expect(() => guard.canActivate(context)).toThrow()
 	})
 
-	it('blocks event without assignment', () => {
+	it('blocks concert without assignment', () => {
 		const reflector = {
-			getAllAndOverride: () => 'eventId',
+			getAllAndOverride: () => 'concertId',
 		} as unknown as Reflector
 
-		const guard = new EventScopeGuard(reflector, new AuthStore())
-		const context = makeContext({ sub: 'user-organizer', role: 'ORGANIZER' }, 'event-404')
+		const guard = new ConcertScopeGuard(reflector, new AuthStore())
+		const context = makeContext({ sub: 'user-organizer', role: 'ORGANIZER' }, 'concert-404')
 
 		expect(() => guard.canActivate(context)).toThrow()
 	})
 
-	it('allows assigned organizer event', () => {
+	it('allows assigned organizer concert', () => {
 		const reflector = {
-			getAllAndOverride: () => 'eventId',
+			getAllAndOverride: () => 'concertId',
 		} as unknown as Reflector
 
-		const guard = new EventScopeGuard(reflector, new AuthStore())
-		const context = makeContext({ sub: 'user-organizer', role: 'ORGANIZER' }, 'event-1')
+		const guard = new ConcertScopeGuard(reflector, new AuthStore())
+		const context = makeContext({ sub: 'user-organizer', role: 'ORGANIZER' }, 'concert-1')
 
 		expect(guard.canActivate(context)).toBe(true)
 	})

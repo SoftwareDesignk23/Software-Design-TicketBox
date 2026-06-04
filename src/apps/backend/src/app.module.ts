@@ -4,6 +4,7 @@ import { AppController } from './app.controller.js'
 import { AppService } from './app.service.js'
 import { AuthModule } from './auth/auth.module.js'
 import { authConfig, authEnvSchema } from './auth/auth.config.js'
+import { ConcertsModule } from './concerts/concerts.module.js'
 
 @Module({
 	imports: [
@@ -13,6 +14,7 @@ import { authConfig, authEnvSchema } from './auth/auth.config.js'
 			validate: (config) => authEnvSchema.parse(config),
 		}),
 		AuthModule,
+		ConcertsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

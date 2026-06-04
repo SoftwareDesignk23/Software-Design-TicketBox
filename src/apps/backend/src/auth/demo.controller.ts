@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
-import { EventScope, Roles } from './auth.decorators.js'
-import { EventScopeGuard, JwtAuthGuard, RolesGuard } from './auth.guards.js'
+import { ConcertScope, Roles } from './auth.decorators.js'
+import { ConcertScopeGuard, JwtAuthGuard, RolesGuard } from './auth.guards.js'
 
 @Controller()
 export class DemoController {
@@ -11,12 +11,12 @@ export class DemoController {
 		return { status: 'ok', scope: 'audience-profile' }
 	}
 
-	@Get('organizer/events/:eventId')
-	@UseGuards(JwtAuthGuard, RolesGuard, EventScopeGuard)
+	@Get('organizer/concerts/:concertId')
+	@UseGuards(JwtAuthGuard, RolesGuard, ConcertScopeGuard)
 	@Roles('ORGANIZER', 'ADMIN')
-	@EventScope('eventId')
-	getOrganizerEvent(@Param('eventId') eventId: string) {
-		return { status: 'ok', scope: 'organizer-event', eventId }
+	@ConcertScope('concertId')
+	getOrganizerConcert(@Param('concertId') concertId: string) {
+		return { status: 'ok', scope: 'organizer-concert', concertId }
 	}
 
 	@Get('admin/overview')
@@ -26,11 +26,11 @@ export class DemoController {
 		return { status: 'ok', scope: 'admin-overview' }
 	}
 
-	@Post('checkin/events/:eventId/scan')
-	@UseGuards(JwtAuthGuard, RolesGuard, EventScopeGuard)
+	@Post('checkin/concerts/:concertId/scan')
+	@UseGuards(JwtAuthGuard, RolesGuard, ConcertScopeGuard)
 	@Roles('CHECK_IN_STAFF')
-	@EventScope('eventId')
-	scanTicket(@Param('eventId') eventId: string) {
-		return { status: 'ok', scope: 'checkin-scan', eventId }
+	@ConcertScope('concertId')
+	scanTicket(@Param('concertId') concertId: string) {
+		return { status: 'ok', scope: 'checkin-scan', concertId }
 	}
 }

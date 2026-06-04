@@ -64,7 +64,7 @@
 		"typescript-eslint": "^8.20.0"
 	},
 	"prisma": {
-		"seed": "ts-node --esm prisma/seed.ts"
+		"seed": "node --loader ts-node/esm prisma/seed.ts"
 	},
 	"jest": {
 		"moduleFileExtensions": [

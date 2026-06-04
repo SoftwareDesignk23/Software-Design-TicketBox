@@ -8,7 +8,7 @@ export const AuthErrorCode = {
 	AuthRefreshExpired: 'AUTH_REFRESH_EXPIRED',
 	AuthRefreshReused: 'AUTH_REFRESH_REUSED',
 	AuthForbidden: 'AUTH_FORBIDDEN',
-	AuthEventForbidden: 'AUTH_EVENT_FORBIDDEN',
+	AuthConcertForbidden: 'AUTH_CONCERT_FORBIDDEN',
 } as const
 
 export type AuthErrorCode = (typeof AuthErrorCode)[keyof typeof AuthErrorCode]

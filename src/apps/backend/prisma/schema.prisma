@@ -14,41 +14,70 @@ enum Role {
   ADMIN
 }
 
+enum ConcertStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
 model User {
-  id            String           @id @default(uuid())
-  email         String           @unique
-  displayName   String
-  role          Role
-  passwordHash  String
-  createdAt     DateTime         @default(now())
-  refreshTokens RefreshSession[]
-  assignments   EventAssignment[]
+  id                String              @id @default(uuid())
+  email             String              @unique
+  displayName       String
+  role              Role
+  passwordHash      String
+  createdAt         DateTime            @default(now())
+  refreshTokens     RefreshSession[]
+  assignments       ConcertAssignment[]
+  organizedConcerts Concert[]
 }
 
 model RefreshSession {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   familyId          String
   userId            String
-  tokenHash         String   @unique
+  tokenHash         String    @unique
   expiresAt         DateTime
-  createdAt         DateTime @default(now())
+  createdAt         DateTime  @default(now())
   revokedAt         DateTime?
   replacedByTokenId String?
   lastUsedAt        DateTime?
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([familyId])
 }
 
-model EventAssignment {
+model ConcertAssignment {
   id        String   @id @default(uuid())
   userId    String
   role      Role
-  eventId   String
+  concertId String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concert   Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, role, eventId])
-  @@index([eventId])
+  @@unique([userId, role, concertId])
+  @@index([concertId])
+}
+
+model Concert {
+  id           String              @id @default(uuid())
+  title        String
+  description  String?
+  venueName    String
+  venueAddress String?
+  startsAt     DateTime
+  endsAt       DateTime?
+  salesOpensAt DateTime?
+  status       ConcertStatus       @default(DRAFT)
+  heroImageUrl String?
+  organizerId  String
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  organizer    User                @relation(fields: [organizerId], references: [id], onDelete: Restrict)
+  assignments  ConcertAssignment[]
+
+  @@index([organizerId])
+  @@index([status, startsAt])
 }
