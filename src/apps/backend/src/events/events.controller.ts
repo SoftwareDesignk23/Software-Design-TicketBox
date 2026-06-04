@@ -1,14 +1,21 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard, RolesGuard } from '../auth/auth.guards.js'
 import { Roles } from '../auth/auth.decorators.js'
+import { EventsService } from './events.service.js'
 
 @Controller('events')
 export class EventsController {
+	constructor(private readonly eventsService: EventsService) {}
+
 	@Get()
-	listEvents() {}
+	listEvents() {
+		return this.eventsService.listEvents()
+	}
 
 	@Get(':id')
-	getEventById(@Param('id') _id: string) {}
+	getEventById(@Param('id') id: string) {
+		return this.eventsService.getEventById(id)
+	}
 
 	@Post()
 	@UseGuards(JwtAuthGuard, RolesGuard)
