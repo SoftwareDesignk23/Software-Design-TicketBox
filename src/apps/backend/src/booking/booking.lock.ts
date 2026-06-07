@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { randomUUID } from 'node:crypto'
-import { RedisService } from '@/redis/redis.service.js'
-import { redisKeys } from '@/redis/redis.keys.js'
-import { releaseLockScript } from '@/redis/redis.scripts.js'
+import { RedisService } from '../redis/redis.service.js'
+import { redisKeys } from '../redis/redis.keys.js'
+import { releaseLockScript } from '../redis/redis.scripts.js'
 
 @Injectable()
 export class DistributedLockService {

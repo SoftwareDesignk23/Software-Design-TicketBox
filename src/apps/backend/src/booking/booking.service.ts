@@ -1,14 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { ConfigType } from '@nestjs/config'
+import type { ConfigType } from '@nestjs/config'
 import { randomUUID } from 'node:crypto'
-import { PrismaService } from '@/prisma/prisma.service.js'
-import { RedisService } from '@/redis/redis.service.js'
-import { redisKeys } from '@/redis/redis.keys.js'
+import { PrismaService } from '../prisma/prisma.service.js'
+import { RedisService } from '../redis/redis.service.js'
+import { redisKeys } from '../redis/redis.keys.js'
 import {
 	completeInventoryScript,
 	releaseInventoryScript,
 	reserveInventoryScript,
-} from '@/redis/redis.scripts.js'
+} from '../redis/redis.scripts.js'
 import { bookingConfig } from './booking.config.js'
 import { BookingAvailabilityService } from './booking.availability.js'
 import { BookingQueueService } from './booking.queue.js'

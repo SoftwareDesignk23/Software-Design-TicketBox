@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Interval } from '@nestjs/schedule'
-import { PrismaService } from '@/prisma/prisma.service.js'
+import { PrismaService } from '../prisma/prisma.service.js'
 import { BookingService } from './booking.service.js'
 import { BookingQueueService } from './booking.queue.js'
 

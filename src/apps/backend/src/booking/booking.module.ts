@@ -5,11 +5,12 @@ import { BookingAvailabilityService } from './booking.availability.js'
 import { BookingQueueService } from './booking.queue.js'
 import { BookingWorker } from './booking.worker.js'
 import { DistributedLockService } from './booking.lock.js'
-import { PrismaModule } from '@/prisma/prisma.module.js'
-import { RedisModule } from '@/redis/redis.module.js'
+import { PrismaModule } from '../prisma/prisma.module.js'
+import { RedisModule } from '../redis/redis.module.js'
+import { AuthModule } from '../auth/auth.module.js'
 
 @Module({
-	imports: [PrismaModule, RedisModule],
+	imports: [PrismaModule, RedisModule, AuthModule],
 	controllers: [BookingController],
 	providers: [
 		BookingService,

@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { ConfigType } from '@nestjs/config'
+import type { ConfigType } from '@nestjs/config'
 import { bookingConfig } from './booking.config.js'
-import { redisKeys } from '@/redis/redis.keys.js'
-import { RedisService } from '@/redis/redis.service.js'
+import { redisKeys } from '../redis/redis.keys.js'
+import { RedisService } from '../redis/redis.service.js'
 import type { QueueStatus } from './booking.types.js'
 
 @Injectable()
