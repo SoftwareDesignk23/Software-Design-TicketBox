@@ -1,0 +1,8 @@
+$kind: http-request
+name: Availability Stream (SSE)
+url: "{{baseURL}}/api/v1/booking/availability/event-1/stream"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"

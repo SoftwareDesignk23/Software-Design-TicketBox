@@ -1,0 +1,8 @@
+$kind: http-request
+name: Queue Status
+url: "{{baseURL}}/api/v1/booking/queue/event-1/ticket-general/status"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"

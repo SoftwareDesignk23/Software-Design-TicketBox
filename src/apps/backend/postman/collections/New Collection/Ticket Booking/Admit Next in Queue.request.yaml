@@ -1,0 +1,8 @@
+$kind: http-request
+name: Admit Next in Queue
+url: "{{baseURL}}/api/v1/booking/queue/event-1/ticket-general/admit"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"

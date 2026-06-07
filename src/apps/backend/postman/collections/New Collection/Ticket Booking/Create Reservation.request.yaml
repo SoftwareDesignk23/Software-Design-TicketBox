@@ -1,0 +1,15 @@
+$kind: http-request
+name: Create Reservation
+url: "{{baseURL}}/api/v1/booking/reservations"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+body:
+  type: json
+  content: "{\n    \"ticketTypeId\": \"ticket-general\",\n    \"quantity\": 2,\n    \"admissionRequired\": false\n}"
+scripts:
+  - type: afterResponse
+    code: "const responseJson = pm.response.json();\nif (responseJson.reservationId) {\n    pm.environment.set('reservationId', responseJson.reservationId);\n}"
+    language: text/javascript

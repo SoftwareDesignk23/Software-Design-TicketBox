@@ -1,0 +1,8 @@
+$kind: http-request
+name: Complete Reservation
+url: "{{baseURL}}/api/v1/booking/reservations/{{reservationId}}/complete"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"

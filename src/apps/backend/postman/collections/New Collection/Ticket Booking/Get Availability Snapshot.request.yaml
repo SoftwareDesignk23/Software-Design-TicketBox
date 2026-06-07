@@ -1,0 +1,8 @@
+$kind: http-request
+name: Get Availability Snapshot
+url: "{{baseURL}}/api/v1/booking/availability/event-1"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
