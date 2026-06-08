@@ -1,11 +1,12 @@
 import { formatCurrency } from '../../../shared/utils/format'
 
-export function SeatZoneMap({ zones, selectedZone, onSelect }) {
+export function SeatZoneMap({ zones, selectedZone, onSelect, seatMapUrl }) {
   const zoneColor = (zoneId) => {
     if (zoneId === selectedZone) {
       return 'var(--accent)'
     }
-    return 'var(--surface-2)'
+    const zone = zones.find(z => z.label?.toLowerCase().includes(zoneId) || z.id === zoneId);
+    return zone?.colorCode || 'var(--surface-2)'
   }
 
   return (
@@ -13,28 +14,40 @@ export function SeatZoneMap({ zones, selectedZone, onSelect }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-primary">
-            Interactive seat zones
+            Sơ đồ khu vực
           </h3>
           <p className="text-sm text-muted">
-            Tap a zone to lock your seats before checkout.
+            Chọn một khu vực trên sơ đồ để xem các ghế trống.
           </p>
         </div>
-        <span className="text-xs text-soft">Stage facing</span>
+        <span className="text-xs text-soft">Khu vực sân khấu</span>
       </div>
-      <div className="mt-6 overflow-hidden rounded-3xl border border-subtle bg-[color:var(--ink-800)] p-4">
-        <svg
-          viewBox="0 0 520 260"
-          className="h-60 w-full"
-          role="img"
-          aria-label="Seat zone map"
-        >
-          <rect x="40" y="30" width="120" height="70" rx="16" fill={zoneColor('svip')} />
-          <rect x="200" y="30" width="120" height="70" rx="16" fill={zoneColor('vip')} />
-          <rect x="360" y="30" width="120" height="70" rx="16" fill={zoneColor('cat1')} />
-          <rect x="80" y="130" width="150" height="80" rx="18" fill={zoneColor('cat2')} />
-          <rect x="290" y="130" width="150" height="80" rx="18" fill={zoneColor('ga')} />
-          <rect x="200" y="225" width="120" height="18" rx="9" fill="var(--surface-3)" />
-        </svg>
+      <div className="mt-6 overflow-hidden rounded-3xl border border-subtle bg-[color:var(--ink-800)] p-4 flex items-center justify-center">
+        {seatMapUrl && false ? (
+          <img src={seatMapUrl} alt="Sơ đồ ghế" className="w-full h-auto object-contain max-h-60" />
+        ) : (
+          <svg
+            viewBox="0 0 520 260"
+            className="h-60 w-full"
+            role="img"
+            aria-label="Bản đồ các khu vực"
+          >
+            <rect x="40" y="30" width="120" height="70" rx="16" fill={zoneColor('svip')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('svip') || z.id === 'svip')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <rect x="200" y="30" width="120" height="70" rx="16" fill={zoneColor('vip')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('vip') && !z.label?.toLowerCase().includes('svip'))?.id || 'vip')} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <rect x="360" y="30" width="120" height="70" rx="16" fill={zoneColor('cat1')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('cat1') || z.id === 'cat1')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <rect x="80" y="130" width="150" height="80" rx="18" fill={zoneColor('cat2')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('cat2') || z.id === 'cat2')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <rect x="290" y="130" width="150" height="80" rx="18" fill={zoneColor('ga')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('ga') || z.id === 'ga')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <rect x="200" y="225" width="120" height="18" rx="9" fill="var(--surface-3)" />
+            
+            {/* Labels overlay */}
+            <text x="100" y="70" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">SVIP</text>
+            <text x="260" y="70" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">VIP</text>
+            <text x="420" y="70" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 1</text>
+            <text x="155" y="175" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 2</text>
+            <text x="365" y="175" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">GA</text>
+            <text x="260" y="238" fill="var(--muted)" fontSize="10" fontWeight="bold" textAnchor="middle" pointerEvents="none">SÂN KHẤU</text>
+          </svg>
+        )}
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {zones.map((zone) => (
@@ -55,8 +68,8 @@ export function SeatZoneMap({ zones, selectedZone, onSelect }) {
         ))}
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-soft">
-        <span>Selected zone holds for 8 minutes.</span>
-        <span>Inventory updates in real time.</span>
+        <span>Sơ đồ chỉ mang tính chất minh họa.</span>
+        <span>Ghế trống được cập nhật theo thời gian thực.</span>
       </div>
     </div>
   )

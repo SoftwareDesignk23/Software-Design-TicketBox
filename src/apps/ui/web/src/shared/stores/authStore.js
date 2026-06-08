@@ -4,9 +4,12 @@ import {
 	getCurrentUser,
 	loadStoredTokens,
 	login as loginRequest,
+	register as registerRequest,
 	logout as logoutRequest,
 	refreshSession,
 } from '../services/auth'
+
+let restorePromise = null;
 
 export const useAuthStore = create((set) => ({
 	status: 'idle',
@@ -15,54 +18,59 @@ export const useAuthStore = create((set) => ({
 	refreshToken: null,
 	error: null,
 	restoreSession: async () => {
-		const tokens = loadStoredTokens()
+		if (restorePromise) return restorePromise;
+		
+		restorePromise = (async () => {
+			const tokens = loadStoredTokens()
 
-		if (!tokens?.accessToken) {
-			set({ status: 'unauthenticated', user: null, accessToken: null, refreshToken: null })
-			return
-		}
-
-		set({ status: 'loading', error: null })
-
-		try {
-			const currentUser = await getCurrentUser(tokens.accessToken)
-			set({
-				status: 'authenticated',
-				user: currentUser,
-				accessToken: tokens.accessToken,
-				refreshToken: tokens.refreshToken,
-			})
-		} catch (error) {
-			if (error.status === 401 && tokens.refreshToken) {
-				try {
-					const refreshed = await refreshSession(tokens.refreshToken)
-					set({
-						status: 'authenticated',
-						user: refreshed.user,
-						accessToken: refreshed.accessToken,
-						refreshToken: refreshed.refreshToken,
-					})
-					return
-				} catch (refreshError) {
-					clearStoredTokens()
-					set({ status: 'unauthenticated', user: null, error: refreshError })
-					return
-				}
-			}
-
-			if (error.status === 403) {
-				set({ status: 'forbidden', user: null, error })
+			if (!tokens?.refreshToken) {
+				set({ status: 'unauthenticated', user: null, accessToken: null, refreshToken: null })
 				return
 			}
 
-			clearStoredTokens()
-			set({ status: 'unauthenticated', user: null, error })
+			set({ status: 'loading', error: null })
+
+			try {
+				const refreshed = await refreshSession(tokens.refreshToken)
+				
+				set({
+					status: 'authenticated',
+					user: refreshed.user,
+					accessToken: refreshed.accessToken,
+					refreshToken: refreshed.refreshToken,
+				})
+			} catch (error) {
+				console.error('Failed to restore session:', error)
+				clearStoredTokens()
+				set({ status: 'unauthenticated', user: null, error })
+			}
+		})();
+		
+		try {
+			await restorePromise;
+		} finally {
+			restorePromise = null;
 		}
 	},
 	login: async (email, password) => {
 		set({ status: 'loading', error: null })
 		try {
 			const response = await loginRequest(email, password)
+			set({
+				status: 'authenticated',
+				user: response.user,
+				accessToken: response.accessToken,
+				refreshToken: response.refreshToken,
+			})
+		} catch (error) {
+			set({ status: 'unauthenticated', user: null, error })
+			throw error
+		}
+	},
+	register: async (displayName, email, password) => {
+		set({ status: 'loading', error: null })
+		try {
+			const response = await registerRequest(displayName, email, password)
 			set({
 				status: 'authenticated',
 				user: response.user,

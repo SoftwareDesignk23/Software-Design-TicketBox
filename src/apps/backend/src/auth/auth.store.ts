@@ -43,6 +43,23 @@ export class AuthStore {
 		return user ? this.toUser(user) : null
 	}
 
+	async getUserByEmail(email: string) {
+		const user = await this.prisma.user.findUnique({ where: { email } })
+		return user ? this.toUser(user) : null
+	}
+
+	async createUser(email: string, passwordHash: string, displayName: string, role: Role) {
+		const user = await this.prisma.user.create({
+			data: {
+				email,
+				passwordHash,
+				displayName,
+				role,
+			},
+		})
+		return this.toUser(user)
+	}
+
 	async getAssignmentSummary(userId: string): Promise<AssignmentSummary> {
 		const assignments = await this.prisma.concertAssignment.findMany({
 			where: { userId },

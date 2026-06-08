@@ -1,51 +1,36 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common'
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { Reflector } from '@nestjs/core'
-import { AuthTokenService } from './auth.tokens.js'
+import { AppException } from '../exception/app-exception.js'
+import { ErrorCode } from '../exception/error-code.js'
 import { AuthStore } from './auth.store.js'
 import { CONCERT_SCOPE_METADATA_KEY, ROLE_METADATA_KEY } from './auth.decorators.js'
-import { AuthErrorCode, forbidden, unauthorized } from './auth.errors.js'
 import type { Role } from './auth.types.js'
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
-	constructor(private readonly tokens: AuthTokenService) {}
-
-	canActivate(context: ExecutionContext): boolean {
-		const request = context.switchToHttp().getRequest()
-		const header = request.headers.authorization
-
-		if (!header) {
-			throw new UnauthorizedException({
-				statusCode: 401,
-				error: 'Unauthorized',
-				code: AuthErrorCode.AuthRequired,
-				message: 'Authentication token required.',
-			})
+export class JwtAuthGuard extends AuthGuard('jwt') {
+	handleRequest<TUser = any>(
+		err: any,
+		user: any,
+		info: any,
+		_context: ExecutionContext,
+		_status?: any,
+	): TUser {
+		if (err) {
+			throw err
 		}
 
-		const [scheme, token] = header.split(' ')
-
-		if (scheme !== 'Bearer' || !token) {
-			throw new UnauthorizedException({
-				statusCode: 401,
-				error: 'Unauthorized',
-				code: AuthErrorCode.AuthInvalid,
-				message: 'Invalid authentication token.',
-			})
+		if (!user) {
+			if (info?.message === 'No auth token') {
+				throw new AppException(ErrorCode.AuthRequired)
+			}
+			if (info?.name === 'TokenExpiredError') {
+				throw new AppException(ErrorCode.AuthTokenExpired)
+			}
+			throw new AppException(ErrorCode.AuthInvalid)
 		}
 
-		try {
-			const payload = this.tokens.verifyAccessToken(token)
-			request.user = payload
-			return true
-		} catch (error) {
-			throw new UnauthorizedException({
-				statusCode: 401,
-				error: 'Unauthorized',
-				code: AuthErrorCode.AuthInvalid,
-				message: 'Access token is invalid or expired.',
-			})
-		}
+		return user
 	}
 }
 
@@ -67,11 +52,11 @@ export class RolesGuard implements CanActivate {
 		const user = request.user as { role?: Role }
 
 		if (!user?.role) {
-			unauthorized(AuthErrorCode.AuthRequired, 'Authentication required.')
+			throw new AppException(ErrorCode.AuthRequired)
 		}
 
 		if (!requiredRoles.includes(user.role)) {
-			forbidden(AuthErrorCode.AuthForbidden, 'You do not have access to this resource.')
+			throw new AppException(ErrorCode.AuthForbidden)
 		}
 
 		return true
@@ -100,16 +85,16 @@ export class ConcertScopeGuard implements CanActivate {
 		const concertId = request.params?.[paramName]
 
 		if (!user?.sub || !user?.role) {
-			unauthorized(AuthErrorCode.AuthRequired, 'Authentication required.')
+			throw new AppException(ErrorCode.AuthRequired)
 		}
 
 		if (!concertId) {
-			forbidden(AuthErrorCode.AuthConcertForbidden, 'Missing concert scope.')
+			throw new AppException(ErrorCode.AuthConcertForbidden)
 		}
 
 		const isAssigned = await this.store.isUserAssignedToConcert(user.sub, user.role, concertId)
 		if (!isAssigned) {
-			forbidden(AuthErrorCode.AuthConcertForbidden, 'You are not assigned to this concert.')
+			throw new AppException(ErrorCode.AuthConcertForbidden)
 		}
 
 		return true

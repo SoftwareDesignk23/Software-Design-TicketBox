@@ -23,14 +23,70 @@ function clearTokens() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-    ...options,
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+function onRefreshed(token) {
+  refreshSubscribers.map((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(cb) {
+  refreshSubscribers.push(cb);
+}
+
+export async function refreshSession(refreshToken) {
+  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
   });
+  if (!res.ok) throw new Error("Refresh failed");
+  const payload = await res.json();
+  const data = payload.data ?? payload;
+  saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
+  return data.accessToken;
+}
+
+export async function request(path, options = {}) {
+  const doRequest = async (authOverride) => {
+    const fetchOptions = {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers ?? {}),
+      },
+    };
+    if (authOverride) {
+      fetchOptions.headers.Authorization = `Bearer ${authOverride}`;
+    }
+    const response = await fetch(`${API_BASE_URL}${path}`, fetchOptions);
+    return response;
+  };
+
+  let response = await doRequest();
+
+  if (response.status === 401 && path !== "/auth/login" && path !== "/auth/refresh") {
+    const tokens = loadTokens();
+    if (tokens?.refreshToken) {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        try {
+          const newToken = await refreshSession(tokens.refreshToken);
+          isRefreshing = false;
+          onRefreshed(newToken);
+        } catch (err) {
+          isRefreshing = false;
+          clearTokens();
+          window.location.href = "/";
+          throw err;
+        }
+      }
+
+      const newToken = await new Promise((resolve) => addRefreshSubscriber(resolve));
+      response = await doRequest(newToken);
+    }
+  }
 
   if (!response.ok) {
     let payload;
@@ -45,7 +101,8 @@ async function request(path, options = {}) {
     throw error;
   }
 
-  return response.json();
+  const payload = await response.json();
+  return payload.data ?? payload;
 }
 
 export async function login(email, password) {

@@ -1,140 +1,101 @@
 import { useEffect, useState } from "react";
-import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AdminLayout } from "./components/layout/AdminLayout";
+import { DashboardPage } from "./pages/DashboardPage";
+import { ConcertsPage } from "./pages/ConcertsPage";
+import { GuestlistPage } from "./pages/GuestlistPage";
 import {
   clearStoredTokens,
-  currentUser,
   loadStoredTokens,
   login as loginRequest,
-  logout as logoutRequest,
 } from "./auth";
 
-const initialState = {
-  status: "loading",
-  user: null,
-  error: null,
-};
-
-function App() {
-  const [state, setState] = useState(initialState);
+function LoginPage() {
   const [email, setEmail] = useState("admin@ticketbox.local");
   const [password, setPassword] = useState("password123");
-
-  useEffect(() => {
-    const restore = async () => {
-      const tokens = loadStoredTokens();
-      if (!tokens?.accessToken) {
-        setState({ status: "unauthenticated", user: null, error: null });
-        return;
-      }
-
-      try {
-        const user = await currentUser(tokens.accessToken);
-        if (user.role !== "ADMIN") {
-          clearStoredTokens();
-          setState({ status: "forbidden", user: null, error: null });
-          return;
-        }
-        setState({ status: "authenticated", user, error: null });
-      } catch (error) {
-        clearStoredTokens();
-        setState({ status: "unauthenticated", user: null, error });
-      }
-    };
-
-    restore();
-  }, []);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (event) => {
     event.preventDefault();
-    setState((prev) => ({ ...prev, status: "loading", error: null }));
+    setLoading(true);
+    setError(null);
     try {
       const response = await loginRequest(email, password);
-      if (response.user.role !== "ADMIN") {
+      if (response.user.role !== "ADMIN" && response.user.role !== "ORGANIZER") {
         clearStoredTokens();
-        setState({ status: "forbidden", user: null, error: null });
+        setError(new Error("Bạn không có quyền truy cập vào trang quản trị."));
+        setLoading(false);
         return;
       }
-      setState({ status: "authenticated", user: response.user, error: null });
+      window.location.href = "/";
     } catch (error) {
-      setState({ status: "unauthenticated", user: null, error });
+      setError(error);
+      setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    const tokens = loadStoredTokens();
-    if (tokens?.refreshToken) {
-      await logoutRequest(tokens.refreshToken);
-    }
-    clearStoredTokens();
-    setState({ status: "unauthenticated", user: null, error: null });
-  };
-
-  if (state.status === "loading") {
-    return (
-      <main className="auth-shell">
-        <div className="panel">Loading admin session...</div>
-      </main>
-    );
-  }
-
-  if (state.status === "forbidden") {
-    return (
-      <main className="auth-shell">
-        <div className="panel">
-          <h1>Forbidden</h1>
-          <p>Your account does not have admin access.</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (state.status !== "authenticated") {
-    return (
-      <main className="auth-shell">
-        <form className="panel" onSubmit={handleLogin}>
-          <h1>Admin sign in</h1>
-          <p>Use your admin credentials to continue.</p>
-          <label>
-            Email
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-surface-1 p-4">
+      <form className="bg-surface-2 p-8 rounded-2xl shadow-strong w-full max-w-md border border-subtle" onSubmit={handleLogin}>
+        <h1 className="text-3xl font-bold text-primary mb-2 text-center">Đăng nhập Admin</h1>
+        <p className="text-muted mb-8 text-center">Sử dụng tài khoản quản trị để tiếp tục.</p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-primary mb-1">Email</label>
             <input
+              type="email"
+              className="w-full rounded-md border border-subtle bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="admin@ticketbox.local"
             />
-          </label>
-          <label>
-            Password
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-primary mb-1">Mật khẩu</label>
             <input
               type="password"
+              className="w-full rounded-md border border-subtle bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-          </label>
-          {state.error ? (
-            <p className="error">
-              {state.error.message ?? "Unable to sign in."}
-            </p>
-          ) : null}
-          <button type="submit">Sign in</button>
-        </form>
-      </main>
-    );
-  }
-
-  return (
-    <main className="auth-shell">
-      <section className="panel">
-        <h1>Welcome, {state.user.displayName}</h1>
-        <p>Admin overview access granted.</p>
-        <div className="admin-actions">
-          <button type="button">Review pending events</button>
-          <button type="button">Audit check-in staff</button>
-          <button type="button" onClick={handleLogout}>
-            Sign out
-          </button>
+          </div>
         </div>
-      </section>
+
+        {error ? (
+          <p className="mt-4 text-error text-sm text-center">
+            {error.message ?? "Đăng nhập thất bại."}
+          </p>
+        ) : null}
+        
+        <button 
+          type="submit" 
+          disabled={loading}
+          className="mt-6 w-full rounded-md bg-accent px-4 py-2 text-white font-semibold hover:bg-accent-hover disabled:opacity-50 transition-colors"
+        >
+          {loading ? "Đang xử lý..." : "Đăng nhập"}
+        </button>
+      </form>
     </main>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<AdminLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="concerts" element={<ConcertsPage />} />
+          <Route path="guestlist" element={<GuestlistPage />} />
+          {/* Placeholder for stats */}
+          <Route path="stats" element={<DashboardPage />} /> 
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

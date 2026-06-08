@@ -1,17 +1,18 @@
 import { Link } from 'react-router-dom'
 import { useEvents } from '../events/hooks/useEvents'
-import { featuredEventIds } from '../../shared/data/events'
 import { Button } from '../../shared/ui/button'
 import { Badge } from '../../shared/ui/badge'
 import { SectionHeading } from '../../shared/components/SectionHeading'
 import { EventCard } from '../events/components/EventCard'
 import { EventCardSkeleton } from '../events/components/EventCardSkeleton'
+import { formatLongDate } from '../../shared/utils/format'
 
 export function LandingPage() {
   const { data, isLoading } = useEvents()
-  const featuredEvents = data?.filter((event) =>
-    featuredEventIds.includes(event.id)
-  )
+  const featuredEvents = data?.slice(0, 4) || []
+  
+  const nextDrop = data?.[0]
+  const liveNow = data?.[1]
 
   return (
     <div className="flex flex-col gap-20">
@@ -20,80 +21,84 @@ export function LandingPage() {
         <div className="absolute right-[-20%] top-[-10%] h-72 w-72 rounded-full bg-[color:color-mix(in_oklab,_var(--accent)_20%,_transparent)] blur-3xl" />
         <div className="relative grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-7">
-            <Badge variant="accent">Premium drop series</Badge>
+            <Badge variant="accent">Nền tảng bán vé hàng đầu</Badge>
             <div className="space-y-4">
               <h1 className="text-4xl font-semibold text-primary md:text-5xl lg:text-6xl">
-                Lock your seats before the lights go out.
+                Săn vé concert đỉnh cao cùng TicketBox
               </h1>
               <p className="text-base text-muted md:text-lg">
-                TicketBox keeps high demand drops fair, fast, and cinematic.
-                Discover the hottest Vietnamese shows, secure seats in minutes,
-                and keep your QR ready at the gate.
+                TicketBox mang đến trải nghiệm săn vé công bằng, nhanh chóng và mượt mà nhất. 
+                Khám phá những show diễn hot nhất Việt Nam, chọn chỗ ngồi ưa thích và thanh toán an toàn trong vài phút.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg">
-                <Link to="/events">Explore events</Link>
+                <Link to="/events">Khám phá sự kiện</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link to="/tickets">View my tickets</Link>
+                <Link to="/tickets">Xem vé của tôi</Link>
               </Button>
             </div>
             <div className="grid gap-4 text-sm text-soft sm:grid-cols-3">
               <div>
-                <p className="text-primary">80k+ peak traffic ready</p>
-                <p>Queue and fairness guardrails</p>
+                <p className="text-primary">Chịu tải 80.000+ truy cập</p>
+                <p>Hệ thống xếp hàng công bằng</p>
               </div>
               <div>
-                <p className="text-primary">Offline check-in ready</p>
-                <p>Mobile gate sync built in</p>
+                <p className="text-primary">Hỗ trợ check-in offline</p>
+                <p>Đồng bộ cổng soát vé mượt mà</p>
               </div>
               <div>
-                <p className="text-primary">Verified seat locks</p>
-                <p>Hold windows with live inventory</p>
+                <p className="text-primary">Giữ chỗ thời gian thực</p>
+                <p>Tránh trùng lặp, bảo đảm quyền lợi</p>
               </div>
             </div>
           </div>
           <div className="relative grid gap-4">
-            <div className="rounded-3xl border border-subtle bg-surface-2 p-6 shadow-strong">
-              <p className="text-xs uppercase tracking-[0.3em] text-soft">
-                Next drop
-              </p>
-              <p className="mt-3 text-2xl font-semibold text-primary">
-                Anh Trai Vuot Ngan Chong Gai
-              </p>
-              <p className="mt-2 text-sm text-muted">
-                10:00 AM tomorrow, My Dinh Stadium
-              </p>
-              <div className="mt-6 flex items-center justify-between text-xs text-soft">
-                <span>SVIP only 18 seats left</span>
-                <span>Fair queue enabled</span>
+            {nextDrop ? (
+              <div className="rounded-3xl border border-subtle bg-surface-2 p-6 shadow-strong">
+                <p className="text-xs uppercase tracking-[0.3em] text-soft">
+                  Sắp mở bán
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-primary">
+                  {nextDrop.title}
+                </p>
+                <p className="mt-2 text-sm text-muted">
+                  {nextDrop.shows?.[0]?.startsAt ? formatLongDate(nextDrop.shows[0].startsAt) : 'Sắp diễn ra'}, {nextDrop.venue?.name || 'Việt Nam'}
+                </p>
+                <div className="mt-6 flex items-center justify-between text-xs text-soft">
+                  <span>Hệ thống đang chuẩn bị</span>
+                  <span>Đã kích hoạt xếp hàng</span>
+                </div>
               </div>
-            </div>
-            <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-soft">
-                Live now
-              </p>
-              <p className="mt-3 text-2xl font-semibold text-primary">
-                Chi Dep Dap Gio Re Song
-              </p>
-              <p className="mt-2 text-sm text-muted">
-                Final release window closes in 02:12
-              </p>
-              <div className="mt-6 flex items-center justify-between text-xs text-soft">
-                <span>VIP from 2,400,000 VND</span>
-                <span>Auto reminder active</span>
+            ) : null}
+            
+            {liveNow ? (
+              <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
+                <p className="text-xs uppercase tracking-[0.3em] text-soft">
+                  Đang mở bán
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-primary">
+                  {liveNow.title}
+                </p>
+                <p className="mt-2 text-sm text-muted">
+                  Cổng bán vé đã mở
+                </p>
+                <div className="mt-6 flex items-center justify-between text-xs text-soft">
+                  <span>Số lượng có hạn</span>
+                  <span>Nhắc nhở tự động đang bật</span>
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
       </section>
 
       <section className="grid gap-8">
         <SectionHeading
-          eyebrow="Featured"
-          title="Premium events curated for stadium energy"
-          description="Hand-picked drops with live inventory, transparent tiers, and clear seat guidance."
+          eyebrow="Nổi bật"
+          title="Các concert đỉnh cao đang được săn đón"
+          description="Danh sách các sự kiện hấp dẫn nhất với thông tin chỗ ngồi trực quan và mức giá rõ ràng."
         />
         <div className="grid gap-6 md:grid-cols-2">
           {isLoading
@@ -108,45 +113,42 @@ export function LandingPage() {
 
       <section className="grid gap-10 rounded-[32px] border border-subtle bg-surface-1 p-8 md:p-12">
         <SectionHeading
-          eyebrow="Why TicketBox"
-          title="Built for massive drops and real fans"
-          description="Every interaction is tuned to protect fairness, reduce anxiety, and keep your focus on the show."
+          eyebrow="Vì sao chọn TicketBox"
+          title="Hệ thống được thiết kế cho các sự kiện lớn"
+          description="Mọi tính năng đều hướng tới việc bảo vệ tính công bằng, giảm lo âu cho khán giả và tập trung vào trải nghiệm nghệ thuật."
         />
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
-            <h3 className="text-xl font-semibold text-primary">Fair queue control</h3>
+            <h3 className="text-xl font-semibold text-primary">Kiểm soát xếp hàng công bằng</h3>
             <p className="mt-3 text-sm text-muted">
-              Adaptive load protection, anti-bot checks, and per-user ticket
-              limits that stay accurate under pressure.
+              Bảo vệ hệ thống khỏi quá tải, chặn bot tự động, và đảm bảo giới hạn vé cho mỗi tài khoản hoạt động chính xác ngay cả khi có hàng chục nghìn người truy cập.
             </p>
             <div className="mt-6 grid gap-4 text-xs text-soft sm:grid-cols-2">
               <div>
-                <p className="text-primary">Queue health</p>
-                <p>Stable throughput and retry windows</p>
+                <p className="text-primary">Chịu tải cao</p>
+                <p>Ổn định băng thông và lượt truy cập</p>
               </div>
               <div>
-                <p className="text-primary">Seat lock integrity</p>
-                <p>Holds are respected across devices</p>
+                <p className="text-primary">Giữ ghế an toàn</p>
+                <p>Bảo toàn ghế đang chọn trên mọi thiết bị</p>
               </div>
             </div>
           </div>
           <div className="grid gap-6">
             <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
               <h3 className="text-lg font-semibold text-primary">
-                Seat zone clarity
+                Sơ đồ ghế trực quan
               </h3>
               <p className="mt-3 text-sm text-muted">
-                Interactive seating map with real-time availability by tier, so you
-                lock exactly what you want.
+                Bản đồ ghế ngồi tương tác với số lượng vé cập nhật theo thời gian thực, giúp bạn chọn chính xác vị trí mong muốn.
               </p>
             </div>
             <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
               <h3 className="text-lg font-semibold text-primary">
-                Offline check-in ready
+                Sẵn sàng check-in khi mất mạng
               </h3>
               <p className="mt-3 text-sm text-muted">
-                QR tickets sync to mobile gate devices even in weak signal zones,
-                with safe replay protection.
+                Vé QR được đồng bộ tới thiết bị soát vé tại cổng, hỗ trợ kiểm tra mượt mà kể cả khi sóng yếu tại sân vận động.
               </p>
             </div>
           </div>
@@ -155,16 +157,16 @@ export function LandingPage() {
 
       <section className="grid gap-8">
         <SectionHeading
-          eyebrow="Get ready"
-          title="Drop checklist for peak nights"
-          description="Stay prepared and reduce the chance of missing your seat lock."
+          eyebrow="Chuẩn bị sẵn sàng"
+          title="Các bước săn vé thành công"
+          description="Chuẩn bị trước để không bỏ lỡ tấm vé tham gia concert của idol."
         />
         <div className="grid gap-4">
           {[
-            'Verify your profile and payment method early.',
-            'Enable drop reminders 24 hours ahead.',
-            'Join the queue 10 minutes before release.',
-            'Keep TicketBox open until checkout is complete.',
+            'Xác minh tài khoản và chuẩn bị sẵn phương thức thanh toán.',
+            'Bật thông báo nhắc nhở 24h trước khi sự kiện diễn ra.',
+            'Vào trang web và chờ xếp hàng 10 phút trước giờ mở bán.',
+            'Giữ nguyên cửa sổ TicketBox cho đến khi thanh toán hoàn tất.',
           ].map((item, index) => (
             <div
               key={item}

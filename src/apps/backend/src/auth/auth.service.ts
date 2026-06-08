@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { randomBytes, createHash } from 'node:crypto'
+import bcrypt from 'bcryptjs'
 import type { ConfigType } from '@nestjs/config'
 import { authConfig } from './auth.config.js'
 import { AuthTokenService } from './auth.tokens.js'
 import { AuthStore } from './auth.store.js'
-import { AuthErrorCode, unauthorized } from './auth.errors.js'
+import { AppException } from '../exception/app-exception.js'
+import { ErrorCode } from '../exception/error-code.js'
 import type { AuthenticatedUserProfile, AuthTokenPayload, Role } from './auth.types.js'
 
 @Injectable()
@@ -19,8 +21,41 @@ export class AuthService {
 		const user = await this.store.validateUser(email, password)
 
 		if (!user) {
-			unauthorized(AuthErrorCode.AuthInvalidCredentials, 'Invalid credentials.')
+			throw new AppException(ErrorCode.AuthInvalidCredentials)
 		}
+
+		const refreshToken = this.generateRefreshToken()
+		const refreshTokenHash = this.hashToken(refreshToken)
+		const session = await this.store.createRefreshSession(
+			user.id,
+			refreshTokenHash,
+			this.refreshExpiryDate(),
+		)
+
+		const accessToken = this.tokens.signAccessToken({
+			sub: user.id,
+			role: user.role,
+			sid: session.id,
+		})
+
+		return {
+			accessToken: accessToken.token,
+			refreshToken,
+			expiresIn: accessToken.expiresIn,
+			user: await this.buildProfile(user.id, user.role),
+		}
+	}
+
+	async register(email: string, passwordPlain: string, displayName: string, role: Role) {
+		const existingUser = await this.store.getUserByEmail(email);
+		if (existingUser) {
+			throw new AppException(ErrorCode.ValidationFailed, {
+				reason: 'email_already_exists',
+			})
+		}
+
+		const passwordHash = await bcrypt.hash(passwordPlain, 10);
+		const user = await this.store.createUser(email, passwordHash, displayName, role);
 
 		const refreshToken = this.generateRefreshToken()
 		const refreshTokenHash = this.hashToken(refreshToken)
@@ -46,24 +81,24 @@ export class AuthService {
 
 	async refresh(refreshToken: string) {
 		if (!refreshToken) {
-			unauthorized(AuthErrorCode.AuthRefreshInvalid, 'Refresh token required.')
+			throw new AppException(ErrorCode.AuthRefreshRequired)
 		}
 
 		const tokenHash = this.hashToken(refreshToken)
 		const session = await this.store.findSessionByTokenHash(tokenHash)
 
 		if (!session) {
-			unauthorized(AuthErrorCode.AuthRefreshInvalid, 'Refresh token is invalid.')
+			throw new AppException(ErrorCode.AuthRefreshInvalid)
 		}
 
 		if (session.revokedAt) {
 			await this.store.revokeFamily(session.familyId)
-			unauthorized(AuthErrorCode.AuthRefreshReused, 'Refresh token reuse detected.')
+			throw new AppException(ErrorCode.AuthRefreshReused)
 		}
 
 		if (this.store.isSessionExpired(session)) {
 			await this.store.revokeSession(session.id)
-			unauthorized(AuthErrorCode.AuthRefreshExpired, 'Refresh token expired.')
+			throw new AppException(ErrorCode.AuthRefreshExpired)
 		}
 
 		await this.store.markSessionUsed(session.id)
@@ -71,7 +106,7 @@ export class AuthService {
 		const user = await this.store.getUserById(session.userId)
 
 		if (!user) {
-			unauthorized(AuthErrorCode.AuthInvalid, 'User not found.')
+			throw new AppException(ErrorCode.AuthUserNotFound)
 		}
 
 		const nextRefreshToken = this.generateRefreshToken()
@@ -98,14 +133,14 @@ export class AuthService {
 
 	async logout(refreshToken: string) {
 		if (!refreshToken) {
-			unauthorized(AuthErrorCode.AuthRefreshInvalid, 'Refresh token required.')
+			throw new AppException(ErrorCode.AuthRefreshRequired)
 		}
 
 		const tokenHash = this.hashToken(refreshToken)
 		const session = await this.store.findSessionByTokenHash(tokenHash)
 
 		if (!session) {
-			unauthorized(AuthErrorCode.AuthRefreshInvalid, 'Refresh token is invalid.')
+			throw new AppException(ErrorCode.AuthRefreshInvalid)
 		}
 
 		await this.store.revokeSession(session.id)
@@ -125,7 +160,7 @@ export class AuthService {
 		const user = await this.store.getUserById(userId)
 
 		if (!user) {
-			unauthorized(AuthErrorCode.AuthInvalid, 'User not found.')
+			throw new AppException(ErrorCode.AuthUserNotFound)
 		}
 
 		return {

@@ -1,32 +1,14 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common'
+import { AppException } from '../exception/app-exception.js'
+import { ErrorCode } from '../exception/error-code.js'
 
-export const AuthErrorCode = {
-	AuthRequired: 'AUTH_REQUIRED',
-	AuthInvalid: 'AUTH_INVALID',
-	AuthInvalidCredentials: 'AUTH_INVALID_CREDENTIALS',
-	AuthRefreshInvalid: 'AUTH_REFRESH_INVALID',
-	AuthRefreshExpired: 'AUTH_REFRESH_EXPIRED',
-	AuthRefreshReused: 'AUTH_REFRESH_REUSED',
-	AuthForbidden: 'AUTH_FORBIDDEN',
-	AuthConcertForbidden: 'AUTH_CONCERT_FORBIDDEN',
-} as const
-
-export type AuthErrorCode = (typeof AuthErrorCode)[keyof typeof AuthErrorCode]
-
-export function unauthorized(code: AuthErrorCode, message: string): never {
-	throw new UnauthorizedException({
-		statusCode: 401,
-		error: 'Unauthorized',
-		code,
-		message,
-	})
+export function authRequired(): never {
+	throw new AppException(ErrorCode.AuthRequired)
 }
 
-export function forbidden(code: AuthErrorCode, message: string): never {
-	throw new ForbiddenException({
-		statusCode: 403,
-		error: 'Forbidden',
-		code,
-		message,
-	})
+export function authForbidden(): never {
+	throw new AppException(ErrorCode.AuthForbidden)
+}
+
+export function authConcertForbidden(): never {
+	throw new AppException(ErrorCode.AuthConcertForbidden)
 }

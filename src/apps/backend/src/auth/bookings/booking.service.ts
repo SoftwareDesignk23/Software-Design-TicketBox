@@ -1,0 +1,306 @@
+import { Injectable, Inject, forwardRef } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
+import { PrismaService } from '../../prisma/prisma.service.js'
+import { AppException } from '../../exception/app-exception.js'
+import { ErrorCode } from '../../exception/error-code.js'
+import { createBookingSchema } from './booking.dto.js'
+import { RedisService } from '../../redis/redis.service.js'
+import { SeatGateway } from '../../concerts/seat.gateway.js'
+
+const BOOKING_TTL_MINUTES = 15
+
+@Injectable()
+export class BookingService {
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly redis: RedisService,
+		@Inject(forwardRef(() => SeatGateway))
+		private readonly seatGateway: SeatGateway,
+	) {}
+
+	async createBooking(body: unknown, userId: string) {
+		const parsed = createBookingSchema.safeParse(body)
+		if (!parsed.success) {
+			throw new AppException(ErrorCode.ValidationFailed, {
+				fields: parsed.error.flatten().fieldErrors,
+			})
+		}
+
+		const { showId, items, idempotencyKey } = parsed.data
+
+		if (idempotencyKey) {
+			const existing = await this.prisma.booking.findUnique({
+				where: { idempotencyKey },
+				include: { items: true },
+			})
+			if (existing) {
+				return existing
+			}
+		}
+
+		const ticketTypeIds = [...new Set(items.map((item) => item.ticketTypeId))]
+		const ticketTypes = await this.prisma.ticketType.findMany({
+			where: { id: { in: ticketTypeIds } },
+		})
+
+		if (ticketTypes.length !== ticketTypeIds.length) {
+			throw new AppException(ErrorCode.ReservationInvalid, {
+				reason: 'ticket_type_not_found',
+			})
+		}
+
+		const ticketTypeMap = new Map(ticketTypes.map((type) => [type.id, type]))
+		let totalAmount = new Prisma.Decimal(0)
+		let currency = 'VND'
+
+		// Extract all requested showSeatIds to lock them
+		const showSeatIds = items.map((i) => i.showSeatId).filter(Boolean) as string[]
+
+		// Check global ticket limit per user
+		const existingTicketsCount = await this.prisma.ticket.groupBy({
+			by: ['ticketTypeId'],
+			where: {
+				ownerId: userId,
+				ticketTypeId: { in: ticketTypeIds },
+				status: { in: ['ISSUED', 'CHECKED_IN'] },
+			},
+			_count: { _all: true },
+		})
+		const existingTicketsMap = new Map(existingTicketsCount.map(t => [t.ticketTypeId, (t._count as any)._all as number]))
+
+		items.forEach((item) => {
+			const ticketType = ticketTypeMap.get(item.ticketTypeId)
+			if (!ticketType) {
+				throw new AppException(ErrorCode.ReservationInvalid, {
+					reason: 'ticket_type_not_found',
+				})
+			}
+			const existingQty = existingTicketsMap.get(item.ticketTypeId) || 0
+			if (existingQty + item.quantity > ticketType.maxPerOrder) {
+				throw new AppException(ErrorCode.ReservationQuantityExceeded, {
+					ticketTypeId: item.ticketTypeId,
+					maxPerOrder: ticketType.maxPerOrder,
+					existingTickets: existingQty,
+					requestedQuantity: item.quantity,
+					reason: 'global_limit_exceeded'
+				})
+			}
+			totalAmount = totalAmount.plus(ticketType.price.mul(item.quantity))
+			currency = ticketType.currency
+		})
+
+		const expiresAt = new Date(Date.now() + BOOKING_TTL_MINUTES * 60 * 1000)
+
+		const lockKey = `lock:show:${showId}:booking`
+		const lockValue = `${userId}:${Date.now()}`
+		const acquired = await this.redis.set(lockKey, lockValue, 'PX', 5000, 'NX')
+		if (!acquired) {
+			throw new AppException(ErrorCode.InternalServerError, {
+				reason: 'system_busy_try_again',
+			})
+		}
+
+		let result: any = null
+		let seatsToUpdate: string[] = []
+		let finalItems = [...items]
+		
+		try {
+			result = await this.prisma.$transaction(async (tx) => {
+				// 1. Lock explicit seats
+				if (showSeatIds.length > 0) {
+					const seats = await tx.showSeat.findMany({
+						where: { id: { in: showSeatIds }, showId },
+					})
+					
+					if (seats.length !== showSeatIds.length) {
+						throw new AppException(ErrorCode.ValidationFailed, { reason: 'invalid_seats' })
+					}
+
+					// Check Redis locks for each seat
+					const availableSeats: any[] = []
+					for (const seat of seats) {
+						if (seat.status !== 'AVAILABLE') continue;
+						const lockOwner = await this.redis.get(`seat_lock:${seat.id}`)
+						// If not locked, or locked by current user, it's available for this user
+						if (!lockOwner || lockOwner === userId) {
+							availableSeats.push(seat)
+						}
+					}
+					seatsToUpdate = availableSeats.map(seat => seat.id)
+
+					if (seatsToUpdate.length === 0) {
+						throw new AppException(ErrorCode.ValidationFailed, { reason: 'all_seats_unavailable' })
+					}
+
+					await tx.showSeat.updateMany({
+						where: { id: { in: seatsToUpdate } },
+						data: { status: 'RESERVED' },
+					})
+
+					// Filter final items to exclude items with unavailable seats
+					finalItems = finalItems.filter(item => !item.showSeatId || seatsToUpdate.includes(item.showSeatId))
+					
+					// Recalculate total amount
+					totalAmount = new Prisma.Decimal(0)
+					finalItems.forEach((item) => {
+						const ticketType = ticketTypeMap.get(item.ticketTypeId)!
+						totalAmount = totalAmount.plus(ticketType.price.mul(item.quantity))
+					})
+				}
+
+				// 2. Decrement inventory for ticket types
+				for (const item of finalItems) {
+					const currentType = await tx.ticketType.findUnique({
+						where: { id: item.ticketTypeId },
+					})
+
+					if (!currentType || currentType.totalQuantity - currentType.soldQuantity < item.quantity) {
+						throw new AppException(ErrorCode.ReservationQuantityExceeded, {
+							ticketTypeId: item.ticketTypeId,
+							reason: 'insufficient_capacity_at_checkout',
+						})
+					}
+
+					const updated = await tx.ticketType.updateMany({
+						where: {
+							id: item.ticketTypeId,
+							soldQuantity: currentType.soldQuantity,
+						},
+						data: {
+							soldQuantity: { increment: item.quantity },
+						},
+					})
+
+					if (updated.count === 0) {
+						throw new AppException(ErrorCode.ReservationQuantityExceeded, {
+							ticketTypeId: item.ticketTypeId,
+							reason: 'concurrent_modification_try_again',
+						})
+					}
+				}
+
+				// 3. Create Booking
+				const booking = await tx.booking.create({
+					data: {
+						userId,
+						status: 'PENDING_PAYMENT',
+						expiresAt,
+						totalAmount,
+						currency,
+						idempotencyKey: idempotencyKey ?? null,
+						items: {
+							create: finalItems.map((item) => {
+								const ticketType = ticketTypeMap.get(item.ticketTypeId)
+								return {
+									ticketTypeId: item.ticketTypeId,
+									showSeatId: item.showSeatId ?? null,
+									quantity: item.quantity,
+									unitPrice: ticketType?.price ?? new Prisma.Decimal(0),
+								}
+							}),
+						},
+					},
+					include: { items: true },
+				})
+				return booking
+			})
+		} finally {
+			const currentLock = await this.redis.get(lockKey)
+			if (currentLock === lockValue) {
+				await this.redis.del(lockKey)
+			}
+		}
+
+		if (result && seatsToUpdate.length > 0) {
+			// Clear the temporary click locks
+			for (const id of seatsToUpdate) {
+				await this.redis.del(`seat_lock:${id}`)
+			}
+			this.seatGateway.notifySeatUpdate(showId, seatsToUpdate.map(id => ({ showSeatId: id, status: 'RESERVED' })))
+		}
+
+		return result
+	}
+
+	async getBooking(id: string, userId: string) {
+		const booking = await this.prisma.booking.findFirst({
+			where: { id, userId },
+			include: { items: true, payments: true, tickets: true },
+		})
+
+		if (!booking) {
+			throw new AppException(ErrorCode.BookingNotFound)
+		}
+
+		return booking
+	}
+
+	async getUserBookings(userId: string) {
+		return this.prisma.booking.findMany({
+			where: { userId },
+			include: {
+				items: {
+					include: {
+						ticketType: {
+							select: { name: true },
+						},
+						showSeat: {
+							include: { seat: true }
+						}
+					},
+				},
+				tickets: true,
+			},
+			orderBy: { createdAt: 'desc' },
+		})
+	}
+	async lockSeat(showSeatId: string, userId: string) {
+		const showSeat = await this.prisma.showSeat.findUnique({
+			where: { id: showSeatId },
+			include: { seat: true }
+		})
+
+		if (!showSeat || showSeat.status !== 'AVAILABLE') {
+			throw new AppException(ErrorCode.ValidationFailed, { reason: 'seat_not_available' })
+		}
+
+		const lockKey = `seat_lock:${showSeatId}`
+		const lockValue = userId
+		
+		// Set lock for 15 minutes (900000 ms)
+		const acquired = await this.redis.set(lockKey, lockValue, 'PX', 900000, 'NX')
+		
+		if (!acquired) {
+			const currentLockOwner = await this.redis.get(lockKey)
+			if (currentLockOwner !== userId) {
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'seat_already_locked' })
+			}
+			// If it's the same user, just refresh the TTL
+			await this.redis.set(lockKey, lockValue, 'PX', 900000)
+		}
+
+		// Notify clients
+		this.seatGateway.notifySeatUpdate(showSeat.showId, [{ showSeatId, status: 'RESERVED', lockedBy: userId }])
+		
+		return { success: true }
+	}
+
+	async unlockSeat(showSeatId: string, userId: string) {
+		const lockKey = `seat_lock:${showSeatId}`
+		const currentLockOwner = await this.redis.get(lockKey)
+
+		if (currentLockOwner === userId) {
+			await this.redis.del(lockKey)
+			
+			const showSeat = await this.prisma.showSeat.findUnique({
+				where: { id: showSeatId }
+			})
+			
+			if (showSeat) {
+				this.seatGateway.notifySeatUpdate(showSeat.showId, [{ showSeatId, status: 'AVAILABLE' }])
+			}
+		}
+
+		return { success: true }
+	}
+}

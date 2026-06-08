@@ -1,14 +1,22 @@
-import 'dotenv/config'
 import { NestFactory } from '@nestjs/core'
+
+import { json, urlencoded } from 'express'
 import { AppModule } from './app.module.js'
-import { AuthHttpExceptionFilter } from './auth/auth.filter.js'
+import { GlobalExceptionFilter } from './exception/catch-global.js'
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule)
-	app.useGlobalFilters(new AuthHttpExceptionFilter())
+	app.useGlobalFilters(new GlobalExceptionFilter())
+	app.enableCors({
+		origin: true,
+		credentials: true,
+	})
+	app.use(json({ limit: '1mb' }))
+	app.use(urlencoded({ extended: true, limit: '1mb' }))
 	app.setGlobalPrefix('api/v1', {
 		exclude: ['health'],
 	})
+
 	await app.listen(process.env.PORT ?? 3000)
 }
 bootstrap()

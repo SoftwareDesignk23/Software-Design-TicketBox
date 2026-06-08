@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchEvents } from '../../../shared/services/mockApi'
+import { fetchEvents } from '../../../shared/services/api'
 
 export function useEvents() {
 	return useQuery({

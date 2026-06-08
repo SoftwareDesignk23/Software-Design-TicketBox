@@ -10,8 +10,9 @@ const posterStyles = {
 }
 
 export function EventCard({ event }) {
-  const prices = event.tiers.map((tier) => tier.price)
-  const inventory = event.tiers.map((tier) => tier.remaining)
+  const ticketTypes = event.ticketTypes || []
+  const prices = ticketTypes.length ? ticketTypes.map((t) => Number(t.price)) : [0]
+  const inventory = ticketTypes.length ? ticketTypes.map((t) => t.totalQuantity - t.soldQuantity) : [0]
   const minPrice = Math.min(...prices)
   const minRemaining = Math.min(...inventory)
   const maxRemaining = Math.max(...inventory)
@@ -22,9 +23,9 @@ export function EventCard({ event }) {
       className="group flex h-full flex-col overflow-hidden rounded-3xl border border-subtle bg-surface-1 transition hover:border-[color:var(--accent)]"
     >
       <div className="relative h-48 overflow-hidden bg-surface-2">
-        {event.posterUrl ? (
+        {event.heroImageUrl ? (
           <img
-            src={event.posterUrl}
+            src={event.heroImageUrl}
             alt=""
             className="h-full w-full object-cover"
             loading="lazy"
@@ -46,7 +47,7 @@ export function EventCard({ event }) {
             <p className="text-lg font-semibold text-primary">
               {event.title}
             </p>
-            <p className="mt-1 text-xs text-soft">{event.venue}</p>
+            <p className="mt-1 text-xs text-soft">{event.venue?.name}</p>
           </div>
         </div>
         <div className="absolute inset-0 flex items-end justify-between px-5 pb-5 opacity-0 transition duration-300 group-hover:opacity-100">
@@ -60,21 +61,19 @@ export function EventCard({ event }) {
       </div>
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex items-center justify-between">
-          <Badge variant="accent">{event.city}</Badge>
+          <Badge variant="accent">{event.venue?.address || 'Vietnam'}</Badge>
           <span className="text-xs text-soft">
-            {formatDateRange(event.startDate, event.endDate)}
+            {event.shows?.[0] ? formatDateRange(event.shows[0].startsAt, event.shows[0].endsAt) : 'Multiple Dates'}
           </span>
         </div>
         <div>
           <h3 className="text-lg font-semibold text-primary">
-            {event.subtitle}
+            {event.title}
           </h3>
-          <p className="mt-2 text-sm text-muted line-clamp-2">
-            {event.description}
-          </p>
+          <p className="mt-2 text-sm text-muted line-clamp-2" dangerouslySetInnerHTML={{ __html: event.description }} />
         </div>
         <div className="mt-auto flex items-center justify-between text-xs text-soft">
-          <span>{event.venue}</span>
+          <span>{event.venue?.name}</span>
           <span>From {formatCurrency(minPrice)}</span>
         </div>
       </div>

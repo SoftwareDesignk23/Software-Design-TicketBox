@@ -1,0 +1,25 @@
+{
+  "apiUrl": "https://openrouter.ai/api/v1/chat/completions",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_OPENROUTER_API_KEY",
+    "X-OpenRouter-Experimental-Metadata": "enabled"
+  },
+  "bodyTemplate": {
+    "model": "openai/gpt-4",
+    "temperature": 0.7,
+    "max_tokens": 500,
+    "messages": [
+      {
+        "role": "system",
+        "content": "{{systemInstruction}}"
+      },
+      {
+        "role": "user",
+        "content": "{{prompt}}\n\nText: {{inputText}}\n\nFormat: {{formatRequirements}}"
+      }
+    ]
+  },
+  "resultFieldPath": "choices.0.message.content"
+}

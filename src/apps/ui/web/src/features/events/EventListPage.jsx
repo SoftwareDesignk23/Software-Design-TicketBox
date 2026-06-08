@@ -6,7 +6,7 @@ import { EventCardSkeleton } from './components/EventCardSkeleton'
 import { EmptyState } from '../../shared/components/EmptyState'
 import { ErrorState } from '../../shared/components/ErrorState'
 
-const filters = ['All', 'Hot Drop', 'Hanoi', 'Ho Chi Minh City', 'Da Nang']
+const filters = ['Tất cả', 'Sự kiện HOT', 'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng']
 
 export function EventListPage() {
   const { data, isLoading, isError, refetch } = useEvents()
@@ -14,37 +14,37 @@ export function EventListPage() {
   return (
     <div className="flex flex-col gap-10">
       <SectionHeading
-        eyebrow="Concert calendar"
-        title="Browse the next wave of live drops"
-        description="Real-time availability, clear tiers, and fair access policies for every venue."
+        eyebrow="Lịch sự kiện"
+        title="Khám phá các sự kiện sắp diễn ra"
+        description="Thông tin vé trực tiếp, các hạng vé rõ ràng và hệ thống xếp hàng công bằng."
       />
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">
           {filters.map((filter) => (
-            <Badge key={filter} variant={filter === 'All' ? 'accent' : 'default'}>
+            <Badge key={filter} variant={filter === 'Tất cả' ? 'accent' : 'default'}>
               {filter}
             </Badge>
           ))}
         </div>
         <div className="text-sm text-soft">
-          {isLoading ? 'Loading events...' : `${data?.length || 0} events`}
+          {isLoading ? 'Đang tải sự kiện...' : `${data?.length || 0} sự kiện`}
         </div>
       </div>
 
       {isError ? (
         <ErrorState
-          title="Events are temporarily unavailable"
-          description="We could not load the latest drops. Please refresh to try again."
-          actionLabel="Reload events"
+          title="Không tải được sự kiện"
+          description="Đã xảy ra lỗi khi tải danh sách các sự kiện mới nhất. Vui lòng thử lại."
+          actionLabel="Tải lại"
           onAction={refetch}
         />
       ) : null}
 
       {!isLoading && data?.length === 0 ? (
         <EmptyState
-          title="No events scheduled"
-          description="New concert drops will appear here as soon as they are announced."
+          title="Chưa có sự kiện nào"
+          description="Các sự kiện âm nhạc mới sẽ xuất hiện ở đây ngay khi được công bố."
         />
       ) : null}
 

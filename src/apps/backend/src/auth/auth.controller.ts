@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Post, UseGuards, Request } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { JwtAuthGuard } from './auth.guards.js'
 import { CurrentUser } from './auth.decorators.js'
@@ -13,13 +13,47 @@ export class AuthController {
 		return this.authService.login(body.email, body.password)
 	}
 
+	@Post('register')
+	async register(@Body() body: unknown, @Request() req: any) {
+		const { registerSchema } = await import('./auth.dto.js')
+		const { AppException } = await import('../exception/app-exception.js')
+		const { ErrorCode } = await import('../exception/error-code.js')
+		
+		const parsed = registerSchema.safeParse(body)
+		if (!parsed.success) {
+			throw new AppException(ErrorCode.ValidationFailed, {
+				fields: parsed.error.flatten().fieldErrors,
+			})
+		}
+		
+		let role = parsed.data.role || 'AUDIENCE'
+		
+		if (role !== 'AUDIENCE') {
+			// Require ADMIN role to create higher roles
+			const authHeader = req.headers.authorization
+			if (!authHeader || !authHeader.startsWith('Bearer ')) {
+				throw new AppException(ErrorCode.AuthRequired)
+			}
+			const token = authHeader.split(' ')[1]
+			try {
+				const payload = this.authService.verifyAccessToken(token)
+				if (payload.role !== 'ADMIN') {
+					throw new AppException(ErrorCode.AuthForbidden)
+				}
+			} catch (e) {
+				throw new AppException(ErrorCode.AuthInvalid)
+			}
+		}
+
+		return this.authService.register(parsed.data.email, parsed.data.password, parsed.data.displayName, role as any)
+	}
+
 	@Post('refresh')
 	async refresh(@Body() body: { refreshToken: string }) {
 		return this.authService.refresh(body.refreshToken)
 	}
 
 	@Post('logout')
-	@UseGuards(JwtAuthGuard)
 	async logout(@Body() body: { refreshToken: string }) {
 		return this.authService.logout(body.refreshToken)
 	}

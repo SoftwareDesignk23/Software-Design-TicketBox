@@ -20,6 +20,11 @@ export class ConcertsController {
 		return this.concertsService.getConcertById(id)
 	}
 
+	@Get(':id/shows/:showId/seats')
+	getShowSeats(@Param('id') id: string, @Param('showId') showId: string) {
+		return this.concertsService.getShowSeats(showId)
+	}
+
 	@Post()
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')

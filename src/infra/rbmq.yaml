@@ -1,0 +1,27 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq-broker
+    restart: unless-stopped
+    hostname: rabbitmq-host
+    environment:
+      - RABBITMQ_DEFAULT_USER=myuser
+      - RABBITMQ_DEFAULT_PASS=mypassword
+      - RABBITMQ_DEFAULT_VHOST=myvhost
+    ports:
+      - "5672:5672"    # AMQP protocol port for application connections
+      - "15672:15672"  # HTTP management dashboard port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_logs:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  rabbitmq_logs:
+    driver: local

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { useAuthStore } from '../../shared/stores/authStore'
@@ -9,14 +10,33 @@ export function AuthPage() {
 	const [error, setError] = useState(null)
 	const login = useAuthStore((state) => state.login)
 	const status = useAuthStore((state) => state.status)
+	const navigate = useNavigate()
 
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 		setError(null)
 		try {
 			await login(email, password)
+			navigate('/')
 		} catch (loginError) {
 			setError(loginError.message ?? 'Unable to sign in.')
+		}
+	}
+
+	const [registerName, setRegisterName] = useState('')
+	const [registerEmail, setRegisterEmail] = useState('')
+	const [registerPassword, setRegisterPassword] = useState('')
+	const [registerError, setRegisterError] = useState(null)
+	const register = useAuthStore((state) => state.register)
+
+	const handleRegister = async (event) => {
+		event.preventDefault()
+		setRegisterError(null)
+		try {
+			await register(registerName, registerEmail, registerPassword)
+			navigate('/')
+		} catch (err) {
+			setRegisterError(err.message ?? 'Unable to create account.')
 		}
 	}
 
@@ -68,15 +88,37 @@ export function AuthPage() {
 				<p className="mt-2 text-sm text-muted">
 					Get ready for the next stadium drop with faster checkout.
 				</p>
-				<div className="mt-6 space-y-4">
-					<Input placeholder="Full name" />
-					<Input placeholder="Email" />
-					<Input placeholder="Phone number" />
-					<Input placeholder="Password" type="password" />
-					<Button variant="secondary" size="lg" className="w-full">
-						Create account
+				<form className="mt-6 space-y-4" onSubmit={handleRegister}>
+					<Input 
+						placeholder="Full name" 
+						value={registerName}
+						onChange={(e) => setRegisterName(e.target.value)}
+						required
+					/>
+					<Input 
+						placeholder="Email" 
+						type="email"
+						value={registerEmail}
+						onChange={(e) => setRegisterEmail(e.target.value)}
+						required
+					/>
+					<Input 
+						placeholder="Password" 
+						type="password" 
+						value={registerPassword}
+						onChange={(e) => setRegisterPassword(e.target.value)}
+						required
+						minLength={8}
+					/>
+					{registerError ? (
+						<p className="rounded-2xl border border-subtle bg-surface-2 px-4 py-3 text-xs text-muted">
+							{registerError}
+						</p>
+					) : null}
+					<Button variant="secondary" size="lg" className="w-full" type="submit" disabled={status === 'loading'}>
+						{status === 'loading' ? 'Creating...' : 'Create account'}
 					</Button>
-				</div>
+				</form>
 				<p className="mt-6 text-xs text-soft">
 					By creating an account you agree to the TicketBox terms and ticketing policies.
 				</p>

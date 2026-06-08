@@ -7,6 +7,7 @@ import { useUiStore } from '../../shared/stores/uiStore'
 import { SearchOverlay } from '../../features/search/SearchOverlay'
 import { NotificationDropdown } from '../../features/notifications/NotificationDropdown'
 import { useAuthStore } from '../../shared/stores/authStore'
+import { useNotifications } from '../../features/notifications/hooks/useNotifications'
 
 const navLinkClass = ({ isActive }) =>
 	`rounded-full px-4 py-2 text-sm font-medium transition ${
@@ -18,6 +19,8 @@ export function AppShell() {
 	const { isNotificationsOpen, toggleNotifications, toggleSearch, closeNotifications } =
 		useUiStore()
 	const { status, user, logout } = useAuthStore()
+	const { data: notifications } = useNotifications()
+	const unreadCount = notifications?.filter(n => n.unread || !n.isRead)?.length || 0
 
 	return (
 		<div className="min-h-screen">
@@ -48,6 +51,9 @@ export function AppShell() {
 						<NavLink to="/tickets" className={navLinkClass}>
 							My Tickets
 						</NavLink>
+						<NavLink to="/history" className={navLinkClass}>
+							History
+						</NavLink>
 						<NavLink to="/profile" className={navLinkClass}>
 							Profile
 						</NavLink>
@@ -68,11 +74,16 @@ export function AppShell() {
 							<button
 								type="button"
 								onClick={toggleNotifications}
-								className="flex h-10 w-10 items-center justify-center rounded-full border border-subtle bg-surface-2 text-primary transition hover:bg-surface-3"
+								className="relative flex h-10 w-10 items-center justify-center rounded-full border border-subtle bg-surface-2 text-primary transition hover:bg-surface-3"
 								aria-label="Open notifications"
 								aria-expanded={isNotificationsOpen}
 							>
 								<Bell className="h-4 w-4" />
+								{unreadCount > 0 && (
+									<span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[color:var(--error)] text-[10px] font-bold text-white shadow-sm">
+										{unreadCount}
+									</span>
+								)}
 							</button>
 							{isNotificationsOpen ? <NotificationDropdown /> : null}
 						</div>
@@ -102,6 +113,9 @@ export function AppShell() {
 				</NavLink>
 				<NavLink to="/tickets" className={navLinkClass}>
 					Tickets
+				</NavLink>
+				<NavLink to="/history" className={navLinkClass}>
+					History
 				</NavLink>
 				<NavLink to="/profile" className={navLinkClass}>
 					Profile
