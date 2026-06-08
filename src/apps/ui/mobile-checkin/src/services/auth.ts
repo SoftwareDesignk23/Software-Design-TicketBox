@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { authService } from './api';
 
 type AuthUser = {
   id: string;
@@ -6,70 +7,26 @@ type AuthUser = {
   role: string;
 };
 
-type AuthSession = {
-  accessToken: string;
-  refreshToken: string;
-};
-
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://192.168.1.19:3000/api/v1";
-
-let sessionCache: AuthSession | null = null;
-
-async function request(path: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const payload = await response
-      .json()
-      .catch(() => ({ message: "Request failed." }));
-    const error = new Error(payload.message ?? "Request failed.") as Error & {
-      status?: number;
-    };
-    error.status = response.status;
-    throw error;
-  }
-
-  return response.json();
-}
-
-export async function restoreSession() {
-  let token = sessionCache?.accessToken;
-  if (!token) {
-    try {
-      token = await SecureStore.getItemAsync('token');
-    } catch (e) {
-      console.warn('SecureStore error', e);
-    }
-  }
-
-  if (!token) {
-    return { status: "unauthenticated" as const, user: null };
-  }
-
+export async function restoreSession(): Promise<{
+  status: 'authenticated' | 'unauthenticated';
+  user: AuthUser | null;
+}> {
   try {
-    const user = (await request("/auth/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })) as AuthUser;
+    const accessToken = await SecureStore.getItemAsync('accessToken');
+    if (!accessToken) {
+      return { status: 'unauthenticated', user: null };
+    }
 
-    return { status: "authenticated" as const, user };
+    // Try to call /auth/me — the axios interceptor will auto-refresh if 401
+    const user = await authService.getMe();
+    return { status: 'authenticated', user };
   } catch (error: any) {
-    return { status: "unauthenticated" as const, user: null };
+    console.warn('restoreSession failed:', error?.message);
+    return { status: 'unauthenticated', user: null };
   }
 }
 
-export function setSession(tokens: AuthSession) {
-  sessionCache = tokens;
-}
-
-export function clearSession() {
-  sessionCache = null;
+export async function clearSession() {
+  await SecureStore.deleteItemAsync('accessToken');
+  await SecureStore.deleteItemAsync('refreshToken');
 }

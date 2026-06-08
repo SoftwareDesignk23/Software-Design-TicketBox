@@ -8,31 +8,121 @@ export const api = axios.create({
   timeout: 10000,
 });
 
+// Attach access token to every request
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await SecureStore.getItemAsync('token');
+      const token = await SecureStore.getItemAsync('accessToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (e) {
-      console.warn('SecureStore error', e);
+      console.warn('SecureStore read error', e);
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// ---- Response interceptors ----
+
+// 1) Unwrap the { code, message, data } envelope
+api.interceptors.response.use(
+  (response) => {
+    // Backend wraps all responses in { code, message, data }
+    if (response.data && response.data.code === 'SUCCESS' && response.data.data !== undefined) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
+
+// 2) Auto-refresh when receiving 401
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (v: any) => void; reject: (e: any) => void }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token);
+  });
+  failedQueue = [];
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        if (!refreshToken) throw new Error('No refresh token');
+
+        // Use raw axios to avoid the interceptor loop
+        const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
+        const responseData = res.data?.data || res.data;
+        const newAccessToken = responseData.accessToken;
+        const newRefreshToken = responseData.refreshToken;
+
+        await SecureStore.setItemAsync('accessToken', newAccessToken);
+        if (newRefreshToken) {
+          await SecureStore.setItemAsync('refreshToken', newRefreshToken);
+        }
+
+        processQueue(null, newAccessToken);
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        await SecureStore.deleteItemAsync('accessToken');
+        await SecureStore.deleteItemAsync('refreshToken');
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// ---- Service exports ----
+
 export const authService = {
-  login: async (email, password) => {
+  login: async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password });
-    if (response.data.accessToken) {
-      await SecureStore.setItemAsync('token', response.data.accessToken);
+    // After unwrapping: response.data = { accessToken, refreshToken, user, ... }
+    const { accessToken, refreshToken } = response.data;
+    if (accessToken) {
+      await SecureStore.setItemAsync('accessToken', accessToken);
+    }
+    if (refreshToken) {
+      await SecureStore.setItemAsync('refreshToken', refreshToken);
     }
     return response.data;
   },
   logout: async () => {
-    await SecureStore.deleteItemAsync('token');
+    await SecureStore.deleteItemAsync('accessToken');
+    await SecureStore.deleteItemAsync('refreshToken');
+  },
+  getMe: async () => {
+    const response = await api.get('/auth/me');
+    // After unwrapping: response.data = { id, displayName, role, ... }
+    return response.data;
   }
 };
 

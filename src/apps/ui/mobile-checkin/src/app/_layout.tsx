@@ -1,44 +1,60 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Stack, router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
-import { clearSession, restoreSession } from "../services/auth";
+import { Pressable, Text, View, ActivityIndicator } from "react-native";
+import { restoreSession, clearSession } from "../services/auth";
+
+type AuthState = {
+  status: "loading" | "authenticated" | "forbidden" | "unauthenticated";
+  displayName: string;
+  refresh: () => Promise<void>;
+};
+
+export const AuthContext = createContext<AuthState>({
+  status: "loading",
+  displayName: "",
+  refresh: async () => {},
+});
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 export default function RootLayout() {
-  const [status, setStatus] = useState<
-    "loading" | "authenticated" | "forbidden" | "unauthenticated"
-  >("loading");
+  const [status, setStatus] = useState<AuthState["status"]>("loading");
   const [displayName, setDisplayName] = useState("");
 
-  useEffect(() => {
-    const boot = async () => {
+  const checkAuth = useCallback(async () => {
+    setStatus("loading");
+    try {
       const result = await restoreSession();
-      if (result.status !== "authenticated") {
+      if (result.status !== "authenticated" || !result.user) {
         setStatus("unauthenticated");
         return;
       }
 
-      if (result.user.role !== "CHECK_IN_STAFF") {
+      if (result.user.role !== "CHECK_IN_STAFF" && result.user.role !== "ADMIN" && result.user.role !== "ORGANIZER") {
         setStatus("forbidden");
         return;
       }
 
       setDisplayName(result.user.displayName);
       setStatus("authenticated");
-    };
-
-    boot();
+    } catch (e) {
+      setStatus("unauthenticated");
+    }
   }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   if (status === "loading") {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>Loading check-in session...</Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1a1a2e" }}>
+        <ActivityIndicator size="large" color="#e94560" />
+        <Text style={{ color: "#eee", marginTop: 12, fontSize: 16 }}>Đang kiểm tra phiên đăng nhập...</Text>
       </View>
     );
-  }
-
-  if (status === "unauthenticated") {
-    // If not authenticated, we STILL need to render the Stack so that the user can see index.tsx (LoginScreen)
   }
 
   if (status === "forbidden") {
@@ -49,28 +65,33 @@ export default function RootLayout() {
           justifyContent: "center",
           alignItems: "center",
           padding: 24,
+          backgroundColor: "#1a1a2e",
         }}
       >
-        <Text style={{ textAlign: "center", marginBottom: 12 }}>
-          This device is not authorized for check-in.
+        <Text style={{ textAlign: "center", marginBottom: 12, color: "#eee", fontSize: 16 }}>
+          Tài khoản không có quyền soát vé.
         </Text>
         <Pressable
-          onPress={() => {
-            clearSession();
+          onPress={async () => {
+            await clearSession();
             setStatus("unauthenticated");
           }}
           style={{
-            paddingVertical: 10,
-            paddingHorizontal: 16,
-            backgroundColor: "#111",
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            backgroundColor: "#e94560",
             borderRadius: 12,
           }}
         >
-          <Text style={{ color: "#fff" }}>Clear session</Text>
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>Đăng xuất</Text>
         </Pressable>
       </View>
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <AuthContext.Provider value={{ status, displayName, refresh: checkAuth }}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </AuthContext.Provider>
+  );
 }
