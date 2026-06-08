@@ -3,7 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ConcertsPage } from "./pages/ConcertsPage";
+import { ConcertDetailPage } from "./pages/ConcertDetailPage";
 import { GuestlistPage } from "./pages/GuestlistPage";
+import { ArtistBioPage } from "./pages/ArtistBioPage";
+import { AccountsPage } from "./pages/AccountsPage";
+import { StaffPage } from "./pages/StaffPage";
 import {
   clearStoredTokens,
   loadStoredTokens,
@@ -89,7 +93,11 @@ function App() {
         <Route path="/" element={<AdminLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="concerts" element={<ConcertsPage />} />
+          <Route path="concerts/:id" element={<ConcertDetailPage />} />
           <Route path="guestlist" element={<GuestlistPage />} />
+          <Route path="artists" element={<ArtistBioPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
+          <Route path="staff" element={<StaffPage />} />
           {/* Placeholder for stats */}
           <Route path="stats" element={<DashboardPage />} /> 
         </Route>

@@ -50,10 +50,11 @@ export async function refreshSession(refreshToken) {
 
 export async function request(path, options = {}) {
   const doRequest = async (authOverride) => {
+    const isFormData = options.body instanceof FormData;
     const fetchOptions = {
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...(options.headers ?? {}),
       },
     };
@@ -75,16 +76,17 @@ export async function request(path, options = {}) {
           const newToken = await refreshSession(tokens.refreshToken);
           isRefreshing = false;
           onRefreshed(newToken);
+          response = await doRequest(newToken);
         } catch (err) {
           isRefreshing = false;
           clearTokens();
-          window.location.href = "/";
+          window.location.href = "/login";
           throw err;
         }
+      } else {
+        const newToken = await new Promise((resolve) => addRefreshSubscriber(resolve));
+        response = await doRequest(newToken);
       }
-
-      const newToken = await new Promise((resolve) => addRefreshSubscriber(resolve));
-      response = await doRequest(newToken);
     }
   }
 

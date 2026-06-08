@@ -29,7 +29,7 @@ export class ConcertsController {
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('ORGANIZER', 'ADMIN')
 	createConcert(@Body() body: unknown, @CurrentUser() user: AuthTokenPayload) {
-		return this.concertsService.createConcert(body, user.sub)
+		return this.concertsService.createConcert(body, user.sub, user.role)
 	}
 
 	@Patch(':id')
@@ -48,5 +48,72 @@ export class ConcertsController {
 	@Roles('ORGANIZER', 'ADMIN')
 	deleteConcert(@Param('id') id: string, @CurrentUser() user: AuthTokenPayload) {
 		return this.concertsService.deleteConcert(id, user.sub, user.role)
+	}
+
+	@Post(':id/ticket-types')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('ORGANIZER', 'ADMIN')
+	createTicketType(
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@CurrentUser() user: AuthTokenPayload,
+	) {
+		return this.concertsService.createTicketType(id, body, user.sub, user.role)
+	}
+
+	@Patch(':id/ticket-types/:ticketTypeId')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('ORGANIZER', 'ADMIN')
+	updateTicketType(
+		@Param('id') id: string,
+		@Param('ticketTypeId') ticketTypeId: string,
+		@Body() body: unknown,
+		@CurrentUser() user: AuthTokenPayload,
+	) {
+		return this.concertsService.updateTicketType(id, ticketTypeId, body, user.sub, user.role)
+	}
+
+	@Delete(':id/ticket-types/:ticketTypeId')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('ORGANIZER', 'ADMIN')
+	deleteTicketType(
+		@Param('id') id: string,
+		@Param('ticketTypeId') ticketTypeId: string,
+		@CurrentUser() user: AuthTokenPayload,
+	) {
+		return this.concertsService.deleteTicketType(id, ticketTypeId, user.sub, user.role)
+	}
+
+	@Post(':id/shows')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('ORGANIZER', 'ADMIN')
+	createShow(
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@CurrentUser() user: AuthTokenPayload,
+	) {
+		return this.concertsService.createShow(id, body, user.sub, user.role)
+	}
+
+	@Post(':id/artists')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('ORGANIZER', 'ADMIN')
+	assignArtist(
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@CurrentUser() user: AuthTokenPayload,
+	) {
+		return this.concertsService.assignArtist(id, body, user.sub, user.role)
+	}
+
+	@Delete(':id/artists/:artistId')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('ORGANIZER', 'ADMIN')
+	removeArtist(
+		@Param('id') id: string,
+		@Param('artistId') artistId: string,
+		@CurrentUser() user: AuthTokenPayload,
+	) {
+		return this.concertsService.removeArtist(id, artistId, user.sub, user.role)
 	}
 }

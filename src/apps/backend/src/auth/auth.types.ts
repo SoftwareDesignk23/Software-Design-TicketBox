@@ -8,7 +8,9 @@ export interface User {
 	displayName: string
 	role: Role
 	passwordHash: string
+	isActive: boolean
 	createdAt: Date
+	organizerId?: string | null
 }
 
 export interface RefreshSession {

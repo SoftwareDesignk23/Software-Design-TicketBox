@@ -6,6 +6,8 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 import moment from 'moment'
 import qs from 'qs'
+import axios from 'axios'
+import CircuitBreaker from 'opossum'
 import { AppException } from '../../exception/app-exception.js'
 import { ErrorCode } from '../../exception/error-code.js'
 
@@ -16,6 +18,7 @@ const __dirname = path.dirname(__filename)
 export class VNPayProvider implements IPaymentProvider {
 	private readonly logger = new Logger(VNPayProvider.name)
 	private config: any
+	private breaker: CircuitBreaker;
 
 	constructor() {
 		// Because tsc does not copy .json files to dist by default, we resolve from src or process.cwd()
@@ -35,6 +38,27 @@ export class VNPayProvider implements IPaymentProvider {
 		} catch (e) {
 			this.logger.error('Failed to load vnpay.json config', e)
 		}
+
+		// Initialize Circuit Breaker
+		const checkVNPayHealth = async () => {
+			// Fake a quick ping to VNPay or just a delay.
+			// In real code, we might do a HEAD request to sandbox.vnpayment.vn
+			await axios.head('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html', { timeout: 3000 })
+		}
+
+		this.breaker = new CircuitBreaker(checkVNPayHealth, {
+			timeout: 5000,
+			errorThresholdPercentage: 50,
+			resetTimeout: 10000
+		})
+
+		this.breaker.fallback(() => {
+			throw new AppException(ErrorCode.InternalServerError, { reason: 'vnpay_gateway_down' })
+		})
+
+		this.breaker.on('open', () => this.logger.warn('Circuit breaker OPEN for VNPay'))
+		this.breaker.on('halfOpen', () => this.logger.log('Circuit breaker HALF-OPEN for VNPay'))
+		this.breaker.on('close', () => this.logger.log('Circuit breaker CLOSED for VNPay'))
 	}
 
 	private sortObject(obj: any) {
@@ -100,6 +124,14 @@ export class VNPayProvider implements IPaymentProvider {
 		vnp_Params['vnp_SecureHash'] = signed
 
 		vnpUrl += '?' + qs.stringify(vnp_Params, { encode: false })
+
+		try {
+			// Trigger circuit breaker health check
+			await this.breaker.fire()
+		} catch (error) {
+			if (error instanceof AppException) throw error
+			this.logger.warn(`VNPay is slow or down, but continuing with URL: ${error.message}`)
+		}
 
 		return { paymentUrl: vnpUrl }
 	}

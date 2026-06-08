@@ -5,8 +5,81 @@ import { Skeleton } from '../../shared/ui/skeleton'
 import { SectionHeading } from '../../shared/components/SectionHeading'
 import { ErrorState } from '../../shared/components/ErrorState'
 import { formatLongDate, formatTime } from '../../shared/utils/format'
+import { getPublicImageUrl } from '../../shared/utils/image'
 import { useEvent } from './hooks/useEvent'
 import { TicketTierTable } from './components/TicketTierTable'
+
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+
+function ArtistCard({ item }) {
+  const [isHovered, setIsHovered] = useState(false)
+  const cardRef = useRef(null)
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
+
+  useEffect(() => {
+    if (isHovered && cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect()
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + rect.width / 2 + window.scrollX,
+        width: rect.width
+      })
+    }
+  }, [isHovered])
+
+  return (
+    <>
+      <div 
+        ref={cardRef}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="relative flex-shrink-0 w-80 snap-start rounded-3xl border border-subtle bg-surface-2 p-6 transition-all hover:border-accent hover:shadow-lg cursor-default flex flex-col"
+      >
+        <div className="flex items-center gap-4">
+          <img 
+            src={getPublicImageUrl(item.artist.avatarUrl) || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.artist.name) + '&background=random'} 
+            alt={item.artist.name} 
+            className="w-16 h-16 rounded-full object-cover shrink-0 border border-subtle" 
+          />
+          <div className="flex flex-col overflow-hidden">
+            <h4 className="font-bold text-primary text-lg truncate" title={item.artist.name}>{item.artist.name}</h4>
+            <Badge variant="default" className="text-xs py-0.5 w-fit mt-1">{item.role}</Badge>
+          </div>
+        </div>
+        {item.artist.bio && (
+          <div className="mt-4 text-sm text-muted leading-relaxed line-clamp-3" dangerouslySetInnerHTML={{ __html: item.artist.bio }} />
+        )}
+      </div>
+
+      {isHovered && item.artist.bio && createPortal(
+        <div 
+          className="absolute z-[9999] w-96 shadow-2xl border border-subtle bg-surface-1 rounded-3xl p-6 pointer-events-none animate-in fade-in zoom-in-95 duration-200"
+          style={{ 
+            top: coords.top + 16, // 16px below the card
+            left: coords.left,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 border-l border-t border-subtle bg-surface-1"></div>
+          <div className="flex items-center gap-3 mb-4">
+            <img 
+              src={getPublicImageUrl(item.artist.avatarUrl) || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.artist.name) + '&background=random'} 
+              alt={item.artist.name} 
+              className="w-12 h-12 rounded-full object-cover border border-subtle shrink-0" 
+            />
+            <div className="flex flex-col">
+              <h4 className="font-bold text-primary text-md">{item.artist.name}</h4>
+              <span className="text-xs text-soft">{item.role}</span>
+            </div>
+          </div>
+          <div className="text-sm text-muted leading-relaxed" dangerouslySetInnerHTML={{ __html: item.artist.bio }} />
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
 
 export function EventDetailPage() {
   const { eventId } = useParams()
@@ -35,13 +108,14 @@ export function EventDetailPage() {
   }
 
   const firstShow = data.shows?.[0]
+  const isSalesOpen = !firstShow?.salesOpensAt || new Date() >= new Date(firstShow.salesOpensAt)
 
   return (
     <div className="flex flex-col gap-12">
       {data.heroImageUrl && (
         <div className="w-full h-[400px] overflow-hidden rounded-b-[32px] md:rounded-[32px] mt-4">
           <img 
-            src={data.heroImageUrl} 
+            src={getPublicImageUrl(data.heroImageUrl)} 
             alt={data.title} 
             className="w-full h-full object-cover"
           />
@@ -78,9 +152,15 @@ export function EventDetailPage() {
             )}
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link to={`/events/${data.id}/seats`}>Mua vé ngay</Link>
-            </Button>
+            {isSalesOpen ? (
+              <Button asChild size="lg">
+                <Link to={`/events/${data.id}/seats`}>Mua vé ngay</Link>
+              </Button>
+            ) : (
+              <Button disabled size="lg" className="opacity-70">
+                Chưa đến giờ mở bán
+              </Button>
+            )}
             <Button asChild variant="secondary" size="lg">
               <Link to="/events">Xem thêm sự kiện</Link>
             </Button>
@@ -93,51 +173,46 @@ export function EventDetailPage() {
               <p className="text-xs uppercase tracking-[0.3em] text-soft">
                 Tình trạng mở bán
               </p>
-              <p className="text-lg font-semibold text-primary">{data.status === 'PUBLISHED' ? 'Đang mở bán' : 'Sắp ra mắt'}</p>
+              <p className="text-lg font-semibold text-primary">
+                {data.status === 'PUBLISHED' 
+                  ? (isSalesOpen ? 'Đang mở bán' : 'Sắp mở bán') 
+                  : 'Sắp ra mắt'}
+              </p>
               <p className="text-sm text-muted">
-                {data.status === 'PUBLISHED' ? 'Vé đang có sẵn. Vui lòng xếp hàng để mua vé.' : 'Hãy theo dõi để cập nhật thêm.'}
+                {data.status === 'PUBLISHED' 
+                  ? (isSalesOpen ? 'Vé đang có sẵn. Vui lòng xếp hàng để mua vé.' : 'Hệ thống đang chờ mở bán. Vui lòng quay lại đúng giờ.') 
+                  : 'Hãy theo dõi để cập nhật thêm.'}
               </p>
               <div className="flex flex-wrap gap-3 text-xs text-soft">
                 {firstShow?.salesOpensAt && (
-                  <span>Mở bán từ: {formatLongDate(firstShow.salesOpensAt)}</span>
+                  <span>Mở bán từ: {formatLongDate(firstShow.salesOpensAt)} lúc {formatTime(firstShow.salesOpensAt)}</span>
                 )}
               </div>
             </div>
           </div>
           
-          {data.artists?.length > 0 && (
-            <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-soft mb-4">
-                Nghệ sĩ tham gia
-              </p>
-              <div className="flex flex-col gap-4">
-                {data.artists.map((item, i) => (
-                  <div key={i} className="flex gap-4 items-start rounded-2xl border border-subtle bg-surface-1 p-4">
-                    {item.artist.avatarUrl && (
-                      <img src={item.artist.avatarUrl} alt={item.artist.name} className="w-14 h-14 rounded-full object-cover shrink-0" />
-                    )}
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-primary">{item.artist.name}</h4>
-                        <Badge variant="default" className="text-[10px] py-0">{item.role}</Badge>
-                      </div>
-                      {item.artist.bio && (
-                        <p className="mt-2 text-xs text-muted leading-relaxed line-clamp-3" dangerouslySetInnerHTML={{ __html: item.artist.bio }} />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {data.seatMapUrl ? (
-            <div className="rounded-3xl border border-subtle bg-[color:var(--ink-800)] p-4 flex items-center justify-center overflow-hidden">
-              <img src={data.seatMapUrl} alt="Sơ đồ ghế" className="w-full h-auto object-contain max-h-48 rounded-xl" />
+            <div className="rounded-3xl border border-subtle bg-[color:var(--ink-800)] p-4 flex items-center justify-center overflow-hidden mt-4">
+              <img src={getPublicImageUrl(data.seatMapUrl)} alt="Sơ đồ ghế" className="w-full h-auto object-contain max-h-48 rounded-xl" />
             </div>
           ) : null}
         </div>
       </section>
+
+      {data.artists?.length > 0 && (
+        <section className="grid gap-6 rounded-[32px] border border-subtle bg-surface-1 p-8 md:p-12">
+          <SectionHeading
+            eyebrow="Đội hình nghệ sĩ"
+            title="Gặp gỡ các nghệ sĩ tham gia"
+            description="Tìm hiểu thêm về các ngôi sao sẽ mang đến màn trình diễn bùng nổ."
+          />
+          <div className="flex overflow-x-auto gap-6 pb-6 snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
+            {data.artists.map((item, i) => (
+              <ArtistCard key={i} item={item} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-8">
         <SectionHeading

@@ -14,7 +14,9 @@ export class AuthStore {
 		displayName: string
 		role: Role
 		passwordHash: string
+		isActive: boolean
 		createdAt: Date
+		organizerId?: string | null
 	}): User {
 		return {
 			id: model.id,
@@ -22,7 +24,9 @@ export class AuthStore {
 			displayName: model.displayName,
 			role: model.role,
 			passwordHash: model.passwordHash,
+			isActive: model.isActive,
 			createdAt: model.createdAt,
+			organizerId: model.organizerId,
 		}
 	}
 
@@ -48,13 +52,14 @@ export class AuthStore {
 		return user ? this.toUser(user) : null
 	}
 
-	async createUser(email: string, passwordHash: string, displayName: string, role: Role) {
+	async createUser(email: string, passwordHash: string, displayName: string, role: Role, organizerId?: string) {
 		const user = await this.prisma.user.create({
 			data: {
 				email,
 				passwordHash,
 				displayName,
 				role,
+				organizerId,
 			},
 		})
 		return this.toUser(user)

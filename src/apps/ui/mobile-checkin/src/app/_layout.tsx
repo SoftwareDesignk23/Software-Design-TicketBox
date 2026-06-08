@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { clearSession, restoreSession } from "../services/auth";
 
@@ -38,23 +38,7 @@ export default function RootLayout() {
   }
 
   if (status === "unauthenticated") {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 24,
-        }}
-      >
-        <Text style={{ textAlign: "center", marginBottom: 12 }}>
-          Sign in required to access check-in tools.
-        </Text>
-        <Text style={{ textAlign: "center", color: "#555" }}>
-          Configure a CHECK_IN_STAFF session to scan or sync tickets.
-        </Text>
-      </View>
-    );
+    // If not authenticated, we STILL need to render the Stack so that the user can see index.tsx (LoginScreen)
   }
 
   if (status === "forbidden") {

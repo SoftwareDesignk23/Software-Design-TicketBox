@@ -52,7 +52,7 @@ async function main() {
 		},
 	})
 
-	// 2. Create Organizers
+	// 2. Create Organizers and their User accounts
 	const datVietVac = await prisma.organizer.create({
 		data: {
 			name: 'DatVietVAC',
@@ -60,6 +60,15 @@ async function main() {
 			website: 'https://datvietvac.vn/',
 			logoUrl:
 				'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/datvietvac_1_716b1e5dc4.jpg',
+		},
+	})
+	await prisma.user.create({
+		data: {
+			email: 'datvietvac@ticketbox.local',
+			passwordHash,
+			displayName: 'DatVietVAC Admin',
+			role: 'ORGANIZER',
+			organizerId: datVietVac.id,
 		},
 	})
 
@@ -70,12 +79,30 @@ async function main() {
 			website: 'https://yeah1.com',
 		},
 	})
+	await prisma.user.create({
+		data: {
+			email: 'yeah1@ticketbox.local',
+			passwordHash,
+			displayName: 'YEA1 Admin',
+			role: 'ORGANIZER',
+			organizerId: yeah1.id,
+		},
+	})
 
 	const viettel = await prisma.organizer.create({
 		data: {
 			name: 'Viettel Telecom',
 			description: 'Tập đoàn Công nghiệp - Viễn thông Quân đội Viettel',
 			website: 'https://vietteltelecom.vn',
+		},
+	})
+	await prisma.user.create({
+		data: {
+			email: 'viettel@ticketbox.local',
+			passwordHash,
+			displayName: 'Viettel Admin',
+			role: 'ORGANIZER',
+			organizerId: viettel.id,
 		},
 	})
 

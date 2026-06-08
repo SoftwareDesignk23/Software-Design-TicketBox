@@ -24,6 +24,12 @@ export class AuthService {
 			throw new AppException(ErrorCode.AuthInvalidCredentials)
 		}
 
+		if (!user.isActive) {
+			throw new AppException(ErrorCode.AuthInvalidCredentials, {
+				reason: 'account_disabled'
+			})
+		}
+
 		const refreshToken = this.generateRefreshToken()
 		const refreshTokenHash = this.hashToken(refreshToken)
 		const session = await this.store.createRefreshSession(
@@ -75,6 +81,31 @@ export class AuthService {
 			accessToken: accessToken.token,
 			refreshToken,
 			expiresIn: accessToken.expiresIn,
+			user: await this.buildProfile(user.id, user.role),
+		}
+	}
+
+	async createStaff(email: string, passwordPlain: string, displayName: string, creatorId: string, creatorRole: Role) {
+		const existingUser = await this.store.getUserByEmail(email);
+		if (existingUser) {
+			throw new AppException(ErrorCode.ValidationFailed, {
+				reason: 'email_already_exists',
+			})
+		}
+
+		let organizerId: string | undefined;
+		if (creatorRole === 'ORGANIZER') {
+			const creator = await this.store.getUserById(creatorId);
+			if (!creator || !creator.organizerId) {
+				throw new AppException(ErrorCode.AuthForbidden, { reason: 'not_linked_to_organizer' })
+			}
+			organizerId = creator.organizerId;
+		}
+
+		const passwordHash = await bcrypt.hash(passwordPlain, 10);
+		const user = await this.store.createUser(email, passwordHash, displayName, 'CHECK_IN_STAFF', organizerId);
+
+		return {
 			user: await this.buildProfile(user.id, user.role),
 		}
 	}

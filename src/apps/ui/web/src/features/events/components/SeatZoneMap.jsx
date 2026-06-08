@@ -27,25 +27,42 @@ export function SeatZoneMap({ zones, selectedZone, onSelect, seatMapUrl }) {
           <img src={seatMapUrl} alt="Sơ đồ ghế" className="w-full h-auto object-contain max-h-60" />
         ) : (
           <svg
-            viewBox="0 0 520 260"
-            className="h-60 w-full"
+            viewBox="0 0 520 360"
+            className="w-full h-auto max-h-[400px]"
             role="img"
             aria-label="Bản đồ các khu vực"
           >
-            <rect x="40" y="30" width="120" height="70" rx="16" fill={zoneColor('svip')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('svip') || z.id === 'svip')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
-            <rect x="200" y="30" width="120" height="70" rx="16" fill={zoneColor('vip')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('vip') && !z.label?.toLowerCase().includes('svip'))?.id || 'vip')} className="cursor-pointer hover:opacity-80 transition-opacity" />
-            <rect x="360" y="30" width="120" height="70" rx="16" fill={zoneColor('cat1')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('cat1') || z.id === 'cat1')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
-            <rect x="80" y="130" width="150" height="80" rx="18" fill={zoneColor('cat2')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('cat2') || z.id === 'cat2')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
-            <rect x="290" y="130" width="150" height="80" rx="18" fill={zoneColor('ga')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('ga') || z.id === 'ga')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
-            <rect x="200" y="225" width="120" height="18" rx="9" fill="var(--surface-3)" />
-            
-            {/* Labels overlay */}
-            <text x="100" y="70" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">SVIP</text>
-            <text x="260" y="70" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">VIP</text>
-            <text x="420" y="70" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 1</text>
-            <text x="155" y="175" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 2</text>
-            <text x="365" y="175" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">GA</text>
-            <text x="260" y="238" fill="var(--muted)" fontSize="10" fontWeight="bold" textAnchor="middle" pointerEvents="none">SÂN KHẤU</text>
+            {/* Stage Indicator */}
+            <path d="M 120 40 L 120 30 L 220 30 M 300 30 L 400 30 L 400 40" stroke="var(--muted)" strokeWidth="2" fill="none" />
+            <text x="260" y="35" fill="var(--muted)" fontSize="14" fontWeight="bold" textAnchor="middle">STAGE</text>
+
+            {/* SVIP */}
+            <rect x="200" y="70" width="120" height="40" rx="12" fill={zoneColor('svip')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('svip') || z.id === 'svip')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <text x="260" y="95" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">SVIP</text>
+
+            {/* VIP */}
+            <rect x="200" y="125" width="120" height="40" rx="12" fill={zoneColor('vip')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('vip') && !z.label?.toLowerCase().includes('svip'))?.id || 'vip')} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <text x="260" y="150" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">VIP</text>
+
+            {/* CAT 1 Left */}
+            <rect x="100" y="180" width="100" height="40" rx="12" fill={zoneColor('cat1')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().replace(/\s/g,'').includes('cat1') || z.id === 'cat1')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <text x="150" y="205" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 1</text>
+
+            {/* CAT 1 Right */}
+            <rect x="320" y="180" width="100" height="40" rx="12" fill={zoneColor('cat1')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().replace(/\s/g,'').includes('cat1') || z.id === 'cat1')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <text x="370" y="205" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 1</text>
+
+            {/* CAT 2 Left */}
+            <rect x="100" y="235" width="100" height="40" rx="12" fill={zoneColor('cat2')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().replace(/\s/g,'').includes('cat2') || z.id === 'cat2')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <text x="150" y="260" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 2</text>
+
+            {/* CAT 2 Right */}
+            <rect x="320" y="235" width="100" height="40" rx="12" fill={zoneColor('cat2')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().replace(/\s/g,'').includes('cat2') || z.id === 'cat2')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <text x="370" y="260" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAT 2</text>
+
+            {/* GA */}
+            <rect x="200" y="290" width="120" height="40" rx="12" fill={zoneColor('ga')} onClick={() => onSelect(zones.find(z => z.label?.toLowerCase().includes('ga') || z.id === 'ga')?.id)} className="cursor-pointer hover:opacity-80 transition-opacity" />
+            <text x="260" y="315" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" pointerEvents="none">GA</text>
           </svg>
         )}
       </div>

@@ -8,6 +8,8 @@ const concertPayloadSchema = z.object({
 	heroImageUrl: z.string().trim().min(1).optional(),
 	bannerUrl: z.string().trim().min(1).optional(),
 	seatMapUrl: z.string().trim().min(1).optional(),
+	gatesCount: z.number().int().min(1).optional(),
+	gateCapacity: z.number().int().min(1).optional(),
 })
 
 export const createConcertSchema = concertPayloadSchema
@@ -21,3 +23,29 @@ export const updateConcertSchema = concertPayloadSchema
 	})
 
 export type UpdateConcertDto = z.infer<typeof updateConcertSchema>
+
+export const createTicketTypeSchema = z.object({
+	name: z.string().trim().min(1),
+	price: z.number().min(0),
+	totalQuantity: z.number().min(1).optional(),
+	colorCode: z.string().trim().optional(),
+	maxPerOrder: z.number().min(1).default(1),
+	isSeated: z.boolean().optional(),
+	rows: z.number().min(1).optional(),
+	seatsPerRow: z.number().min(1).optional(),
+})
+
+export const updateTicketTypeSchema = createTicketTypeSchema.partial()
+
+export const createShowSchema = z.object({
+	startsAt: z.coerce.date(),
+	endsAt: z.coerce.date(),
+	salesOpensAt: z.coerce.date(),
+})
+
+export const updateShowSchema = createShowSchema.partial()
+
+export const assignArtistSchema = z.object({
+	artistId: z.string().trim().min(1),
+	role: z.string().trim().min(1),
+})

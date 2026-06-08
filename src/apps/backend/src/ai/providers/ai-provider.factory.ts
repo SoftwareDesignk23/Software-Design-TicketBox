@@ -14,8 +14,7 @@ export class AiProviderFactory {
 		private readonly customProvider: CustomAiProvider,
 	) {}
 
-	getProvider(): IAiProvider {
-		const providerName = process.env.AI_PROVIDER || 'GEMINI'
+	getProvider(providerName: string = process.env.AI_PROVIDER || 'GEMINI'): IAiProvider {
 		this.logger.log(`Using AI Provider: ${providerName}`)
 
 		switch (providerName.toUpperCase()) {

@@ -12,9 +12,9 @@ export class CsvController {
 	@Roles('ADMIN', 'ORGANIZER')
 	async importGuestlist(
 		@Body('showId') showId: string,
-		@Body('csvData') csvData: string,
+		@Body('fileUrl') fileUrl: string,
 		@Request() req: any
 	) {
-		return this.csvService.processGuestlistFile(showId, csvData, req.user.sub);
+		return this.csvService.queueGuestlistFile(showId, fileUrl, req.user.sub);
 	}
 }

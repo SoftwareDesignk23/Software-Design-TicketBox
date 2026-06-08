@@ -64,11 +64,11 @@ export class GeminiProvider implements IAiProvider {
 		const key = this.getNextKey()
 		const genAI = new GoogleGenerativeAI(key)
 		const model = genAI.getGenerativeModel({
-			model: 'gemini-1.5-flash',
+			model: 'gemini-flash-latest',
 			systemInstruction: this.promptConfig.systemInstruction,
 		})
 
-		const fullPrompt = `${this.promptConfig.prompt}\n\nFormat requirements: ${this.promptConfig.formatRequirements}\n\nInput Text:\n${inputText}`
+		const fullPrompt = inputText
 
 		try {
 			const result = await model.generateContent(fullPrompt)

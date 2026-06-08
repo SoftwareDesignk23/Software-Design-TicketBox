@@ -193,3 +193,6 @@ dist-ssr
 
 cong
 project_sample
+
+!src/apps/backend/.venv
+

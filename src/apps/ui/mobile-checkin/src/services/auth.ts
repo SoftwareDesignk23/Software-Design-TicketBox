@@ -1,3 +1,5 @@
+import * as SecureStore from 'expo-secure-store';
+
 type AuthUser = {
   id: string;
   displayName: string;
@@ -10,7 +12,7 @@ type AuthSession = {
 };
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
+  process.env.EXPO_PUBLIC_API_URL ?? "http://192.168.1.19:3000/api/v1";
 
 let sessionCache: AuthSession | null = null;
 
@@ -38,35 +40,28 @@ async function request(path: string, options: RequestInit = {}) {
 }
 
 export async function restoreSession() {
-  if (!sessionCache?.accessToken) {
+  let token = sessionCache?.accessToken;
+  if (!token) {
+    try {
+      token = await SecureStore.getItemAsync('token');
+    } catch (e) {
+      console.warn('SecureStore error', e);
+    }
+  }
+
+  if (!token) {
     return { status: "unauthenticated" as const, user: null };
   }
 
   try {
     const user = (await request("/auth/me", {
       headers: {
-        Authorization: `Bearer ${sessionCache.accessToken}`,
+        Authorization: `Bearer ${token}`,
       },
     })) as AuthUser;
 
     return { status: "authenticated" as const, user };
-  } catch (error) {
-    if (error.status === 401 && sessionCache?.refreshToken) {
-      const refreshed = await request("/auth/refresh", {
-        method: "POST",
-        body: JSON.stringify({ refreshToken: sessionCache.refreshToken }),
-      });
-      sessionCache = {
-        accessToken: refreshed.accessToken,
-        refreshToken: refreshed.refreshToken,
-      };
-      return {
-        status: "authenticated" as const,
-        user: refreshed.user as AuthUser,
-      };
-    }
-
-    sessionCache = null;
+  } catch (error: any) {
     return { status: "unauthenticated" as const, user: null };
   }
 }

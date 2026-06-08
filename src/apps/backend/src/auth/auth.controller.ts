@@ -58,6 +58,26 @@ export class AuthController {
 		return this.authService.logout(body.refreshToken)
 	}
 
+	@Post('staff')
+	@UseGuards(JwtAuthGuard)
+	async createStaff(@Body() body: unknown, @CurrentUser() user: AuthTokenPayload) {
+		const { AppException } = await import('../exception/app-exception.js')
+		const { ErrorCode } = await import('../exception/error-code.js')
+		
+		if (user.role !== 'ORGANIZER' && user.role !== 'ADMIN') {
+			throw new AppException(ErrorCode.AuthForbidden)
+		}
+
+		const parsed = (await import('./auth.dto.js')).registerSchema.safeParse(body)
+		if (!parsed.success) {
+			throw new AppException(ErrorCode.ValidationFailed, {
+				fields: parsed.error.flatten().fieldErrors,
+			})
+		}
+
+		return this.authService.createStaff(parsed.data.email, parsed.data.password, parsed.data.displayName, user.sub, user.role)
+	}
+
 	@Get('me')
 	@UseGuards(JwtAuthGuard)
 	getCurrentUser(@CurrentUser() user: AuthTokenPayload) {

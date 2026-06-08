@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Badge } from '../../../shared/ui/badge'
 import { formatCurrency, formatDateRange } from '../../../shared/utils/format'
+import { getPublicImageUrl } from '../../../shared/utils/image'
 
 const posterStyles = {
   'anh-trai-say-hi': 'from-[color:var(--accent)]/60 via-transparent to-transparent',
@@ -25,7 +26,7 @@ export function EventCard({ event }) {
       <div className="relative h-48 overflow-hidden bg-surface-2">
         {event.heroImageUrl ? (
           <img
-            src={event.heroImageUrl}
+            src={getPublicImageUrl(event.heroImageUrl)}
             alt=""
             className="h-full w-full object-cover"
             loading="lazy"

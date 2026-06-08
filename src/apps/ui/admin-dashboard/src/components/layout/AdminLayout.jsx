@@ -1,20 +1,34 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Ticket, LogOut, FileText } from 'lucide-react'
-import { clearStoredTokens, loadStoredTokens, logout as logoutRequest } from '../../auth'
+import { clearStoredTokens, loadStoredTokens, logout as logoutRequest, currentUser } from '../../auth'
 import { useEffect, useState } from 'react'
 
 export function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [userName, setUserName] = useState('Admin')
+  const [userRole, setUserRole] = useState('')
 
   useEffect(() => {
     const tokens = loadStoredTokens()
     if (!tokens?.accessToken) {
       navigate('/login')
+    } else {
+      currentUser(tokens.accessToken).then(user => {
+        setUserName(user.displayName || user.email || 'Admin')
+        setUserRole(user.role)
+        
+        // Redirect ADMIN away from Organizer Dashboard
+        if (user.role === 'ADMIN' && location.pathname === '/') {
+          navigate('/accounts', { replace: true })
+        }
+      }).catch(e => {
+        console.error(e)
+        // Optionally redirect on invalid token
+        // navigate('/login')
+      })
     }
-    // We could fetch /auth/me here to set username
-  }, [navigate])
+  }, [navigate, location.pathname])
 
   const handleLogout = async () => {
     const tokens = loadStoredTokens()
@@ -29,10 +43,14 @@ export function AdminLayout() {
     navigate('/login')
   }
 
-  const navigation = [
+  const navigation = userRole === 'ADMIN' ? [
+    { name: 'Quản lý Organizer', href: '/accounts', icon: FileText },
+  ] : [
     { name: 'Tổng quan', href: '/', icon: LayoutDashboard },
     { name: 'Sự kiện', href: '/concerts', icon: Ticket },
+    { name: 'Nhân viên', href: '/staff', icon: FileText },
     { name: 'Khách mời (CSV)', href: '/guestlist', icon: FileText },
+    { name: 'Nghệ sĩ & AI', href: '/artists', icon: FileText },
   ]
 
   return (

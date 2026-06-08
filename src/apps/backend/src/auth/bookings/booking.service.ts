@@ -28,6 +28,17 @@ export class BookingService {
 
 		const { showId, items, idempotencyKey } = parsed.data
 
+		const show = await this.prisma.concertShow.findUnique({
+			where: { id: showId },
+			select: { salesOpensAt: true },
+		});
+		if (!show) {
+			throw new AppException(ErrorCode.ValidationFailed, { reason: 'show_not_found' });
+		}
+		if (show.salesOpensAt && new Date() < show.salesOpensAt) {
+			throw new AppException(ErrorCode.ValidationFailed, { reason: 'ticket_sales_not_started' });
+		}
+
 		if (idempotencyKey) {
 			const existing = await this.prisma.booking.findUnique({
 				where: { idempotencyKey },

@@ -12,7 +12,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await authService.login(email, password);
-      router.replace('/scanner');
+      router.replace('/events');
     } catch (err) {
       alert('Login failed');
     } finally {

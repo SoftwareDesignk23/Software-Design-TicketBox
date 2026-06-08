@@ -90,6 +90,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  isActive      Boolean   @default(true)
+
+  organizerId   String?   // Link to Organizer if role is ORGANIZER
+  organizer     Organizer? @relation(fields: [organizerId], references: [id])
+
   refreshTokens RefreshSession[]
   bookings      Booking[]
   tickets       Ticket[]
@@ -136,6 +141,7 @@ model Organizer {
   website     String?
   email       String?
   concerts    Concert[]
+  users       User[]
 }
 
 model Sponsor {
@@ -176,6 +182,8 @@ model Concert {
   status           ConcertStatus   @default(DRAFT)
   organizerId      String
   venueId          String
+  gatesCount       Int             @default(1)
+  gateCapacity     Int             @default(1000)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -211,16 +219,26 @@ model ConcertSponsor {
 
 // 4. Schedule & Seats
 model ConcertShow {
-  id           String      @id @default(uuid())
+  id           String        @id @default(uuid())
   concertId    String
   startsAt     DateTime
   endsAt       DateTime?
   salesOpensAt DateTime?
   status       ConcertStatus @default(PUBLISHED)
-  
-  concert      Concert     @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  concert      Concert       @relation(fields: [concertId], references: [id], onDelete: Cascade)
   showSeats    ShowSeat[]
   tickets      Ticket[]
+}
+
+model BackgroundJob {
+  id          String   @id @default(uuid())
+  type        String   // "AI_ARTIST_BIO" or "CSV_GUEST_LIST"
+  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  data        Json?    // Initial payload data or context
+  result      Json?    // Resulting data (like summary or error message)
+  createdBy   String?  // organizerId or userId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model SeatSection {
@@ -259,6 +277,8 @@ model TicketType {
   maxPerOrder    Int            @default(4)
   totalQuantity  Int
   soldQuantity   Int            @default(0)
+  rows           Int?
+  seatsPerRow    Int?
   status         TicketTypeStatus @default(ACTIVE)
 
   concert        Concert        @relation(fields: [concertId], references: [id], onDelete: Cascade)
@@ -347,6 +367,7 @@ model Ticket {
   ownerId       String
   code          String        @unique // QR Code / Hash
   qrPayload     String
+  gate          String?
   status        TicketStatus  @default(ISSUED)
   issuedAt      DateTime      @default(now())
   checkedInAt   DateTime?

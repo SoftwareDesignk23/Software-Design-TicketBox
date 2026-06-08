@@ -12,6 +12,7 @@ import { formatCurrency, formatLongDate, formatTime } from '../../shared/utils/f
 import { ErrorState } from '../../shared/components/ErrorState'
 import { io } from 'socket.io-client'
 import { useAuthStore } from '../../shared/stores/authStore'
+import { Lock } from 'lucide-react'
 
 export function SeatSelectionPage() {
   const { user } = useAuthStore()
@@ -35,7 +36,10 @@ export function SeatSelectionPage() {
 
   useEffect(() => {
     if (!selectedShow && data?.shows?.length > 0) {
-      setSelectedShow(data.shows[0].id)
+      const firstAvailable = data.shows.find(s => !s.salesOpensAt || new Date(s.salesOpensAt) <= new Date())
+      if (firstAvailable) {
+        setSelectedShow(firstAvailable.id)
+      }
     }
   }, [data, selectedShow])
 
@@ -300,21 +304,30 @@ export function SeatSelectionPage() {
             Chọn suất diễn
           </p>
           <div className="flex flex-wrap gap-3">
-            {data.shows?.map(show => (
-              <button
-                key={show.id}
-                type="button"
-                onClick={() => setSelectedShow(show.id)}
-                className={`flex flex-col items-start px-4 py-3 rounded-2xl border transition ${
-                  selectedShow === show.id
-                    ? 'border-[color:var(--accent)] bg-accent-soft text-primary'
-                    : 'border-subtle bg-surface-2 text-muted hover:bg-surface-3'
-                }`}
-              >
-                <span className="font-semibold">{formatLongDate(show.startsAt)}</span>
-                <span className="text-sm">{formatTime(show.startsAt)}</span>
-              </button>
-            ))}
+            {data.shows?.map(show => {
+              const isLocked = show.salesOpensAt && new Date(show.salesOpensAt) > new Date()
+              return (
+                <button
+                  key={show.id}
+                  type="button"
+                  onClick={() => !isLocked && setSelectedShow(show.id)}
+                  disabled={isLocked}
+                  className={`flex flex-col items-start px-4 py-3 rounded-2xl border transition ${
+                    isLocked ? 'opacity-50 cursor-not-allowed border-subtle bg-surface-2 text-muted' :
+                    selectedShow === show.id
+                      ? 'border-[color:var(--accent)] bg-accent-soft text-primary'
+                      : 'border-subtle bg-surface-2 text-muted hover:bg-surface-3'
+                  }`}
+                >
+                  <div className="flex justify-between w-full items-center gap-2">
+                    <span className="font-semibold">{formatLongDate(show.startsAt)}</span>
+                    {isLocked && <Lock className="w-3 h-3 text-error" />}
+                  </div>
+                  <span className="text-sm">{formatTime(show.startsAt)}</span>
+                  {isLocked && <span className="text-[10px] text-error mt-1">Mở bán: {formatTime(show.salesOpensAt)} {formatLongDate(show.salesOpensAt)}</span>}
+                </button>
+              )
+            })}
           </div>
         </div>
 

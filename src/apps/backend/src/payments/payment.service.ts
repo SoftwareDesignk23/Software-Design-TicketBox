@@ -7,7 +7,9 @@ import { VNPayProvider } from './providers/vnpay.provider.js'
 import { MoMoProvider } from './providers/momo.provider.js'
 import { IPaymentProvider } from './providers/payment.provider.interface.js'
 import { PaymentProvider } from '@prisma/client'
-import crypto from 'crypto'
+import { ConfigService } from '@nestjs/config'
+import * as crypto from 'crypto'
+import { encryptAES } from '../utils/crypto.util.js'
 
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq'
 
@@ -165,11 +167,40 @@ export class PaymentService {
 						})
 						if (show) showId = show.id
 					}
+
+					// Fetch gatesCount and gateCapacity for this concert
+					const concert = await tx.concert.findUnique({
+						where: { id: item.ticketType.concertId }
+					})
+					const gatesCount = concert?.gatesCount || 1
+					const gateCapacity = concert?.gateCapacity || 1000
 					
 					for (let i = 0; i < item.quantity; i++) {
 						const ticketId = crypto.randomUUID()
 						const code = crypto.randomUUID().split('-')[0].toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase()
 						
+						// Determine gate based on issued tickets
+						const issuedTickets = await tx.ticket.count({
+							where: { showId: showId! }
+						})
+						const gateNumber = Math.min(Math.floor(issuedTickets / gateCapacity) + 1, gatesCount)
+						const gate = `Cổng ${gateNumber}`
+						
+						const payloadData = {
+							ticketId,
+							code,
+							bookingId: booking.id,
+							showId: showId!,
+							eventId: item.ticketType.concertId,
+							attendeeName: booking.attendeeName,
+							attendeeEmail: booking.attendeeEmail,
+							attendeePhone: booking.attendeePhone,
+							gate,
+							issuedAt: new Date().toISOString()
+						}
+						
+						const qrPayload = encryptAES(payloadData)
+
 						const createdTicket = await tx.ticket.create({
 							data: {
 								id: ticketId,
@@ -179,7 +210,8 @@ export class PaymentService {
 								showSeatId: item.showSeatId,
 								ownerId: booking.userId,
 								code: code,
-								qrPayload: JSON.stringify({ ticketId, code })
+								gate: gate,
+								qrPayload: qrPayload
 							}
 						})
 

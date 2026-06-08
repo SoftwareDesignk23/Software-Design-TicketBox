@@ -23,13 +23,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			return
 		}
 
+		console.error('Unhandled exception:', exception);
+
 		response
 			.status(ErrorCode.InternalServerError.httpStatus)
 			.json(
 				HttpResponse.error(
 					ErrorCode.InternalServerError.message,
 					ErrorCode.InternalServerError.code,
-					null,
+					{ error: exception instanceof Error ? exception.message : String(exception), stack: exception instanceof Error ? exception.stack : undefined },
 				),
 			)
 	}
