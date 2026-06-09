@@ -1,4 +1,5 @@
 import { KEYUTIL, KJUR, RSAKey } from 'jsrsasign';
+import CryptoJS from 'crypto-js';
 
 const pubB64 = process.env.EXPO_PUBLIC_JWT_PUBLIC_KEY || '';
 
@@ -6,7 +7,8 @@ let cachedPublicKey: RSAKey | null = null;
 
 function getPublicKeyPem(): string {
   if (!pubB64) throw new Error('Missing EXPO_PUBLIC_JWT_PUBLIC_KEY');
-  return globalThis.atob(pubB64);
+  const words = CryptoJS.enc.Base64.parse(pubB64);
+  return CryptoJS.enc.Utf8.stringify(words);
 }
 
 function getPublicKey() {

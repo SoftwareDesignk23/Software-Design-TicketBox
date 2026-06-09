@@ -1,5 +1,6 @@
 import { Badge } from '../../../shared/ui/badge'
 import { formatLongDate, formatTime } from '../../../shared/utils/format'
+import QRCode from 'react-qr-code'
 
 export function TicketCard({ ticket }) {
   const getStatusText = (status) => {
@@ -10,6 +11,41 @@ export function TicketCard({ ticket }) {
       default: return status
     }
   }
+
+  const handleDownloadQR = () => {
+    const qrData = ticket.qrPayload || ticket.code;
+    if (!qrData) return;
+    
+    // Tìm thẻ SVG chứa QR
+    const svgNode = document.getElementById(`qr-${ticket.id}`);
+    if (!svgNode) return;
+    
+    // Chuyển SVG sang dạng chuỗi
+    const serializer = new XMLSerializer();
+    let source = serializer.serializeToString(svgNode);
+    
+    // Thêm XML namespace
+    if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+        source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    if(!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+        source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+    }
+
+    // Mã hóa dữ liệu để nhúng vào URI
+    const encodedData = encodeURIComponent(source);
+    
+    // Tạo image URI
+    const url = "data:image/svg+xml;charset=utf-8," + encodedData;
+
+    // Tải xuống
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `TicketBox-QR-${ticket.code}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
 
   return (
     <div className="grid gap-6 rounded-3xl border border-subtle bg-surface-1 p-6 lg:grid-cols-[1.4fr_0.6fr]">
@@ -51,24 +87,7 @@ export function TicketCard({ ticket }) {
           </button>
           <button 
             className="rounded-full border border-subtle px-4 py-2 text-xs text-muted hover:bg-surface-2"
-            onClick={async () => {
-              const qrData = ticket.qrPayload || ticket.code;
-              if (!qrData) return;
-              try {
-                const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrData)}`);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `TicketBox-QR-${ticket.code}.png`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-              } catch (err) {
-                alert('Không thể tải mã QR lúc này. Vui lòng thử lại sau.');
-              }
-            }}
+            onClick={handleDownloadQR}
           >
             Tải mã QR
           </button>
@@ -80,10 +99,12 @@ export function TicketCard({ ticket }) {
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-subtle bg-surface-2 p-6 text-center">
         {ticket.qrPayload || ticket.code ? (
           <div className="grid h-28 w-28 place-items-center rounded-2xl bg-white p-2">
-            <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(ticket.qrPayload || ticket.code)}`} 
-              alt="Mã QR vé" 
-              className="h-full w-full object-contain"
+            <QRCode 
+              id={`qr-${ticket.id}`}
+              value={ticket.qrPayload || ticket.code}
+              size={96}
+              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+              viewBox={`0 0 96 96`}
             />
           </div>
         ) : (

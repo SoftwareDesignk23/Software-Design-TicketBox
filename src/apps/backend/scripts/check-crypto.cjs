@@ -2,7 +2,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
 // Read backend .env
-const envText = fs.readFileSync('.env', 'utf8');
+const envText = fs.readFileSync('../.env', 'utf8');
 const getEnvVal = (key) => {
     const line = envText.split('\n').find(l => l.startsWith(key + '='));
     if (!line) return '';
@@ -20,7 +20,7 @@ console.log('Private key loaded:', !!PRIVATE_KEY, '| first line:', PRIVATE_KEY.s
 console.log('Public key loaded:', !!PUBLIC_KEY, '| first line:', PUBLIC_KEY.split('\n')[0]);
 
 // Read mobile .env
-const mobileEnvText = fs.readFileSync('../../../ui/mobile-checkin/.env', 'utf8');
+const mobileEnvText = fs.readFileSync('../../ui/mobile-checkin/.env', 'utf8');
 const getMobileEnvVal = (key) => {
     const line = mobileEnvText.split('\n').find(l => l.startsWith(key + '='));
     if (!line) return '';

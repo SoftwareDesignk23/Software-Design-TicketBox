@@ -88,8 +88,11 @@ export default function ScannerScreen() {
     setUnsyncedCount(logs.length);
   };
 
+  const isProcessingRef = useRef(false);
+
   const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
-    if (scanned || isProcessing) return;
+    if (scanned || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setScanned(true);
     setIsProcessing(true);
     setScanResult(null);
@@ -102,7 +105,11 @@ export default function ScannerScreen() {
         setScanResult({
           type: 'error',
           title: '❌ Mã QR không hợp lệ',
-          lines: ['Không giải mã được mã QR này.', 'Không phải vé do TicketBox phát hành.'],
+          lines: [
+            'Không giải mã được mã QR này.', 
+            'Có thể là vé cũ (chưa cập nhật mã bảo mật) hoặc không do TicketBox phát hành.',
+            `Dữ liệu quét được: ${data.length > 20 ? data.substring(0, 20) + '...' : data}`
+          ],
         });
         setScanCount(c => c + 1);
         return;
@@ -293,7 +300,11 @@ export default function ScannerScreen() {
       {scanned && !isProcessing && (
         <Pressable
           style={styles.scanAgainBtn}
-          onPress={() => { setScanned(false); setScanResult(null); }}
+          onPress={() => { 
+            isProcessingRef.current = false;
+            setScanned(false); 
+            setScanResult(null); 
+          }}
         >
           <Text style={styles.scanAgainText}>📷 Quét vé tiếp theo</Text>
         </Pressable>
