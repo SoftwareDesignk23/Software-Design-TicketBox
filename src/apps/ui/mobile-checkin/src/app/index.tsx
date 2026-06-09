@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { authService } from '../services/api';
@@ -11,9 +11,13 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const auth = useAuth();
 
-  // If already authenticated, redirect to events
+  useEffect(() => {
+    if (auth.status === 'authenticated') {
+      router.replace('/events');
+    }
+  }, [auth.status]);
+
   if (auth.status === 'authenticated') {
-    router.replace('/events');
     return null;
   }
 

@@ -38,11 +38,13 @@ export class AuthService {
 			this.refreshExpiryDate(),
 		)
 
+		// CHECK_IN_STAFF tokens don't expire — they need to work offline
+		const noExpiry = user.role === 'CHECK_IN_STAFF'
 		const accessToken = this.tokens.signAccessToken({
 			sub: user.id,
 			role: user.role,
 			sid: session.id,
-		})
+		}, noExpiry)
 
 		return {
 			accessToken: accessToken.token,
@@ -51,6 +53,7 @@ export class AuthService {
 			user: await this.buildProfile(user.id, user.role),
 		}
 	}
+
 
 	async register(email: string, passwordPlain: string, displayName: string, role: Role) {
 		const existingUser = await this.store.getUserByEmail(email);

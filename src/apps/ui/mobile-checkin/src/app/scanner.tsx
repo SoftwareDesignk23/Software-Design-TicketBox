@@ -1,45 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Vibration } from 'react-native';
-import { Camera, CameraView } from 'expo-camera';
+import {
+  View, Text, StyleSheet, Pressable, Vibration,
+  ActivityIndicator, Dimensions,
+} from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, router } from 'expo-router';
 import { checkinService } from '../services/api';
-import { addCheckinLog, getUnsyncedLogs, markLogsAsSynced, checkTicketValidity, markTicketAsCheckedInLocally, updateTicketStatuses } from '../services/db';
+import {
+  addCheckinLog,
+  getUnsyncedLogs,
+  markLogsAsSynced,
+  checkTicketValidity,
+  markTicketAsCheckedInLocally,
+  updateTicketStatuses,
+} from '../services/db';
 import { decryptAES } from '../services/crypto';
 import * as Device from 'expo-device';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const FRAME_SIZE = 240;
+const CORNER = 24;
+const CORNER_THICK = 4;
 
 type ScanResult = {
   type: 'success' | 'error' | 'warning';
   title: string;
-  message: string;
+  lines: string[];
 } | null;
 
 export default function ScannerScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [deviceId, setDeviceId] = useState('unknown-device');
   const [scanResult, setScanResult] = useState<ScanResult>(null);
-  
-  const lastUpdatedRef = useRef<string>(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  const [scanCount, setScanCount] = useState(0);
+
+  const lastUpdatedRef = useRef<string>(
+    new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  );
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const init = async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-      setDeviceId(Device.modelName || 'expo-device');
-      refreshUnsyncedCount();
-    };
-    init();
-
-    // Background sync every 10 seconds
-    syncIntervalRef.current = setInterval(backgroundSyncDown, 10000);
+    setDeviceId(Device.modelName || 'expo-device');
+    refreshUnsyncedCount();
+    if (permission && !permission.granted && permission.canAskAgain) {
+      requestPermission();
+    }
+    syncIntervalRef.current = setInterval(backgroundSyncDown, 15000);
     return () => {
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (permission && !permission.granted && permission.canAskAgain) {
+      requestPermission();
+    }
+  }, [permission]);
 
   const backgroundSyncDown = async () => {
     try {
@@ -48,23 +69,18 @@ export default function ScannerScreen() {
         await updateTicketStatuses(data.changes);
       }
       lastUpdatedRef.current = data.serverTime;
-
-      // Auto push unsynced logs if online
       const logs = await getUnsyncedLogs();
       if (logs.length > 0) {
-        const payloadLogs = logs.map(l => ({
+        await checkinService.syncCheckins(logs.map(l => ({
           ticketId: l.ticketId,
           deviceId: l.deviceId,
           scannedAt: l.scannedAt,
-          scanResult: l.scanResult
-        }));
-        await checkinService.syncCheckins(payloadLogs);
+          scanResult: l.scanResult,
+        })));
         await markLogsAsSynced(logs.map(l => l.id));
-        refreshUnsyncedCount();
+        await refreshUnsyncedCount();
       }
-    } catch (e) {
-      // Ignore network errors in background sync
-    }
+    } catch (_) {}
   };
 
   const refreshUnsyncedCount = async () => {
@@ -72,198 +88,227 @@ export default function ScannerScreen() {
     setUnsyncedCount(logs.length);
   };
 
-  // =====================================================
-  // LUỒNG SOÁT VÉ CHÍNH
-  // =====================================================
   const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
+    if (scanned || isProcessing) return;
     setScanned(true);
+    setIsProcessing(true);
     setScanResult(null);
 
-    // --- Bước 1: Giải mã JWT (chống vé giả) ---
-    const payload = await decryptAES(data);
-    if (!payload) {
-      Vibration.vibrate([0, 200, 100, 200]); // rung đúp = lỗi
-      setScanResult({
-        type: 'error',
-        title: '❌ Mã QR giả mạo',
-        message: 'Không giải mã được. Mã này không phải do hệ thống TicketBox tạo.'
-      });
-      await addCheckinLog('unknown', deviceId, 'INVALID');
-      await refreshUnsyncedCount();
-      return;
-    }
-
-    // --- Bước 2: Check sự kiện (đúng người đúng chỗ) ---
-    if (payload.eventId !== eventId) {
-      Vibration.vibrate([0, 200, 100, 200]);
-      setScanResult({
-        type: 'warning',
-        title: '⚠️ Sai sự kiện',
-        message: `Vé này thuộc sự kiện khác.\nKhách: ${payload.attendeeName || 'N/A'}`
-      });
-      return;
-    }
-
-    // --- Bước 3: Hiển thị thông tin cổng ---
-    const gateInfo = payload.gate || 'N/A';
-
-    // --- Bước 4: Check trạng thái vé (online/offline) ---
     try {
-      // Thử online trước
-      const result = await checkinService.verifyTicket(payload.ticketId);
-      if (result.success) {
-        Vibration.vibrate(100); // rung nhẹ = OK
+      // --- Bước 1: Giải mã JWT ---
+      const payload = await decryptAES(data);
+      if (!payload || !payload.ticketId) {
+        Vibration.vibrate([0, 200, 100, 200]);
         setScanResult({
-          type: 'success',
-          title: '✅ Hợp lệ (Online)',
-          message: `Khách: ${payload.attendeeName || 'N/A'}\nEmail: ${payload.attendeeEmail || 'N/A'}\nCổng: ${gateInfo}\nMã vé: ${payload.code || payload.ticketId.slice(0, 8)}`
+          type: 'error',
+          title: '❌ Mã QR không hợp lệ',
+          lines: ['Không giải mã được mã QR này.', 'Không phải vé do TicketBox phát hành.'],
         });
-        // Cập nhật local DB
-        await markTicketAsCheckedInLocally(payload.ticketId);
-        await addCheckinLog(payload.ticketId, deviceId, 'VALID');
-        await refreshUnsyncedCount();
+        setScanCount(c => c + 1);
+        return;
       }
-    } catch (e: any) {
-      // Nếu lỗi mạng → fallback offline
-      if (!e.response) {
-        console.log('Network error, falling back to offline');
-        await processOfflineCheckin(payload);
-      } else {
-        // Lỗi business logic từ server
-        const reason = e.response?.data?.data?.reason;
-        if (reason === 'already_checked_in') {
-          Vibration.vibrate([0, 200, 100, 200]);
-          setScanResult({
-            type: 'error',
-            title: '🚫 Vé đã sử dụng',
-            message: `Vé này đã được quét trước đó!\nKhách: ${payload.attendeeName || 'N/A'}\nCổng: ${gateInfo}`
-          });
+
+      // --- Bước 2: Check sự kiện ---
+      if (payload.eventId && payload.eventId !== eventId) {
+        Vibration.vibrate([0, 200, 100, 200]);
+        setScanResult({
+          type: 'warning',
+          title: '⚠️ Sai sự kiện',
+          lines: [
+            'Vé này thuộc sự kiện khác.',
+            `Khách: ${payload.attendeeName || 'N/A'}`,
+            `Cổng: ${payload.gate || 'N/A'}`,
+          ],
+        });
+        setScanCount(c => c + 1);
+        return;
+      }
+
+      // --- Bước 3+4: Verify online → offline ---
+      const gateInfo = payload.gate || 'N/A';
+      const attendeeInfo = [
+        `👤 ${payload.attendeeName || 'N/A'}`,
+        `📧 ${payload.attendeeEmail || 'N/A'}`,
+        `🚪 Cổng: ${gateInfo}`,
+        `🎫 Mã: ${payload.code || payload.ticketId?.slice(0, 8) || 'N/A'}`,
+      ];
+
+      try {
+        const result = await checkinService.verifyTicket(payload.ticketId);
+        if (result.success) {
+          Vibration.vibrate(100);
+          setScanResult({ type: 'success', title: '✅ Hợp lệ — Cho vào! (Online)', lines: attendeeInfo });
           await markTicketAsCheckedInLocally(payload.ticketId);
-        } else if (reason === 'invalid_ticket') {
-          Vibration.vibrate([0, 200, 100, 200]);
-          setScanResult({
-            type: 'error',
-            title: '❌ Vé không tồn tại',
-            message: 'Ticket ID không có trong hệ thống.'
-          });
-        } else {
-          Vibration.vibrate([0, 200, 100, 200]);
-          setScanResult({
-            type: 'error',
-            title: '❌ Từ chối',
-            message: e.response?.data?.message || 'Vé không hợp lệ'
-          });
+          await addCheckinLog(payload.ticketId, deviceId, 'VALID');
+          await refreshUnsyncedCount();
         }
-        await addCheckinLog(payload.ticketId, deviceId, reason === 'already_checked_in' ? 'ALREADY_SCANNED' : 'INVALID');
-        await refreshUnsyncedCount();
+      } catch (e: any) {
+        if (!e.response) {
+          // Mất mạng → fallback offline
+          await processOfflineCheckin(payload, gateInfo, attendeeInfo);
+        } else {
+          const reason = e.response?.data?.data?.reason || e.response?.data?.reason;
+          if (reason === 'already_checked_in') {
+            Vibration.vibrate([0, 200, 100, 200]);
+            setScanResult({ type: 'error', title: '🚫 Vé đã được quét!', lines: ['Vé này đã check-in trước đó.', ...attendeeInfo] });
+            await markTicketAsCheckedInLocally(payload.ticketId);
+            await addCheckinLog(payload.ticketId, deviceId, 'ALREADY_SCANNED');
+          } else if (reason === 'invalid_ticket') {
+            Vibration.vibrate([0, 200, 100, 200]);
+            setScanResult({ type: 'error', title: '❌ Vé không tồn tại', lines: [`ID: ${payload.ticketId?.slice(0, 16)}...`] });
+            await addCheckinLog(payload.ticketId, deviceId, 'INVALID');
+          } else {
+            Vibration.vibrate([0, 200, 100, 200]);
+            setScanResult({ type: 'error', title: '❌ Từ chối', lines: [e.response?.data?.message || 'Vé không hợp lệ.'] });
+            await addCheckinLog(payload.ticketId, deviceId, 'INVALID');
+          }
+          await refreshUnsyncedCount();
+        }
       }
+    } finally {
+      setIsProcessing(false);
+      setScanCount(c => c + 1);
     }
   };
 
-  const processOfflineCheckin = async (payload: any) => {
+  const processOfflineCheckin = async (payload: any, gateInfo: string, attendeeInfo: string[]) => {
     const ticketInfo = await checkTicketValidity(payload.ticketId);
     if (!ticketInfo) {
       Vibration.vibrate([0, 200, 100, 200]);
       setScanResult({
         type: 'warning',
-        title: '⚠️ Không tìm thấy (Offline)',
-        message: `Vé chưa được tải xuống.\nKhách: ${payload.attendeeName || 'N/A'}\nHãy tải dữ liệu offline trước.`
+        title: '⚠️ Vé chưa được tải (Offline)',
+        lines: ['Không tìm thấy vé trong dữ liệu offline.', `Khách: ${payload.attendeeName || 'N/A'}`],
       });
       return;
     }
-
     if (ticketInfo.status === 'CHECKED_IN') {
       Vibration.vibrate([0, 200, 100, 200]);
-      setScanResult({
-        type: 'error',
-        title: '🚫 Vé đã sử dụng (Offline)',
-        message: `Vé này đã được quét!\nKhách: ${payload.attendeeName || 'N/A'}\nCổng: ${ticketInfo.gate || payload.gate || 'N/A'}`
-      });
+      setScanResult({ type: 'error', title: '🚫 Đã sử dụng (Offline)', lines: ['Vé này đã check-in!', ...attendeeInfo] });
       return;
     }
-
-    // Mark checked in locally
     await markTicketAsCheckedInLocally(payload.ticketId);
     await addCheckinLog(payload.ticketId, deviceId, 'VALID');
     await refreshUnsyncedCount();
-
     Vibration.vibrate(100);
-    setScanResult({
-      type: 'success',
-      title: '✅ Hợp lệ (Offline)',
-      message: `Khách: ${payload.attendeeName || 'N/A'}\nEmail: ${payload.attendeeEmail || 'N/A'}\nCổng: ${ticketInfo.gate || payload.gate || 'N/A'}\nMã vé: ${payload.code || payload.ticketId.slice(0, 8)}`
-    });
+    setScanResult({ type: 'success', title: '✅ Hợp lệ — Cho vào! (Offline)', lines: ['⚠️ Sẽ sync khi có mạng.', ...attendeeInfo] });
   };
 
   const handleManualSync = async () => {
     setIsSyncing(true);
-    await backgroundSyncDown();
-    setIsSyncing(false);
-    Alert.alert('Đồng bộ', 'Đã đồng bộ thành công với server.');
+    try { await backgroundSyncDown(); } finally { setIsSyncing(false); }
   };
 
-  if (hasPermission === null) {
+  // ---- Permission screens ----
+  if (!permission) {
     return (
       <View style={styles.centerScreen}>
-        <Text style={styles.centerText}>Đang yêu cầu quyền camera...</Text>
+        <ActivityIndicator size="large" color="#e94560" />
+        <Text style={styles.centerText}>Đang khởi tạo camera...</Text>
       </View>
     );
   }
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.centerScreen}>
-        <Text style={styles.centerText}>Không có quyền truy cập camera. Vui lòng cấp quyền trong Cài đặt.</Text>
+        <Text style={styles.centerText}>
+          {'📷 App cần quyền truy cập camera.\nVui lòng cấp quyền.'}
+        </Text>
+        <Pressable style={styles.permBtn} onPress={requestPermission}>
+          <Text style={styles.permBtnText}>Cấp quyền Camera</Text>
+        </Pressable>
       </View>
     );
   }
+
+  const resultBg =
+    scanResult?.type === 'success' ? 'rgba(40, 167, 69, 0.95)'
+    : scanResult?.type === 'error' ? 'rgba(220, 53, 69, 0.95)'
+    : 'rgba(255, 193, 7, 0.95)';
+
+  // Tính toán vị trí chính xác của khung scan
+  const frameLeft = (SCREEN_W - FRAME_SIZE) / 2;
+  const frameTop = (SCREEN_H - FRAME_SIZE) / 2 - 40; // hơi cao hơn trung tâm 1 chút
 
   return (
     <View style={styles.container}>
+      {/* Camera — flex:1 để lấp đầy container, KHÔNG dùng absoluteFillObject */}
       <CameraView
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
-        style={StyleSheet.absoluteFillObject}
+        onBarcodeScanned={scanned || isProcessing ? undefined : handleBarCodeScanned}
+        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+        style={styles.camera}
+        facing="back"
       />
 
-      {/* Back button */}
-      <Pressable style={styles.backBtn} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Quay lại</Text>
-      </Pressable>
+      {/* 4 dải tối xung quanh khung scan */}
+      <View style={[styles.darkStrip, { top: 0, left: 0, right: 0, height: frameTop }]} />
+      <View style={[styles.darkStrip, { top: frameTop + FRAME_SIZE, left: 0, right: 0, bottom: 0 }]} />
+      <View style={[styles.darkStrip, { top: frameTop, left: 0, width: frameLeft, height: FRAME_SIZE }]} />
+      <View style={[styles.darkStrip, { top: frameTop, left: frameLeft + FRAME_SIZE, right: 0, height: FRAME_SIZE }]} />
 
-      {/* Scan result overlay */}
-      {scanResult && (
-        <View style={[
-          styles.resultBox,
-          scanResult.type === 'success' && styles.resultSuccess,
-          scanResult.type === 'error' && styles.resultError,
-          scanResult.type === 'warning' && styles.resultWarning,
-        ]}>
-          <Text style={styles.resultTitle}>{scanResult.title}</Text>
-          <Text style={styles.resultMessage}>{scanResult.message}</Text>
+      {/* Khung scan — tọa độ tuyệt đối chính xác */}
+      <View style={[styles.scanFrame, { top: frameTop, left: frameLeft }]}>
+        <View style={[styles.corner, styles.cornerTL]} />
+        <View style={[styles.corner, styles.cornerTR]} />
+        <View style={[styles.corner, styles.cornerBL]} />
+        <View style={[styles.corner, styles.cornerBR]} />
+      </View>
+
+      {/* Hint text bên dưới khung */}
+      <View style={[styles.hintBox, { top: frameTop + FRAME_SIZE + 16 }]}>
+        <Text style={styles.scanHint}>
+          {isProcessing ? '⏳ Đang kiểm tra...' : scanned ? '👆 Tap để quét tiếp' : '📷 Đưa mã QR vào khung'}
+        </Text>
+      </View>
+
+      {/* Top bar */}
+      <View style={styles.topBar}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backText}>← Quay lại</Text>
+        </Pressable>
+        <View style={styles.scanCounter}>
+          <Text style={styles.scanCountText}>Quét hôm nay: {scanCount}</Text>
+        </View>
+      </View>
+
+      {/* Processing spinner */}
+      {isProcessing && (
+        <View style={styles.processingBox}>
+          <ActivityIndicator size="small" color="#fff" />
+          <Text style={styles.processingText}>  Đang kiểm tra...</Text>
         </View>
       )}
 
-      {/* Scan again button */}
-      {scanned && (
+      {/* Result card */}
+      {scanResult && !isProcessing && (
+        <View style={[styles.resultBox, { backgroundColor: resultBg }]}>
+          <Text style={styles.resultTitle}>{scanResult.title}</Text>
+          {scanResult.lines.map((line, i) => (
+            <Text key={i} style={styles.resultLine}>{line}</Text>
+          ))}
+        </View>
+      )}
+
+      {/* Quét tiếp */}
+      {scanned && !isProcessing && (
         <Pressable
           style={styles.scanAgainBtn}
           onPress={() => { setScanned(false); setScanResult(null); }}
         >
-          <Text style={styles.scanAgainText}>📷 Chạm để quét tiếp</Text>
+          <Text style={styles.scanAgainText}>📷 Quét vé tiếp theo</Text>
         </Pressable>
       )}
 
-      {/* Sync status bar */}
+      {/* Sync bar */}
       <View style={styles.syncBox}>
-        <Text style={styles.syncText}>📤 Chờ đẩy lên: {unsyncedCount}</Text>
-        <Pressable
-          style={[styles.syncBtn, isSyncing && styles.btnDisabled]}
-          onPress={handleManualSync}
-          disabled={isSyncing}
-        >
-          <Text style={styles.syncBtnText}>{isSyncing ? '⏳ Đang sync...' : '🔄 Đồng bộ'}</Text>
+        <View>
+          <Text style={styles.syncLabel}>Chờ đồng bộ lên server</Text>
+          <Text style={styles.syncCount}>{unsyncedCount} lượt check-in</Text>
+        </View>
+        <Pressable style={[styles.syncBtn, isSyncing && styles.btnDisabled]} onPress={handleManualSync} disabled={isSyncing}>
+          {isSyncing
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.syncBtnText}>🔄 Sync</Text>}
         </Pressable>
       </View>
     </View>
@@ -271,61 +316,89 @@ export default function ScannerScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centerScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 20 },
-  centerText: { color: '#eee', fontSize: 16, textAlign: 'center' },
-  backBtn: {
+  container: { flex: 1, backgroundColor: '#000' },
+
+  // Camera: flex:1 để tự lấp đầy container
+  camera: { flex: 1 },
+
+  // Dải tối xung quanh khung
+  darkStrip: {
     position: 'absolute',
-    top: 50,
-    left: 16,
     backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+
+  // Khung scan (chỉ có 4 góc, không có viền đầy đủ)
+  scanFrame: {
+    position: 'absolute',
+    width: FRAME_SIZE,
+    height: FRAME_SIZE,
+  },
+
+  // Góc khung
+  corner: {
+    position: 'absolute',
+    width: CORNER,
+    height: CORNER,
+    borderColor: '#e94560',
+  },
+  cornerTL: { top: 0, left: 0, borderTopWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderTopLeftRadius: 8 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderTopRightRadius: 8 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderBottomLeftRadius: 8 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderBottomRightRadius: 8 },
+
+  hintBox: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  scanHint: {
+    color: '#fff',
+    fontSize: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 18,
     paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
+
+  centerScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 24 },
+  centerText: { color: '#eee', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 20 },
+  permBtn: { backgroundColor: '#e94560', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10 },
+  permBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+
+  topBar: {
+    position: 'absolute', top: 50, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingHorizontal: 16,
+  },
+  backBtn: { backgroundColor: 'rgba(0,0,0,0.65)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
   backText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  resultBox: {
-    position: 'absolute',
-    top: 100,
-    left: 16,
-    right: 16,
-    padding: 18,
-    borderRadius: 12,
+  scanCounter: { backgroundColor: 'rgba(0,0,0,0.65)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
+  scanCountText: { color: '#ddd', fontSize: 13 },
+
+  processingBox: {
+    position: 'absolute', alignSelf: 'center', top: '45%',
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.85)', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12,
   },
-  resultSuccess: { backgroundColor: 'rgba(40, 167, 69, 0.95)' },
-  resultError: { backgroundColor: 'rgba(220, 53, 69, 0.95)' },
-  resultWarning: { backgroundColor: 'rgba(255, 193, 7, 0.95)' },
-  resultTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
-  resultMessage: { fontSize: 15, color: '#fff', lineHeight: 22 },
+  processingText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+  resultBox: { position: 'absolute', top: 108, left: 12, right: 12, padding: 18, borderRadius: 14 },
+  resultTitle: { fontSize: 19, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
+  resultLine: { fontSize: 14, color: '#fff', lineHeight: 22 },
+
   scanAgainBtn: {
-    position: 'absolute',
-    bottom: 120,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(15, 52, 96, 0.9)',
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 12,
+    position: 'absolute', bottom: 120, alignSelf: 'center',
+    backgroundColor: 'rgba(15, 52, 96, 0.92)',
+    paddingVertical: 14, paddingHorizontal: 28, borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
   },
   scanAgainText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+
   syncBox: {
-    position: 'absolute',
-    bottom: 40,
-    left: 16,
-    right: 16,
-    backgroundColor: 'rgba(22, 33, 62, 0.95)',
-    padding: 14,
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    position: 'absolute', bottom: 30, left: 12, right: 12,
+    backgroundColor: 'rgba(22, 33, 62, 0.95)', padding: 14, borderRadius: 12,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  syncText: { fontWeight: 'bold', color: '#eee', fontSize: 14 },
-  syncBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: '#0f3460',
-    borderRadius: 8,
-  },
+  syncLabel: { color: '#888', fontSize: 11, marginBottom: 2 },
+  syncCount: { color: '#eee', fontWeight: 'bold', fontSize: 15 },
+  syncBtn: { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#0f3460', borderRadius: 8, minWidth: 70, alignItems: 'center' },
   syncBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
   btnDisabled: { opacity: 0.5 },
 });

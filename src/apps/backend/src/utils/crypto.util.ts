@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 // Note: JWT_PRIVATE_KEY should be passed as a base64 encoded string to avoid newline issues in .env
 const privB64 = process.env.JWT_PRIVATE_KEY || '';

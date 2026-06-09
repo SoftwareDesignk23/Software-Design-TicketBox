@@ -52,9 +52,10 @@ export function TicketCard({ ticket }) {
           <button 
             className="rounded-full border border-subtle px-4 py-2 text-xs text-muted hover:bg-surface-2"
             onClick={async () => {
-              if (!ticket.code) return;
+              const qrData = ticket.qrPayload || ticket.code;
+              if (!qrData) return;
               try {
-                const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(ticket.code)}`);
+                const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrData)}`);
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -77,10 +78,10 @@ export function TicketCard({ ticket }) {
         </div>
       </div>
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-subtle bg-surface-2 p-6 text-center">
-        {ticket.code ? (
+        {ticket.qrPayload || ticket.code ? (
           <div className="grid h-28 w-28 place-items-center rounded-2xl bg-white p-2">
             <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(ticket.code)}`} 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(ticket.qrPayload || ticket.code)}`} 
               alt="Mã QR vé" 
               className="h-full w-full object-contain"
             />

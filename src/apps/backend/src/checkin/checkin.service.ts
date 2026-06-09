@@ -119,13 +119,34 @@ export class CheckinService {
 			where: { showId: { in: showIds } },
 			select: {
 				id: true,
+				code: true,
 				gate: true,
 				status: true,
+				show: {
+					select: { concertId: true }
+				},
+				booking: {
+					select: {
+						attendeeName: true,
+						attendeeEmail: true,
+					}
+				}
 			}
 		})
 
-		return { tickets }
+		return {
+			tickets: tickets.map(t => ({
+				id: t.id,
+				code: t.code,
+				gate: t.gate,
+				status: t.status,
+				eventId: t.show.concertId,
+				attendeeName: t.booking?.attendeeName || '',
+				attendeeEmail: t.booking?.attendeeEmail || '',
+			}))
+		}
 	}
+
 
 	async syncDown(lastUpdatedStr: string, userId: string, role: string) {
 		const lastUpdated = lastUpdatedStr ? new Date(lastUpdatedStr) : new Date(0)

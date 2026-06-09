@@ -34,6 +34,7 @@ export class TicketsService {
 		return tickets.map((t) => ({
 			id: t.id,
 			code: t.code,
+			qrPayload: t.qrPayload,   // JWT-signed token — encode this in the QR, not 'code'
 			status: t.status,
 			eventName: t.show.concert.title,
 			eventId: t.show.concertId,
@@ -44,3 +45,4 @@ export class TicketsService {
 		}))
 	}
 }
+

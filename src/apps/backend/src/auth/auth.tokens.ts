@@ -8,16 +8,19 @@ import type { AuthTokenPayload } from './auth.types.js'
 export class AuthTokenService {
 	constructor(@Inject(authConfig.KEY) private readonly config: ConfigType<typeof authConfig>) {}
 
-	signAccessToken(payload: AuthTokenPayload) {
-		const token = jwt.sign(payload, this.config.signingSecret, {
-			expiresIn: this.config.accessTokenTtlSeconds,
+	signAccessToken(payload: AuthTokenPayload, noExpiry = false) {
+		const signOptions: jwt.SignOptions = {
 			issuer: this.config.issuer,
 			audience: this.config.audience,
-		})
+		}
+		if (!noExpiry) {
+			signOptions.expiresIn = this.config.accessTokenTtlSeconds
+		}
+		const token = jwt.sign(payload, this.config.signingSecret, signOptions)
 
 		return {
 			token,
-			expiresIn: this.config.accessTokenTtlSeconds,
+			expiresIn: noExpiry ? null : this.config.accessTokenTtlSeconds,
 		}
 	}
 
