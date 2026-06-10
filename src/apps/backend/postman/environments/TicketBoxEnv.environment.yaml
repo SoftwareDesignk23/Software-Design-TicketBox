@@ -6,3 +6,5 @@ values:
     value: ''
   - key: refreshToken
     value: ''
+  - key: reservationId
+    value: ''
