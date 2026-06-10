@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { deleteToken, getToken, setToken } from './tokenStore';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.19:3000/api/v1';
 
@@ -12,12 +12,12 @@ export const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await SecureStore.getItemAsync('accessToken');
+      const token = await getToken('accessToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (e) {
-      console.warn('SecureStore read error', e);
+      console.warn('Token storage read error', e);
     }
     return config;
   },
@@ -69,7 +69,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        const refreshToken = await getToken('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
 
         // Use raw axios to avoid the interceptor loop
@@ -78,9 +78,9 @@ api.interceptors.response.use(
         const newAccessToken = responseData.accessToken;
         const newRefreshToken = responseData.refreshToken;
 
-        await SecureStore.setItemAsync('accessToken', newAccessToken);
+        await setToken('accessToken', newAccessToken);
         if (newRefreshToken) {
-          await SecureStore.setItemAsync('refreshToken', newRefreshToken);
+          await setToken('refreshToken', newRefreshToken);
         }
 
         processQueue(null, newAccessToken);
@@ -88,8 +88,8 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        await SecureStore.deleteItemAsync('accessToken');
-        await SecureStore.deleteItemAsync('refreshToken');
+        await deleteToken('accessToken');
+        await deleteToken('refreshToken');
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -108,16 +108,16 @@ export const authService = {
     // After unwrapping: response.data = { accessToken, refreshToken, user, ... }
     const { accessToken, refreshToken } = response.data;
     if (accessToken) {
-      await SecureStore.setItemAsync('accessToken', accessToken);
+      await setToken('accessToken', accessToken);
     }
     if (refreshToken) {
-      await SecureStore.setItemAsync('refreshToken', refreshToken);
+      await setToken('refreshToken', refreshToken);
     }
     return response.data;
   },
   logout: async () => {
-    await SecureStore.deleteItemAsync('accessToken');
-    await SecureStore.deleteItemAsync('refreshToken');
+    await deleteToken('accessToken');
+    await deleteToken('refreshToken');
   },
   getMe: async () => {
     const response = await api.get('/auth/me');

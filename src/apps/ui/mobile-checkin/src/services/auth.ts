@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import { authService } from './api';
+import { deleteToken, getToken } from './tokenStore';
 
 type AuthUser = {
   id: string;
@@ -12,7 +12,7 @@ export async function restoreSession(): Promise<{
   user: AuthUser | null;
 }> {
   try {
-    const accessToken = await SecureStore.getItemAsync('accessToken');
+    const accessToken = await getToken('accessToken');
     if (!accessToken) {
       return { status: 'unauthenticated', user: null };
     }
@@ -27,6 +27,6 @@ export async function restoreSession(): Promise<{
 }
 
 export async function clearSession() {
-  await SecureStore.deleteItemAsync('accessToken');
-  await SecureStore.deleteItemAsync('refreshToken');
+  await deleteToken('accessToken');
+  await deleteToken('refreshToken');
 }
