@@ -30,7 +30,7 @@ export class BookingService {
 
 		const show = await this.prisma.concertShow.findUnique({
 			where: { id: showId },
-			select: { salesOpensAt: true },
+			select: { salesOpensAt: true, concertId: true },
 		});
 		if (!show) {
 			throw new AppException(ErrorCode.ValidationFailed, { reason: 'show_not_found' });
@@ -100,6 +100,27 @@ export class BookingService {
 			currency = ticketType.currency
 		})
 
+		let couponId: string | null = null;
+		let discountAmount = new Prisma.Decimal(0);
+		let finalAmount = totalAmount;
+
+		if (parsed.data.couponCode) {
+			const coupon = await this.prisma.coupon.findUnique({
+				where: {
+					code_concertId: {
+						code: parsed.data.couponCode.toUpperCase(),
+						concertId: show.concertId
+					}
+				}
+			});
+			if (!coupon || !coupon.isActive || coupon.usedCount >= coupon.maxUsage) {
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'invalid_coupon' });
+			}
+			couponId = coupon.id;
+			discountAmount = totalAmount.mul(coupon.discountPercentage).div(100);
+			finalAmount = totalAmount.minus(discountAmount);
+		}
+
 		const expiresAt = new Date(Date.now() + BOOKING_TTL_MINUTES * 60 * 1000)
 
 		const lockKey = `lock:show:${showId}:booking`
@@ -157,6 +178,13 @@ export class BookingService {
 						const ticketType = ticketTypeMap.get(item.ticketTypeId)!
 						totalAmount = totalAmount.plus(ticketType.price.mul(item.quantity))
 					})
+					if (couponId) {
+						const coupon = await this.prisma.coupon.findUnique({ where: { id: couponId } });
+						if (coupon) {
+							discountAmount = totalAmount.mul(coupon.discountPercentage).div(100);
+						}
+					}
+					finalAmount = totalAmount.minus(discountAmount);
 				}
 
 				// 2. Decrement inventory for ticket types
@@ -190,15 +218,31 @@ export class BookingService {
 					}
 				}
 
+				// Apply coupon usage with pessimistic lock
+				if (couponId) {
+					const lockedCoupons: any[] = await tx.$queryRaw`SELECT * FROM "Coupon" WHERE id = ${couponId} FOR UPDATE`;
+					const currentCoupon = lockedCoupons[0];
+					if (!currentCoupon || currentCoupon.usedCount >= currentCoupon.maxUsage || !currentCoupon.isActive) {
+						throw new AppException(ErrorCode.ValidationFailed, { reason: 'coupon_exhausted' });
+					}
+					
+					await tx.coupon.update({
+						where: { id: couponId },
+						data: { usedCount: { increment: 1 } }
+					});
+				}
+
 				// 3. Create Booking
 				const booking = await tx.booking.create({
 					data: {
 						userId,
 						status: 'PENDING_PAYMENT',
 						expiresAt,
-						totalAmount,
+						totalAmount: finalAmount,
 						currency,
 						idempotencyKey: idempotencyKey ?? null,
+						couponId,
+						discountAmount,
 						items: {
 							create: finalItems.map((item) => {
 								const ticketType = ticketTypeMap.get(item.ticketTypeId)
@@ -236,7 +280,7 @@ export class BookingService {
 	async getBooking(id: string, userId: string) {
 		const booking = await this.prisma.booking.findFirst({
 			where: { id, userId },
-			include: { items: true, payments: true, tickets: true },
+			include: { items: true, payments: true, tickets: true, coupon: true },
 		})
 
 		if (!booking) {
@@ -313,5 +357,123 @@ export class BookingService {
 		}
 
 		return { success: true }
+	}
+
+	async applyCouponToBooking(bookingId: string, couponCode: string | undefined, userId: string) {
+		return this.prisma.$transaction(async (tx) => {
+			const booking = await tx.booking.findFirst({
+				where: { id: bookingId, userId },
+				include: { items: { include: { ticketType: true } } },
+			})
+
+			if (!booking) {
+				throw new AppException(ErrorCode.BookingNotFound)
+			}
+
+			if (booking.status !== 'PENDING_PAYMENT') {
+				throw new AppException(ErrorCode.BookingInvalidStatus, {
+					reason: 'booking_not_pending_payment',
+				})
+			}
+
+			// Calculate original total amount from items
+			let originalTotal = new Prisma.Decimal(0)
+			booking.items.forEach((item) => {
+				originalTotal = originalTotal.plus(item.unitPrice.mul(item.quantity))
+			})
+
+			// If couponCode is empty or undefined, remove the coupon
+			if (!couponCode || couponCode.trim() === '') {
+				if (booking.couponId) {
+					// Decrement previous coupon usedCount
+					await tx.coupon.update({
+						where: { id: booking.couponId },
+						data: { usedCount: { decrement: 1 } },
+					})
+				}
+
+				return tx.booking.update({
+					where: { id: bookingId },
+					data: {
+						couponId: null,
+						discountAmount: 0,
+						totalAmount: originalTotal,
+					},
+					include: { items: true, coupon: true },
+				})
+			}
+
+			const normalizedCode = couponCode.trim().toUpperCase()
+
+			// If the same coupon code is already applied, do nothing
+			if (booking.couponId) {
+				const currentCoupon = await tx.coupon.findUnique({
+					where: { id: booking.couponId }
+				})
+				if (currentCoupon && currentCoupon.code === normalizedCode) {
+					return booking
+				}
+			}
+
+			const firstItem = booking.items[0]
+			if (!firstItem) {
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'booking_has_no_items' })
+			}
+			const concertId = firstItem.ticketType.concertId
+
+			// Find the new coupon
+			const newCoupon = await tx.coupon.findUnique({
+				where: {
+					code_concertId: {
+						code: normalizedCode,
+						concertId: concertId,
+					},
+				},
+			})
+
+			if (!newCoupon) {
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'invalid_coupon' })
+			}
+
+			if (!newCoupon.isActive) {
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'coupon_inactive' })
+			}
+
+			// Pessimistic lock the coupon usage check
+			const lockedCoupons: any[] = await tx.$queryRaw`SELECT * FROM "Coupon" WHERE id = ${newCoupon.id} FOR UPDATE`
+			const lockedCoupon = lockedCoupons[0]
+			if (!lockedCoupon || lockedCoupon.usedCount >= lockedCoupon.maxUsage || !lockedCoupon.isActive) {
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'coupon_exhausted' })
+			}
+
+			// Decrement previous coupon usedCount if it existed
+			if (booking.couponId) {
+				await tx.coupon.update({
+					where: { id: booking.couponId },
+					data: { usedCount: { decrement: 1 } },
+				})
+			}
+
+			// Increment new coupon usedCount
+			await tx.coupon.update({
+				where: { id: newCoupon.id },
+				data: { usedCount: { increment: 1 } },
+			})
+
+			// Calculate discount
+			const discountAmount = originalTotal.mul(newCoupon.discountPercentage).div(100)
+			const finalAmount = originalTotal.minus(discountAmount)
+
+			// Update booking
+			return tx.booking.update({
+				where: { id: bookingId },
+				data: {
+					couponId: newCoupon.id,
+					discountAmount: discountAmount,
+					totalAmount: finalAmount,
+				},
+				include: { items: true, coupon: true },
+			})
+		})
 	}
 }

@@ -40,6 +40,16 @@ export async function fetchBookings() {
   return response.data?.data || response.data || [];
 }
 
+export async function fetchBookingById(bookingId) {
+  const response = await apiClient.get(`/bookings/${bookingId}`);
+  return response.data?.data || response.data || null;
+}
+
+export async function applyCoupon(bookingId, code) {
+  const response = await apiClient.post(`/bookings/${bookingId}/coupon`, { code });
+  return response.data?.data || response.data;
+}
+
 // Renamed internally but keeping the same function name to avoid breaking many files
 export async function createReservation(showId, items) {
   const response = await apiClient.post('/bookings/reservations', {
