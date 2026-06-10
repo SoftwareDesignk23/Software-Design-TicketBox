@@ -1,54 +1,83 @@
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, LogOut, FileText, Settings, Mic2, CircleDot } from 'lucide-react'
-import { clearStoredTokens, loadStoredTokens, logout as logoutRequest, currentUser } from '../../auth'
-import { useEffect, useState } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Ticket,
+  LogOut,
+  FileText,
+  Settings,
+  Mic2,
+  CircleDot,
+} from "lucide-react";
+import {
+  clearStoredTokens,
+  loadStoredTokens,
+  logout as logoutRequest,
+} from "../../auth";
+import { useAuth } from "../../AuthContext";
+import { useEffect } from "react";
 
 export function AdminLayout() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [userName, setUserName] = useState('Admin')
-  const [userRole, setUserRole] = useState('')
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isLoading, clearUserData } = useAuth();
 
   useEffect(() => {
-    const tokens = loadStoredTokens()
+    const tokens = loadStoredTokens();
     if (!tokens?.accessToken) {
-      navigate('/login')
-    } else {
-      currentUser(tokens.accessToken).then(user => {
-        setUserName(user.displayName || user.email || 'Admin')
-        setUserRole(user.role)
-
-        if (user.role === 'ADMIN' && location.pathname === '/') {
-          navigate('/accounts', { replace: true })
-        }
-      }).catch(e => {
-        console.error(e)
-      })
+      navigate("/login");
+      return;
     }
-  }, [navigate, location.pathname])
 
-  const handleLogout = async () => {
-    const tokens = loadStoredTokens()
-    if (tokens?.refreshToken) {
-      try {
-        await logoutRequest(tokens.refreshToken)
-      } catch (e) {
-        console.error(e)
-      }
+    // Auto-redirect ADMIN to /accounts (chỉ khi user role thay đổi)
+    if (user?.role === "ADMIN" && location.pathname === "/") {
+      navigate("/accounts", { replace: true });
     }
-    clearStoredTokens()
-    navigate('/login')
+  }, [user?.role]);
+
+  // Hiển thị loading nếu đang khôi phục user data
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#0b1118]">
+        <div className="text-white">Đang tải...</div>
+      </div>
+    );
   }
 
-  const navigation = userRole === 'ADMIN' ? [
-    { name: 'Organizer', href: '/accounts', icon: FileText },
-  ] : [
-    { name: 'Tổng quan', href: '/', icon: LayoutDashboard },
-    { name: 'Sự kiện', href: '/concerts', icon: CircleDot },
-    { name: 'Guestlist', href: '/guestlist', icon: Ticket },
-    { name: 'Nghệ sĩ', href: '/artists', icon: Mic2 },
-    { name: 'Nhân viên', href: '/staff', icon: Settings },
-  ]
+  // Logout nếu không có user data
+  if (!user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#0b1118]">
+        <div className="text-white">Đang tải...</div>
+      </div>
+    );
+  }
+
+  const handleLogout = async () => {
+    const tokens = loadStoredTokens();
+    if (tokens?.refreshToken) {
+      try {
+        await logoutRequest(tokens.refreshToken);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    clearStoredTokens();
+    clearUserData();
+    navigate("/login");
+  };
+
+  const navigation =
+    user.role === "ADMIN"
+      ? [{ name: "Organizer", href: "/accounts", icon: FileText }]
+      : [
+          { name: "Tổng quan", href: "/", icon: LayoutDashboard },
+          { name: "Sự kiện", href: "/concerts", icon: CircleDot },
+          { name: "Guestlist", href: "/guestlist", icon: Ticket },
+          { name: "Nghệ sĩ", href: "/artists", icon: Mic2 },
+          { name: "Nhân viên", href: "/staff", icon: Settings },
+        ];
+
+  const displayName = user.displayName || user.email || "Admin";
 
   return (
     <div className="flex h-screen bg-[#0b1118]">
@@ -59,32 +88,40 @@ export function AdminLayout() {
 
         <nav className="mt-10 flex-1 space-y-3">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href))
+            const isActive =
+              location.pathname === item.href ||
+              (item.href !== "/" && location.pathname.startsWith(item.href));
             return (
               <Link
                 key={item.name}
                 to={item.href}
                 className={`group flex items-center rounded-xl border-l-4 px-4 py-4 text-lg font-black transition ${
                   isActive
-                    ? 'border-[#ff7118] bg-[#1d2b3a] text-white'
-                    : 'border-transparent text-[#d6e1ee] hover:bg-[#172432] hover:text-white'
+                    ? "border-[#ff7118] bg-[#1d2b3a] text-white"
+                    : "border-transparent text-[#d6e1ee] hover:bg-[#172432] hover:text-white"
                 }`}
               >
-                <item.icon className={`mr-2 h-4 w-4 ${isActive ? 'text-white' : 'text-[#9fb2c8]'}`} />
+                <item.icon
+                  className={`mr-2 h-4 w-4 ${isActive ? "text-white" : "text-[#9fb2c8]"}`}
+                />
                 {item.name}
               </Link>
-            )
+            );
           })}
         </nav>
 
         <div className="border-t border-[#2a3848] pt-5">
           <div className="flex items-center rounded-2xl bg-[#111d29] p-4">
             <div className="mr-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#ff7118] text-xl font-black text-white">
-              A
+              {displayName.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-lg font-black text-white">{userName}</p>
-              <p className="text-sm font-semibold text-[#9fb2c8]">Full access</p>
+              <p className="truncate text-lg font-black text-white">
+                {displayName}
+              </p>
+              <p className="text-sm font-semibold text-[#9fb2c8]">
+                Full access
+              </p>
             </div>
             <button
               onClick={handleLogout}
@@ -101,5 +138,5 @@ export function AdminLayout() {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }
