@@ -12,12 +12,21 @@ export function TicketCard({ ticket }) {
     }
   }
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'CONFIRMED': return '#4ade80'
+      case 'CHECKED_IN': return '#60a5fa'
+      case 'CANCELLED': return '#f87171'
+      default: return '#a1a1aa'
+    }
+  }
+
   const handleDownloadQR = () => {
     const qrData = ticket.qrPayload || ticket.code;
     if (!qrData) return;
     
-    // Tìm thẻ SVG chứa QR
-    const svgNode = document.getElementById(`qr-${ticket.id}`);
+    // Tìm thẻ SVG full ticket
+    const svgNode = document.getElementById(`ticket-full-svg-${ticket.id}`);
     if (!svgNode) return;
     
     // Chuyển SVG sang dạng chuỗi
@@ -41,7 +50,7 @@ export function TicketCard({ ticket }) {
     // Tải xuống
     const a = document.createElement('a');
     a.href = url;
-    a.download = `TicketBox-QR-${ticket.code}.svg`;
+    a.download = `TicketBox-${ticket.eventName?.replace(/[^a-zA-Z0-9]/g, '-') || 'Ticket'}-${ticket.code}.svg`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -113,6 +122,74 @@ export function TicketCard({ ticket }) {
           </div>
         )}
         <p className="text-xs text-muted">Sẵn sàng check-in ngoại tuyến</p>
+      </div>
+
+      {/* Hidden Full Ticket SVG for Download */}
+      <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        <svg id={`ticket-full-svg-${ticket.id}`} width="850" height="350" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id={`bg-grad-${ticket.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#18181b" />
+              <stop offset="100%" stopColor="#27272a" />
+            </linearGradient>
+            <mask id={`ticket-mask-${ticket.id}`}>
+              <rect width="850" height="350" rx="24" fill="white" />
+              <circle cx="600" cy="0" r="20" fill="black" />
+              <circle cx="600" cy="350" r="20" fill="black" />
+            </mask>
+          </defs>
+
+          {/* Background */}
+          <rect width="850" height="350" fill={`url(#bg-grad-${ticket.id})`} mask={`url(#ticket-mask-${ticket.id})`} />
+          
+          {/* Dashed Line */}
+          <line x1="600" y1="30" x2="600" y2="320" stroke="#52525b" strokeWidth="2" strokeDasharray="8 8" />
+
+          {/* Left Content */}
+          <text x="50" y="60" fontSize="24" fontWeight="900" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '2px' }}>
+            <tspan fill="#ffffff">TICKET</tspan><tspan fill="#a855f7">BOX</tspan>
+          </text>
+          
+          <text x="50" y="130" fill="#ffffff" fontSize="28" fontWeight="bold" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+            {ticket.eventName?.length > 35 ? ticket.eventName.substring(0, 35) + '...' : ticket.eventName}
+          </text>
+          <text x="50" y="165" fill="#a1a1aa" fontSize="18" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+            {ticket.venue?.length > 50 ? ticket.venue.substring(0, 50) + '...' : ticket.venue}
+          </text>
+
+          {/* Grid of Details */}
+          {/* Row 1 */}
+          <text x="50" y="230" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Ngày diễn'.toUpperCase()}</text>
+          <text x="50" y="255" fill="#ffffff" fontSize="18" fontWeight="600" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{formatLongDate(ticket.date)}</text>
+          
+          <text x="250" y="230" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Thời gian'.toUpperCase()}</text>
+          <text x="250" y="255" fill="#ffffff" fontSize="18" fontWeight="600" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{formatTime(ticket.date)}</text>
+          
+          <text x="400" y="230" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Trạng thái'.toUpperCase()}</text>
+          <text x="400" y="255" fill={getStatusColor(ticket.status)} fontSize="18" fontWeight="600" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{getStatusText(ticket.status)}</text>
+          
+          {/* Row 2 */}
+          <text x="50" y="295" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Hạng vé'.toUpperCase()}</text>
+          <text x="50" y="320" fill="#ffffff" fontSize="18" fontWeight="600" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{ticket.tier}</text>
+          
+          <text x="250" y="295" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Chỗ ngồi'.toUpperCase()}</text>
+          <text x="250" y="320" fill="#a855f7" fontSize="20" fontWeight="bold" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{ticket.seats || '---'}</text>
+
+          {/* Right Content (QR Code) */}
+          <rect x="645" y="50" width="160" height="160" rx="16" fill="#ffffff" />
+          <svg x="660" y="65" width="130" height="130">
+            {ticket.qrPayload || ticket.code ? (
+              <QRCode 
+                value={ticket.qrPayload || ticket.code} 
+                size={130} 
+                viewBox={`0 0 130 130`} 
+              />
+            ) : null}
+          </svg>
+          
+          <text x="725" y="250" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }} textAnchor="middle">{'Mã vé'.toUpperCase()}</text>
+          <text x="725" y="275" fill="#ffffff" fontSize="18" fontWeight="600" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" textAnchor="middle" style={{ letterSpacing: '2px' }}>{ticket.code || ticket.id.slice(0, 8).toUpperCase()}</text>
+        </svg>
       </div>
     </div>
   )
