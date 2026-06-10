@@ -8,6 +8,7 @@ export function ConcertDetailPage() {
   const navigate = useNavigate()
   const [concert, setConcert] = useState(null)
   const [artists, setArtists] = useState([])
+  const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('shows')
 
@@ -31,18 +32,24 @@ export function ConcertDetailPage() {
   const [newArtistId, setNewArtistId] = useState('')
   const [newArtistRole, setNewArtistRole] = useState('Ca sĩ chính')
 
+  const [newCouponCode, setNewCouponCode] = useState('')
+  const [newCouponDiscount, setNewCouponDiscount] = useState('')
+  const [newCouponMaxUsage, setNewCouponMaxUsage] = useState('')
+
   const fetchData = async () => {
     try {
       setLoading(true)
       const tokens = loadStoredTokens()
       
-      const [concertData, artistsData] = await Promise.all([
+      const [concertData, artistsData, couponsData] = await Promise.all([
         request(`/concerts/${id}`),
-        request('/admin/artists', { headers: { Authorization: `Bearer ${tokens.accessToken}` } })
+        request('/admin/artists', { headers: { Authorization: `Bearer ${tokens.accessToken}` } }),
+        request(`/concerts/${id}/coupons`, { headers: { Authorization: `Bearer ${tokens.accessToken}` } }).catch(() => [])
       ])
       
       setConcert(concertData)
       setArtists(artistsData)
+      setCoupons(couponsData)
       if (artistsData.length > 0) setNewArtistId(artistsData[0].id)
     } catch (e) {
       console.error(e)
@@ -201,6 +208,50 @@ export function ConcertDetailPage() {
     }
   }
 
+  const handleCreateCoupon = async () => {
+    if (!newCouponCode || !newCouponDiscount || !newCouponMaxUsage) return alert('Nhập đủ thông tin mã giảm giá')
+    try {
+      const tokens = loadStoredTokens()
+      await request(`/concerts/${id}/coupons`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${tokens.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: newCouponCode,
+          discountPercentage: Number(newCouponDiscount),
+          maxUsage: Number(newCouponMaxUsage)
+        })
+      })
+      setNewCouponCode('')
+      setNewCouponDiscount('')
+      setNewCouponMaxUsage('')
+      fetchData()
+    } catch (e) {
+      alert('Lỗi tạo mã giảm giá: ' + e.message)
+    }
+  }
+
+  const handleToggleCoupon = async (coupon) => {
+    try {
+      const tokens = loadStoredTokens()
+      await request(`/concerts/${id}/coupons/${coupon.id}`, {
+        method: 'PATCH',
+        headers: { 
+          Authorization: `Bearer ${tokens.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          isActive: !coupon.isActive
+        })
+      })
+      fetchData()
+    } catch (e) {
+      alert('Lỗi cập nhật mã giảm giá: ' + e.message)
+    }
+  }
+
   if (loading) return <div className="p-8 text-center text-muted">Đang tải...</div>
   if (!concert) return <div className="p-8 text-center text-error">Không tìm thấy sự kiện</div>
 
@@ -217,6 +268,7 @@ export function ConcertDetailPage() {
         <button onClick={() => setActiveTab('shows')} className={`px-4 py-2 font-medium border-b-2 transition-colors ${activeTab === 'shows' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'}`}>Suất diễn</button>
         <button onClick={() => setActiveTab('tickets')} className={`px-4 py-2 font-medium border-b-2 transition-colors ${activeTab === 'tickets' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'}`}>Hạng vé</button>
         <button onClick={() => setActiveTab('artists')} className={`px-4 py-2 font-medium border-b-2 transition-colors ${activeTab === 'artists' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'}`}>Nghệ sĩ</button>
+        <button onClick={() => setActiveTab('coupons')} className={`px-4 py-2 font-medium border-b-2 transition-colors ${activeTab === 'coupons' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'}`}>Mã giảm giá</button>
       </div>
 
       {activeTab === 'shows' && (
@@ -467,6 +519,65 @@ export function ConcertDetailPage() {
                   </tr>
                 ))}
                 {!concert.artists?.length && <tr><td colSpan="3" className="px-6 py-4 text-center text-muted">Chưa có nghệ sĩ nào</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'coupons' && (
+        <div className="space-y-6">
+          <div className="bg-surface-2 p-4 rounded-xl border border-subtle space-y-4">
+            <h3 className="font-bold text-primary">Thêm mã giảm giá</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Mã (Code)</label>
+                <input type="text" placeholder="VD: SUMMER20" value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value)} className="w-full rounded-md border border-subtle bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Giảm giá (%)</label>
+                <input type="number" placeholder="VD: 20" value={newCouponDiscount} onChange={(e) => setNewCouponDiscount(e.target.value)} className="w-full rounded-md border border-subtle bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Giới hạn sử dụng</label>
+                <input type="number" placeholder="VD: 100" value={newCouponMaxUsage} onChange={(e) => setNewCouponMaxUsage(e.target.value)} className="w-full rounded-md border border-subtle bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
+              </div>
+            </div>
+            <button onClick={handleCreateCoupon} className="flex items-center rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover shadow-sm transition-colors">
+              <Plus className="mr-2 h-4 w-4" /> Thêm Mã Giảm Giá
+            </button>
+          </div>
+
+          <div className="bg-surface-1 rounded-xl border border-subtle overflow-hidden">
+            <table className="min-w-full divide-y divide-subtle">
+              <thead className="bg-surface-2">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">Mã (Code)</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">Giảm giá</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">Đã dùng / Giới hạn</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">Trạng thái</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted uppercase">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-subtle">
+                {coupons?.map(c => (
+                  <tr key={c.id}>
+                    <td className="px-6 py-4 text-sm font-bold text-primary">{c.code}</td>
+                    <td className="px-6 py-4 text-sm text-primary">{c.discountPercentage}%</td>
+                    <td className="px-6 py-4 text-sm text-primary">{c.usedCount} / {c.maxUsage}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${c.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {c.isActive ? 'Đang hoạt động' : 'Tạm khóa'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button onClick={() => handleToggleCoupon(c)} className="text-sm text-accent hover:underline">
+                        {c.isActive ? 'Khóa' : 'Mở khóa'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {!coupons?.length && <tr><td colSpan="5" className="px-6 py-4 text-center text-muted">Chưa có mã giảm giá nào</td></tr>}
               </tbody>
             </table>
           </div>
