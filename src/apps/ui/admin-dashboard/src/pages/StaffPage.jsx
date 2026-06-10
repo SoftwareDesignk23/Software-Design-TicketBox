@@ -134,14 +134,10 @@ export function StaffPage() {
                   <td className="whitespace-nowrap px-6 py-4">
                     <button 
                       onClick={() => handleUpdateStatus(user.id, user.isActive)}
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors ${
-                        user.isActive 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50' 
-                        : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-                      }`}
+                      className={`status-pill ${user.isActive ? 'status-pill-active' : 'status-pill-locked'}`}
                     >
-                      {user.isActive ? <CheckCircle className="w-3 h-3"/> : <XCircle className="w-3 h-3"/>}
-                      {user.isActive ? 'Hoạt động' : 'Khóa'}
+                      {user.isActive ? <CheckCircle aria-hidden="true" /> : <XCircle aria-hidden="true" />}
+                      {user.isActive ? 'Hoạt động' : 'Bị khóa'}
                     </button>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">

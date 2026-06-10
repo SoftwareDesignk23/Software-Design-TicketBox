@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, LogOut, FileText } from 'lucide-react'
+import { LayoutDashboard, Ticket, LogOut, FileText, Settings, Diamond, CircleDot } from 'lucide-react'
 import { clearStoredTokens, loadStoredTokens, logout as logoutRequest, currentUser } from '../../auth'
 import { useEffect, useState } from 'react'
 
@@ -17,15 +17,12 @@ export function AdminLayout() {
       currentUser(tokens.accessToken).then(user => {
         setUserName(user.displayName || user.email || 'Admin')
         setUserRole(user.role)
-        
-        // Redirect ADMIN away from Organizer Dashboard
+
         if (user.role === 'ADMIN' && location.pathname === '/') {
           navigate('/accounts', { replace: true })
         }
       }).catch(e => {
         console.error(e)
-        // Optionally redirect on invalid token
-        // navigate('/login')
       })
     }
   }, [navigate, location.pathname])
@@ -44,57 +41,54 @@ export function AdminLayout() {
   }
 
   const navigation = userRole === 'ADMIN' ? [
-    { name: 'Quản lý Organizer', href: '/accounts', icon: FileText },
+    { name: 'Organizer', href: '/accounts', icon: FileText },
   ] : [
     { name: 'Tổng quan', href: '/', icon: LayoutDashboard },
-    { name: 'Sự kiện', href: '/concerts', icon: Ticket },
-    { name: 'Nhân viên', href: '/staff', icon: FileText },
-    { name: 'Khách mời (CSV)', href: '/guestlist', icon: FileText },
-    { name: 'Nghệ sĩ & AI', href: '/artists', icon: FileText },
+    { name: 'Sự kiện', href: '/concerts', icon: CircleDot },
+    { name: 'Đơn vé', href: '/guestlist', icon: Ticket },
+    { name: 'Doanh thu', href: '/artists', icon: Diamond },
+    { name: 'Cấu hình', href: '/staff', icon: Settings },
   ]
 
   return (
-    <div className="flex h-screen bg-surface-1">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-subtle bg-surface-2 flex flex-col">
-        <div className="flex h-16 shrink-0 items-center px-6">
-          <span className="text-xl font-bold text-primary">TicketBox Admin</span>
+    <div className="flex h-screen bg-[#0b1118]">
+      <aside className="flex w-[294px] shrink-0 flex-col bg-[#101922] px-5 py-6 text-white">
+        <div className="text-3xl font-black tracking-[-0.04em]">
+          Ticket<span className="text-[#ff7118]">Ops</span>
         </div>
-        <nav className="flex-1 space-y-1 px-4 py-4">
+
+        <nav className="mt-10 flex-1 space-y-3">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href))
             return (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`group flex items-center rounded-md px-2 py-2 text-sm font-medium ${
+                className={`group flex items-center rounded-xl border-l-4 px-4 py-4 text-lg font-black transition ${
                   isActive
-                    ? 'bg-surface-3 text-primary'
-                    : 'text-muted hover:bg-surface-3 hover:text-primary'
+                    ? 'border-[#ff7118] bg-[#1d2b3a] text-white'
+                    : 'border-transparent text-[#d6e1ee] hover:bg-[#172432] hover:text-white'
                 }`}
               >
-                <item.icon
-                  className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                    isActive ? 'text-primary' : 'text-muted group-hover:text-primary'
-                  }`}
-                  aria-hidden="true"
-                />
+                <item.icon className={`mr-2 h-4 w-4 ${isActive ? 'text-white' : 'text-[#9fb2c8]'}`} />
                 {item.name}
               </Link>
             )
           })}
         </nav>
-        <div className="border-t border-subtle p-4">
-          <div className="flex items-center w-full px-2">
-            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white font-bold mr-3">
+
+        <div className="border-t border-[#2a3848] pt-5">
+          <div className="flex items-center rounded-2xl bg-[#111d29] p-4">
+            <div className="mr-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#ff7118] text-xl font-black text-white">
               A
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-primary truncate">{userName}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-lg font-black text-white">{userName}</p>
+              <p className="text-sm font-semibold text-[#9fb2c8]">Full access</p>
             </div>
             <button
               onClick={handleLogout}
-              className="text-muted hover:text-error"
+              className="text-[#9fb2c8] transition hover:text-[#ff7118]"
               title="Đăng xuất"
             >
               <LogOut className="h-5 w-5" />
@@ -103,11 +97,8 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="py-6 px-8 h-full">
-          <Outlet />
-        </div>
+      <main className="min-w-0 flex-1 overflow-y-auto bg-[#eef2f6]">
+        <Outlet />
       </main>
     </div>
   )
