@@ -218,19 +218,18 @@ export class BookingService {
 					}
 				}
 
-				// Apply coupon usage with optimistic lock
+				// Apply coupon usage with pessimistic lock
 				if (couponId) {
-					const currentCoupon = await tx.coupon.findUnique({ where: { id: couponId } });
+					const lockedCoupons: any[] = await tx.$queryRaw`SELECT * FROM "Coupon" WHERE id = ${couponId} FOR UPDATE`;
+					const currentCoupon = lockedCoupons[0];
 					if (!currentCoupon || currentCoupon.usedCount >= currentCoupon.maxUsage || !currentCoupon.isActive) {
 						throw new AppException(ErrorCode.ValidationFailed, { reason: 'coupon_exhausted' });
 					}
-					const updatedCoupon = await tx.coupon.updateMany({
-						where: { id: couponId, usedCount: currentCoupon.usedCount },
+					
+					await tx.coupon.update({
+						where: { id: couponId },
 						data: { usedCount: { increment: 1 } }
 					});
-					if (updatedCoupon.count === 0) {
-						throw new AppException(ErrorCode.ValidationFailed, { reason: 'coupon_concurrent_modification' });
-					}
 				}
 
 				// 3. Create Booking
