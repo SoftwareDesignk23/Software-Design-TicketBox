@@ -10,8 +10,8 @@ import { useAuthStore } from '../../shared/stores/authStore'
 import { useNotifications } from '../../features/notifications/hooks/useNotifications'
 
 const navLinkClass = ({ isActive }) =>
-	`rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 border ${
-		isActive ? 'glass-panel text-primary border-glow shadow-glow' : 'text-muted border-transparent hover:text-primary hover:bg-surface-2 hover:border-glow hover:shadow-glow'
+	`rounded-full px-5 py-2 text-sm font-bold transition-all duration-300 border ${
+		isActive ? 'bg-white/10 text-[color:var(--accent)] border-[color:var(--accent)]/50 shadow-[0_0_15px_color-mix(in_oklab,var(--accent)_30%,transparent)]' : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5 hover:border-white/20'
 	}`
 
 export function AppShell() {
@@ -23,50 +23,49 @@ export function AppShell() {
 	const unreadCount = notifications?.filter(n => n.unread || !n.isRead)?.length || 0
 
 	return (
-		<div className="min-h-screen">
+		<div className="min-h-screen relative flex flex-col">
 			<a
 				href="#main-content"
-				className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-surface-2 focus:px-4 focus:py-2"
+				className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-white/10 focus:px-4 focus:py-2 text-white"
 			>
-				Skip to content
+				Chuyển đến nội dung chính
 			</a>
-			<header className="sticky top-0 z-30 border-b border-subtle bg-black/40 backdrop-blur-xl">
+			<header className="sticky top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
 				<div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4 lg:px-10">
-					<div className="flex items-center gap-4">
-						<Link to="/" className="group flex items-center gap-2">
-							<div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--accent)] to-[color:var(--accent-2)] text-white shadow-glow transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
+					<div className="flex items-center gap-6">
+						<Link to="/" className="group flex items-center gap-3">
+							<div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--accent)] to-[color:var(--accent-2)] text-white shadow-[0_0_15px_color-mix(in_oklab,var(--accent)_50%,transparent)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 group-hover:shadow-[0_0_25px_color-mix(in_oklab,var(--accent)_80%,transparent)]">
 								<Ticket className="h-5 w-5" aria-hidden="true" />
 							</div>
-							<span className="text-xl font-bold tracking-tight text-primary transition-colors group-hover:text-accent">TicketBox</span>
+							<span className="text-xl font-extrabold tracking-tight text-white transition-colors group-hover:text-[color:var(--accent)] drop-shadow-md hidden sm:block">TicketBox</span>
 						</Link>
-						<Badge variant="accent" className="hidden md:inline-flex">
-							Drop window: 10:00 AM
+						<Badge variant="accent" className="hidden md:inline-flex bg-[color:var(--accent)]/20 text-[color:var(--accent)] border-[color:var(--accent)]/30 font-bold tracking-wider">
+							Mở bán: 10:00 AM
 						</Badge>
-						<span className="hidden text-xs text-soft lg:inline-flex">Queue status: stable</span>
 					</div>
-					<nav className="hidden items-center gap-2 md:flex">
+					<nav className="hidden items-center gap-2 md:flex bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-md">
 						<NavLink to="/events" className={navLinkClass}>
-							Events
+							Sự kiện
 						</NavLink>
 						<NavLink to="/tickets" className={navLinkClass}>
-							My Tickets
+							Ví vé
 						</NavLink>
 						<NavLink to="/history" className={navLinkClass}>
-							History
+							Lịch sử
 						</NavLink>
 						<NavLink to="/profile" className={navLinkClass}>
-							Profile
+							Hồ sơ
 						</NavLink>
 					</nav>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-3">
 						<button
 							type="button"
 							onClick={() => {
 								toggleSearch()
 								closeNotifications()
 							}}
-							className="flex h-10 w-10 items-center justify-center rounded-full border border-subtle bg-surface-2 text-primary transition hover:bg-surface-3"
-							aria-label="Open search"
+							className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-gray-300 transition-all duration-300 hover:bg-white/10 hover:text-white hover:border-white/20 hover:scale-105 active:scale-95 shadow-sm"
+							aria-label="Tìm kiếm"
 						>
 							<Search className="h-4 w-4" />
 						</button>
@@ -74,13 +73,15 @@ export function AppShell() {
 							<button
 								type="button"
 								onClick={toggleNotifications}
-								className="relative flex h-10 w-10 items-center justify-center rounded-full border border-subtle bg-surface-2 text-primary transition hover:bg-surface-3"
-								aria-label="Open notifications"
+								className={`relative flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm ${
+									isNotificationsOpen ? 'bg-white/10 text-[color:var(--accent)] border-[color:var(--accent)]/50 shadow-[0_0_15px_color-mix(in_oklab,var(--accent)_30%,transparent)]' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white hover:border-white/20'
+								}`}
+								aria-label="Thông báo"
 								aria-expanded={isNotificationsOpen}
 							>
 								<Bell className="h-4 w-4" />
 								{unreadCount > 0 && (
-									<span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[color:var(--error)] text-[10px] font-bold text-white shadow-sm">
+									<span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse">
 										{unreadCount}
 									</span>
 								)}
@@ -88,18 +89,16 @@ export function AppShell() {
 							{isNotificationsOpen ? <NotificationDropdown /> : null}
 						</div>
 						{status === 'authenticated' ? (
-							<Button
-								variant="secondary"
-								size="sm"
-								className="hidden sm:inline-flex"
-								onClick={() => logout()}
+							<button
+								className="hidden sm:inline-flex rounded-full bg-white/5 border border-white/10 px-5 py-2 text-sm font-bold text-gray-300 transition-all duration-300 hover:bg-white/10 hover:text-white hover:border-white/20 hover:scale-105 active:scale-95 shadow-sm"
+								onClick={async () => { await logout() }}
 							>
-								{`Sign out${user ? ` (${user.displayName})` : ''}`}
-							</Button>
+								{`Đăng xuất${user ? ` (${user.displayName})` : ''}`}
+							</button>
 						) : (
-							<Button asChild variant="secondary" size="sm" className="hidden sm:inline-flex">
-								<Link to="/auth">Sign in</Link>
-							</Button>
+							<Link to="/auth" className="hidden sm:inline-flex rounded-full px-5 py-2 text-sm font-bold text-white transition-all duration-300 bg-[color:var(--accent)] hover:bg-[color:var(--accent-2)] shadow-[0_0_15px_color-mix(in_oklab,var(--accent)_30%,transparent)] hover:shadow-[0_0_25px_color-mix(in_oklab,var(--accent)_60%,transparent)] hover:scale-105 active:scale-95">
+								Đăng nhập
+							</Link>
 						)}
 					</div>
 				</div>
@@ -107,18 +106,18 @@ export function AppShell() {
 
 			<SearchOverlay />
 
-			<nav className="fixed bottom-6 left-1/2 z-20 flex w-[calc(100%-3rem)] -translate-x-1/2 items-center justify-between rounded-full border border-subtle glass-panel px-5 py-2 text-xs text-muted shadow-elevated md:hidden">
+			<nav className="fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-3rem)] max-w-sm -translate-x-1/2 items-center justify-between rounded-full border border-white/10 bg-black/60 backdrop-blur-2xl px-2 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.8)] md:hidden">
 				<NavLink to="/events" className={navLinkClass}>
-					Events
+					Sự kiện
 				</NavLink>
 				<NavLink to="/tickets" className={navLinkClass}>
-					Tickets
+					Ví vé
 				</NavLink>
 				<NavLink to="/history" className={navLinkClass}>
-					History
+					Lịch sử
 				</NavLink>
 				<NavLink to="/profile" className={navLinkClass}>
-					Profile
+					Hồ sơ
 				</NavLink>
 			</nav>
 
@@ -126,7 +125,7 @@ export function AppShell() {
 				<motion.main
 					key={location.pathname}
 					id="main-content"
-					className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-6 pb-24 pt-10 lg:px-10"
+					className="mx-auto flex w-full max-w-7xl flex-col flex-1 gap-20 px-6 pb-24 pt-10 lg:px-10"
 					initial={{ opacity: 0, y: 16 }}
 					animate={{ opacity: 1, y: 0 }}
 					exit={{ opacity: 0, y: -8 }}
@@ -136,25 +135,25 @@ export function AppShell() {
 				</motion.main>
 			</AnimatePresence>
 
-			<footer className="relative mt-20 border-t border-subtle bg-black/40 backdrop-blur-lg">
-				<div className="absolute inset-0 bg-grid-pattern opacity-50" />
-				<div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-					<div className="space-y-3">
+			<footer className="relative mt-auto border-t border-white/10 bg-black/40 backdrop-blur-lg overflow-hidden">
+				<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-[color:var(--accent)]/10 via-black/0 to-black/0 pointer-events-none" />
+				<div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-16 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+					<div className="space-y-4">
 						<h3 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--accent)] to-[color:var(--accent-2)] drop-shadow-md">Sẵn sàng săn vé?</h3>
-						<p className="text-muted text-lg font-light max-w-md">
+						<p className="text-gray-400 text-lg font-medium max-w-md">
 							Cập nhật lịch mở bán, quản lý vé QR và trải nghiệm nền tảng phân phối vé công bằng nhất.
 						</p>
-						<p className="text-xs text-soft font-mono tracking-widest uppercase">
+						<p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase">
 							Hệ thống chịu tải cực đại
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-4">
-						<Button asChild size="lg" className="rounded-full shadow-glow">
-							<Link to="/events">Khám phá sự kiện</Link>
-						</Button>
-						<Button asChild variant="outline" size="lg" className="rounded-full hover:border-glow hover:shadow-glow transition-all duration-300">
-							<Link to="/tickets">Xem ví vé</Link>
-						</Button>
+						<Link to="/events" className="rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 bg-[color:var(--accent)] hover:bg-[color:var(--accent-2)] shadow-[0_0_20px_color-mix(in_oklab,var(--accent)_40%,transparent)] hover:shadow-[0_0_30px_color-mix(in_oklab,var(--accent)_70%,transparent)] hover:-translate-y-1 active:translate-y-0">
+							Khám phá sự kiện
+						</Link>
+						<Link to="/tickets" className="rounded-full bg-white/5 border border-white/10 px-8 py-4 text-sm font-bold text-white transition-all duration-300 hover:bg-white/10 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:-translate-y-1 active:translate-y-0">
+							Xem ví vé
+						</Link>
 					</div>
 				</div>
 			</footer>
