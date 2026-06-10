@@ -1,40 +1,48 @@
 @import "tailwindcss";
 
 :root {
-  --ink-900: oklch(0.16 0.01 260);
-  --ink-800: oklch(0.2 0.012 260);
-  --ink-700: oklch(0.26 0.014 260);
+  /* Deep Dark Mode Theme */
+  --ink-900: oklch(0.12 0.01 260); /* Deeper black */
+  --ink-800: oklch(0.16 0.01 260);
+  --ink-700: oklch(0.22 0.01 260);
   --fog-100: oklch(0.86 0.02 260);
-  --ember-500: oklch(0.68 0.17 35);
-  --ember-400: oklch(0.72 0.16 35);
-  --cyan-400: oklch(0.78 0.14 210);
-  --success: oklch(0.73 0.15 145);
-  --warning: oklch(0.79 0.15 85);
+  
+  /* Modern Accent: Electric Blue to Neon Purple */
+  --accent: oklch(0.65 0.25 280); /* Bright Purple-Blue */
+  --accent-hover: oklch(0.7 0.2 280);
+  --accent-2: oklch(0.65 0.2 240); /* Bright Blue */
+  
+  /* Semantic */
+  --success: oklch(0.7 0.15 150);
+  --warning: oklch(0.75 0.15 80);
   --error: oklch(0.6 0.2 25);
 
-  --bg: var(--ink-900);
-  --surface-1: oklch(0.19 0.012 260);
-  --surface-2: oklch(0.23 0.012 260);
-  --surface-3: oklch(0.28 0.014 260);
-  --surface-4: oklch(0.32 0.016 260);
-  --border: oklch(0.3 0.015 260);
-  --text-primary: oklch(0.92 0.015 260);
-  --text-muted: oklch(0.72 0.02 260);
-  --text-soft: oklch(0.62 0.02 260);
+  /* Surface layers */
+  --bg: #000000;
+  --surface-1: rgba(255, 255, 255, 0.03); /* Glassy */
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-3: rgba(255, 255, 255, 0.08);
+  --surface-4: rgba(255, 255, 255, 0.12);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(255, 255, 255, 0.15);
+  
+  /* Text */
+  --text-primary: oklch(0.96 0.01 260);
+  --text-muted: oklch(0.7 0.01 260);
+  --text-soft: oklch(0.55 0.01 260);
 
-  --accent: var(--ember-500);
-  --accent-hover: var(--ember-400);
-  --accent-2: var(--cyan-400);
+  /* Shadows */
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.8);
+  --shadow-glow: 0 0 20px color-mix(in oklab, var(--accent) 30%, transparent);
 
-  --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 18px 36px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 28px 60px rgba(0, 0, 0, 0.45);
-
-  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  /* Typography */
+  font-family: "Inter", "Space Grotesk", system-ui, -apple-system, sans-serif;
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
   color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -53,22 +61,11 @@ body {
 
 body {
   margin: 0;
-  background: radial-gradient(
-      1100px 520px at 75% -12%,
-      oklch(0.32 0.08 35 / 0.28),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 520px at 0% 18%,
-      oklch(0.3 0.05 210 / 0.22),
-      transparent 62%
-    ),
-    linear-gradient(
-      140deg,
-      oklch(0.18 0.012 260) 0%,
-      oklch(0.16 0.012 260) 45%,
-      oklch(0.14 0.012 260) 100%
-    );
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120, 119, 198, 0.15), transparent),
+    radial-gradient(ellipse 80% 50% at 50% 120%, rgba(120, 119, 198, 0.1), transparent);
+  background-attachment: fixed;
   color: var(--text-primary);
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -104,8 +101,8 @@ h3,
 h4,
 h5 {
   margin: 0;
-  font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
-  letter-spacing: -0.01em;
+  font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
 
@@ -156,6 +153,10 @@ p {
     border-color: var(--border);
   }
 
+  .border-glow {
+    border-color: var(--border-glow);
+  }
+
   .text-accent {
     color: var(--accent);
   }
@@ -165,7 +166,7 @@ p {
   }
 
   .bg-accent-soft {
-    background-color: color-mix(in oklab, var(--accent) 18%, transparent);
+    background-color: color-mix(in oklab, var(--accent) 15%, transparent);
   }
 
   .shadow-soft {
@@ -180,6 +181,17 @@ p {
     box-shadow: var(--shadow-lg);
   }
 
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glass-panel {
+    background-color: var(--surface-1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+  }
+
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -187,6 +199,36 @@ p {
     overflow: hidden;
   }
 }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-delay-100 { animation-delay: 100ms; opacity: 0; }
+.animate-delay-200 { animation-delay: 200ms; opacity: 0; }
+.animate-delay-300 { animation-delay: 300ms; opacity: 0; }
+.animate-delay-400 { animation-delay: 400ms; opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -10,8 +10,8 @@ import { useAuthStore } from '../../shared/stores/authStore'
 import { useNotifications } from '../../features/notifications/hooks/useNotifications'
 
 const navLinkClass = ({ isActive }) =>
-	`rounded-full px-4 py-2 text-sm font-medium transition ${
-		isActive ? 'bg-surface-2 text-primary' : 'text-muted hover:text-primary hover:bg-surface-2'
+	`rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 border ${
+		isActive ? 'glass-panel text-primary border-glow shadow-glow' : 'text-muted border-transparent hover:text-primary hover:bg-surface-2 hover:border-glow hover:shadow-glow'
 	}`
 
 export function AppShell() {
@@ -30,14 +30,14 @@ export function AppShell() {
 			>
 				Skip to content
 			</a>
-			<header className="sticky top-0 z-30 border-b border-subtle bg-[color:color-mix(in_oklab,_var(--bg)_92%,_transparent)] backdrop-blur">
+			<header className="sticky top-0 z-30 border-b border-subtle glass-panel rounded-b-3xl">
 				<div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4 lg:px-10">
 					<div className="flex items-center gap-4">
-						<Link to="/" className="flex items-center gap-2">
-							<div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent text-[color:var(--ink-900)] shadow-soft">
+						<Link to="/" className="group flex items-center gap-2">
+							<div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--accent)] to-[color:var(--accent-2)] text-white shadow-glow transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
 								<Ticket className="h-5 w-5" aria-hidden="true" />
 							</div>
-							<span className="text-lg font-semibold text-primary">TicketBox</span>
+							<span className="text-xl font-bold tracking-tight text-primary transition-colors group-hover:text-accent">TicketBox</span>
 						</Link>
 						<Badge variant="accent" className="hidden md:inline-flex">
 							Drop window: 10:00 AM
@@ -138,12 +138,12 @@ export function AppShell() {
 
 			<footer className="border-t border-subtle bg-surface-1">
 				<div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-					<div className="space-y-2">
-						<h3 className="text-xl font-semibold text-primary">Ready for the next drop?</h3>
+					<div className="space-y-3">
+						<h3 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--text-primary)] to-[color:var(--text-muted)]">Ready for the next drop?</h3>
 						<p className="text-muted">
 							Track drops, save favorites, and access your tickets instantly.
 						</p>
-						<p className="text-xs text-soft">
+						<p className="text-xs text-soft font-mono">
 							Built for high-demand nights and zero-stress check-in.
 						</p>
 					</div>

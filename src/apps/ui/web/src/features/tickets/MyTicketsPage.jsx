@@ -11,7 +11,7 @@ export function MyTicketsPage() {
   const nextTicket = data?.find(t => new Date(t.date) > new Date()) || data?.[0]
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-10 animate-fade-in-up">
       <SectionHeading
         eyebrow="Vé của tôi"
         title="Danh sách vé đã mua của bạn"
@@ -19,18 +19,18 @@ export function MyTicketsPage() {
       />
 
       {nextTicket && (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-subtle bg-surface-1 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[32px] border border-subtle glass-panel p-8 shadow-soft">
           <div>
             <p className="text-sm text-muted">Sự kiện sắp diễn ra</p>
             <p className="text-lg font-semibold text-primary">
               {nextTicket.eventName}, {new Date(nextTicket.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button className="rounded-full border border-subtle px-4 py-2 text-xs text-muted hover:bg-surface-2">
+          <div className="flex flex-wrap gap-3">
+            <button className="rounded-full border border-subtle px-4 py-2 text-xs font-semibold text-[color:var(--accent)] transition-all duration-300 hover:bg-accent hover:text-white shadow-[0_0_10px_color-mix(in_oklab,var(--accent)_20%,transparent)] hover:shadow-[0_0_20px_color-mix(in_oklab,var(--accent)_50%,transparent)]">
               Tải xuống tất cả QR
             </button>
-            <button className="rounded-full border border-subtle px-4 py-2 text-xs text-muted hover:bg-surface-2">
+            <button className="rounded-full border border-subtle px-4 py-2 text-xs font-semibold text-muted transition-all duration-300 hover:bg-surface-3 hover:text-primary hover:border-glow hover:shadow-glow">
               Chế độ ngoại tuyến
             </button>
           </div>

@@ -21,14 +21,14 @@ export function EventCard({ event }) {
   return (
     <Link
       to={`/events/${event.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-subtle bg-surface-1 transition hover:border-[color:var(--accent)]"
+      className="group flex h-full flex-col overflow-hidden rounded-[32px] border border-subtle glass-panel transition-all duration-500 hover:-translate-y-2 hover:border-glow hover:shadow-glow"
     >
       <div className="relative h-48 overflow-hidden bg-surface-2">
         {event.heroImageUrl ? (
           <img
             src={getPublicImageUrl(event.heroImageUrl)}
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             loading="lazy"
           />
         ) : (
@@ -39,10 +39,10 @@ export function EventCard({ event }) {
           />
         )}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(11,12,20,0)_0%,_rgba(11,12,20,0.75)_75%)]" />
-        <div className="absolute inset-0 flex flex-col justify-between p-5">
-          <div className="flex items-center justify-between text-xs text-soft">
-            <span className="uppercase tracking-[0.3em]">Live Tour</span>
-            <span>Fair drop</span>
+        <div className="absolute inset-0 flex flex-col justify-between p-6">
+          <div className="flex items-center justify-between text-xs font-semibold text-white">
+            <span className="uppercase tracking-[0.3em] drop-shadow-md">Live Tour</span>
+            <span className="rounded-full bg-black/40 backdrop-blur-md px-3 py-1 shadow-soft">Fair drop</span>
           </div>
           <div>
             <p className="text-lg font-semibold text-primary">
@@ -59,8 +59,9 @@ export function EventCard({ event }) {
             {minRemaining}-{maxRemaining} seats
           </span>
         </div>
+        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-5">
+      <div className="flex flex-1 flex-col gap-4 p-6">
         <div className="flex items-center justify-between">
           <Badge variant="accent">{event.venue?.address || 'Vietnam'}</Badge>
           <span className="text-xs text-soft">
@@ -68,10 +69,10 @@ export function EventCard({ event }) {
           </span>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-primary">
+          <h3 className="text-xl font-bold tracking-tight text-primary transition-colors group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[color:var(--accent)] group-hover:to-[color:var(--accent-2)]">
             {event.title}
           </h3>
-          <p className="mt-2 text-sm text-muted line-clamp-2" dangerouslySetInnerHTML={{ __html: event.description }} />
+          <p className="mt-3 text-sm text-muted line-clamp-2" dangerouslySetInnerHTML={{ __html: event.description }} />
         </div>
         <div className="mt-auto flex items-center justify-between text-xs text-soft">
           <span>{event.venue?.name}</span>

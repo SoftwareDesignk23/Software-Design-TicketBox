@@ -16,26 +16,27 @@ export function LandingPage() {
 
   return (
     <div className="flex flex-col gap-20">
-      <section className="relative overflow-hidden rounded-[36px] border border-subtle bg-surface-1 p-8 md:p-12">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(246,153,70,0.28),_transparent_58%)]" />
-        <div className="absolute right-[-20%] top-[-10%] h-72 w-72 rounded-full bg-[color:color-mix(in_oklab,_var(--accent)_20%,_transparent)] blur-3xl" />
+      <section className="relative overflow-hidden rounded-[36px] border border-subtle glass-panel p-8 md:p-12 animate-fade-in-up">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.15),_transparent_60%)]" />
+        <div className="absolute right-[-10%] top-[-10%] h-96 w-96 rounded-full bg-[color:color-mix(in_oklab,_var(--accent)_20%,_transparent)] blur-[100px] animate-pulse" />
+        <div className="absolute left-[-10%] bottom-[-10%] h-80 w-80 rounded-full bg-[color:color-mix(in_oklab,_var(--accent-2)_15%,_transparent)] blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
         <div className="relative grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-7">
             <Badge variant="accent">Nền tảng bán vé hàng đầu</Badge>
             <div className="space-y-4">
-              <h1 className="text-4xl font-semibold text-primary md:text-5xl lg:text-6xl">
+              <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/60 md:text-6xl lg:text-7xl animate-fade-in-up">
                 Săn vé concert đỉnh cao cùng TicketBox
               </h1>
-              <p className="text-base text-muted md:text-lg">
+              <p className="text-lg text-muted md:text-xl font-light animate-fade-in-up animate-delay-100">
                 TicketBox mang đến trải nghiệm săn vé công bằng, nhanh chóng và mượt mà nhất. 
                 Khám phá những show diễn hot nhất Việt Nam, chọn chỗ ngồi ưa thích và thanh toán an toàn trong vài phút.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg">
+            <div className="flex flex-wrap gap-4 animate-fade-in-up animate-delay-200">
+              <Button asChild size="lg" className="rounded-full">
                 <Link to="/events">Khám phá sự kiện</Link>
               </Button>
-              <Button asChild variant="secondary" size="lg">
+              <Button asChild variant="secondary" size="lg" className="rounded-full">
                 <Link to="/tickets">Xem vé của tôi</Link>
               </Button>
             </div>
@@ -54,10 +55,10 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="relative grid gap-4">
+          <div className="relative grid gap-5 animate-fade-in-up animate-delay-300">
             {nextDrop ? (
-              <div className="rounded-3xl border border-subtle bg-surface-2 p-6 shadow-strong">
-                <p className="text-xs uppercase tracking-[0.3em] text-soft">
+              <div className="rounded-3xl border border-subtle glass-panel p-6 shadow-strong hover:-translate-y-1 hover:shadow-glow hover:border-glow transition-all duration-300">
+                <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--accent)] font-semibold">
                   Sắp mở bán
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-primary">
@@ -74,8 +75,8 @@ export function LandingPage() {
             ) : null}
             
             {liveNow ? (
-              <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-soft">
+              <div className="rounded-3xl border border-subtle glass-panel p-6 shadow-strong hover:-translate-y-1 hover:shadow-glow hover:border-glow transition-all duration-300">
+                <p className="text-xs uppercase tracking-[0.3em] text-success font-semibold">
                   Đang mở bán
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-primary">
@@ -111,15 +112,15 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="grid gap-10 rounded-[32px] border border-subtle bg-surface-1 p-8 md:p-12">
+      <section className="grid gap-10 rounded-[36px] border border-subtle glass-panel p-8 md:p-12 animate-fade-in-up animate-delay-200">
         <SectionHeading
           eyebrow="Vì sao chọn TicketBox"
           title="Hệ thống được thiết kế cho các sự kiện lớn"
           description="Mọi tính năng đều hướng tới việc bảo vệ tính công bằng, giảm lo âu cho khán giả và tập trung vào trải nghiệm nghệ thuật."
         />
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
-            <h3 className="text-xl font-semibold text-primary">Kiểm soát xếp hàng công bằng</h3>
+          <div className="rounded-3xl border border-subtle glass-panel p-8 hover:border-glow hover:shadow-glow transition-all duration-300">
+            <h3 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-muted">Kiểm soát xếp hàng công bằng</h3>
             <p className="mt-3 text-sm text-muted">
               Bảo vệ hệ thống khỏi quá tải, chặn bot tự động, và đảm bảo giới hạn vé cho mỗi tài khoản hoạt động chính xác ngay cả khi có hàng chục nghìn người truy cập.
             </p>
@@ -135,16 +136,16 @@ export function LandingPage() {
             </div>
           </div>
           <div className="grid gap-6">
-            <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
-              <h3 className="text-lg font-semibold text-primary">
+            <div className="rounded-3xl border border-subtle glass-panel p-6 hover:border-glow hover:shadow-glow transition-all duration-300">
+              <h3 className="text-lg font-bold text-primary">
                 Sơ đồ ghế trực quan
               </h3>
               <p className="mt-3 text-sm text-muted">
                 Bản đồ ghế ngồi tương tác với số lượng vé cập nhật theo thời gian thực, giúp bạn chọn chính xác vị trí mong muốn.
               </p>
             </div>
-            <div className="rounded-3xl border border-subtle bg-surface-2 p-6">
-              <h3 className="text-lg font-semibold text-primary">
+            <div className="rounded-3xl border border-subtle glass-panel p-6 hover:border-glow hover:shadow-glow transition-all duration-300">
+              <h3 className="text-lg font-bold text-primary">
                 Sẵn sàng check-in khi mất mạng
               </h3>
               <p className="mt-3 text-sm text-muted">
@@ -170,9 +171,9 @@ export function LandingPage() {
           ].map((item, index) => (
             <div
               key={item}
-              className="flex items-center gap-4 rounded-2xl border border-subtle bg-surface-2 px-5 py-4 text-sm text-muted"
+              className="flex items-center gap-4 rounded-2xl border border-subtle glass-panel px-6 py-5 text-sm text-muted hover:-translate-x-1 hover:border-glow transition-all duration-300"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-subtle bg-surface-3 text-xs font-semibold text-primary">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-subtle bg-surface-3 text-sm font-bold text-[color:var(--accent)] shadow-glow">
                 {index + 1}
               </span>
               <span>{item}</span>

@@ -34,7 +34,7 @@ function ArtistCard({ item }) {
         ref={cardRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="relative flex-shrink-0 w-80 snap-start rounded-3xl border border-subtle bg-surface-2 p-6 transition-all hover:border-accent hover:shadow-lg cursor-default flex flex-col"
+        className="relative flex-shrink-0 w-80 snap-start rounded-[32px] border border-subtle glass-panel p-6 transition-all duration-300 hover:-translate-y-2 hover:border-glow hover:shadow-glow cursor-default flex flex-col"
       >
         <div className="flex items-center gap-4">
           <img 
@@ -54,7 +54,7 @@ function ArtistCard({ item }) {
 
       {isHovered && item.artist.bio && createPortal(
         <div 
-          className="absolute z-[9999] w-96 shadow-2xl border border-subtle bg-surface-1 rounded-3xl p-6 pointer-events-none animate-in fade-in zoom-in-95 duration-200"
+          className="absolute z-[9999] w-96 shadow-elevated border border-subtle glass-panel rounded-3xl p-6 pointer-events-none animate-in fade-in zoom-in-95 duration-200"
           style={{ 
             top: coords.top + 16, // 16px below the card
             left: coords.left,
@@ -121,7 +121,7 @@ export function EventDetailPage() {
           />
         </div>
       )}
-      <section className="grid gap-6 rounded-[32px] border border-subtle bg-surface-1 p-8 md:p-12 lg:grid-cols-[1.1fr_0.9fr] mt-4">
+      <section className="grid gap-6 rounded-[36px] border border-subtle glass-panel p-8 md:p-12 lg:grid-cols-[1.1fr_0.9fr] mt-4 animate-fade-in-up">
         <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="accent">{data.venue?.address || 'Việt Nam'}</Badge>
@@ -167,8 +167,8 @@ export function EventDetailPage() {
           </div>
         </div>
         <div className="grid gap-4">
-          <div className="relative overflow-hidden rounded-3xl border border-subtle bg-surface-2 p-6">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(246,153,70,0.2),_transparent_60%)]" />
+          <div className="relative overflow-hidden rounded-[32px] border border-subtle glass-panel p-8 hover:border-glow hover:shadow-glow transition-all duration-300">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.15),_transparent_60%)]" />
             <div className="relative space-y-3">
               <p className="text-xs uppercase tracking-[0.3em] text-soft">
                 Tình trạng mở bán
@@ -200,7 +200,7 @@ export function EventDetailPage() {
       </section>
 
       {data.artists?.length > 0 && (
-        <section className="grid gap-6 rounded-[32px] border border-subtle bg-surface-1 p-8 md:p-12">
+        <section className="grid gap-6 rounded-[36px] border border-subtle glass-panel p-8 md:p-12 animate-fade-in-up animate-delay-100">
           <SectionHeading
             eyebrow="Đội hình nghệ sĩ"
             title="Gặp gỡ các nghệ sĩ tham gia"
@@ -223,7 +223,7 @@ export function EventDetailPage() {
         <TicketTierTable tiers={data.ticketTypes || []} />
       </section>
 
-      <section className="grid gap-8 rounded-[32px] border border-subtle bg-surface-1 p-8">
+      <section className="grid gap-8 rounded-[36px] border border-subtle glass-panel p-8 md:p-12 animate-fade-in-up animate-delay-200">
         <SectionHeading
           eyebrow="Thông tin địa điểm"
           title="Đến nơi và check-in"
@@ -246,7 +246,7 @@ export function EventDetailPage() {
           ].map((item) => (
             <div
               key={item.title}
-              className="rounded-3xl border border-subtle bg-surface-2 p-6"
+              className="rounded-3xl border border-subtle glass-panel p-6 hover:-translate-y-1 hover:border-glow hover:shadow-glow transition-all duration-300"
             >
               <h3 className="text-lg font-semibold text-primary">
                 {item.title}
