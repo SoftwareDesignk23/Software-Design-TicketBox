@@ -30,7 +30,7 @@ export class BookingService {
 
 		const show = await this.prisma.concertShow.findUnique({
 			where: { id: showId },
-			select: { salesOpensAt: true },
+			select: { salesOpensAt: true, concertId: true },
 		});
 		if (!show) {
 			throw new AppException(ErrorCode.ValidationFailed, { reason: 'show_not_found' });
@@ -100,6 +100,27 @@ export class BookingService {
 			currency = ticketType.currency
 		})
 
+		let couponId: string | null = null;
+		let discountAmount = new Prisma.Decimal(0);
+		let finalAmount = totalAmount;
+
+		if (parsed.data.couponCode) {
+			const coupon = await this.prisma.coupon.findUnique({
+				where: {
+					code_concertId: {
+						code: parsed.data.couponCode.toUpperCase(),
+						concertId: show.concertId
+					}
+				}
+			});
+			if (!coupon || !coupon.isActive || coupon.usedCount >= coupon.maxUsage) {
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'invalid_coupon' });
+			}
+			couponId = coupon.id;
+			discountAmount = totalAmount.mul(coupon.discountPercentage).div(100);
+			finalAmount = totalAmount.minus(discountAmount);
+		}
+
 		const expiresAt = new Date(Date.now() + BOOKING_TTL_MINUTES * 60 * 1000)
 
 		const lockKey = `lock:show:${showId}:booking`
@@ -157,6 +178,13 @@ export class BookingService {
 						const ticketType = ticketTypeMap.get(item.ticketTypeId)!
 						totalAmount = totalAmount.plus(ticketType.price.mul(item.quantity))
 					})
+					if (couponId) {
+						const coupon = await this.prisma.coupon.findUnique({ where: { id: couponId } });
+						if (coupon) {
+							discountAmount = totalAmount.mul(coupon.discountPercentage).div(100);
+						}
+					}
+					finalAmount = totalAmount.minus(discountAmount);
 				}
 
 				// 2. Decrement inventory for ticket types
@@ -190,15 +218,32 @@ export class BookingService {
 					}
 				}
 
+				// Apply coupon usage with optimistic lock
+				if (couponId) {
+					const currentCoupon = await tx.coupon.findUnique({ where: { id: couponId } });
+					if (!currentCoupon || currentCoupon.usedCount >= currentCoupon.maxUsage || !currentCoupon.isActive) {
+						throw new AppException(ErrorCode.ValidationFailed, { reason: 'coupon_exhausted' });
+					}
+					const updatedCoupon = await tx.coupon.updateMany({
+						where: { id: couponId, usedCount: currentCoupon.usedCount },
+						data: { usedCount: { increment: 1 } }
+					});
+					if (updatedCoupon.count === 0) {
+						throw new AppException(ErrorCode.ValidationFailed, { reason: 'coupon_concurrent_modification' });
+					}
+				}
+
 				// 3. Create Booking
 				const booking = await tx.booking.create({
 					data: {
 						userId,
 						status: 'PENDING_PAYMENT',
 						expiresAt,
-						totalAmount,
+						totalAmount: finalAmount,
 						currency,
 						idempotencyKey: idempotencyKey ?? null,
+						couponId,
+						discountAmount,
 						items: {
 							create: finalItems.map((item) => {
 								const ticketType = ticketTypeMap.get(item.ticketTypeId)
