@@ -30,7 +30,7 @@ export function AppShell() {
 			>
 				Skip to content
 			</a>
-			<header className="sticky top-0 z-30 border-b border-subtle glass-panel rounded-b-3xl">
+			<header className="sticky top-0 z-30 border-b border-subtle bg-black/40 backdrop-blur-xl">
 				<div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4 lg:px-10">
 					<div className="flex items-center gap-4">
 						<Link to="/" className="group flex items-center gap-2">
@@ -107,7 +107,7 @@ export function AppShell() {
 
 			<SearchOverlay />
 
-			<nav className="fixed bottom-6 left-1/2 z-20 flex w-[calc(100%-3rem)] -translate-x-1/2 items-center justify-between rounded-full border border-subtle bg-[color:color-mix(in_oklab,_var(--surface-2)_92%,_transparent)] px-5 py-2 text-xs text-muted backdrop-blur md:hidden">
+			<nav className="fixed bottom-6 left-1/2 z-20 flex w-[calc(100%-3rem)] -translate-x-1/2 items-center justify-between rounded-full border border-subtle glass-panel px-5 py-2 text-xs text-muted shadow-elevated md:hidden">
 				<NavLink to="/events" className={navLinkClass}>
 					Events
 				</NavLink>
@@ -136,23 +136,24 @@ export function AppShell() {
 				</motion.main>
 			</AnimatePresence>
 
-			<footer className="border-t border-subtle bg-surface-1">
-				<div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+			<footer className="relative mt-20 border-t border-subtle bg-black/40 backdrop-blur-lg">
+				<div className="absolute inset-0 bg-grid-pattern opacity-50" />
+				<div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-10">
 					<div className="space-y-3">
-						<h3 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--text-primary)] to-[color:var(--text-muted)]">Ready for the next drop?</h3>
-						<p className="text-muted">
-							Track drops, save favorites, and access your tickets instantly.
+						<h3 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--accent)] to-[color:var(--accent-2)] drop-shadow-md">Sẵn sàng săn vé?</h3>
+						<p className="text-muted text-lg font-light max-w-md">
+							Cập nhật lịch mở bán, quản lý vé QR và trải nghiệm nền tảng phân phối vé công bằng nhất.
 						</p>
-						<p className="text-xs text-soft font-mono">
-							Built for high-demand nights and zero-stress check-in.
+						<p className="text-xs text-soft font-mono tracking-widest uppercase">
+							Hệ thống chịu tải cực đại
 						</p>
 					</div>
-					<div className="flex flex-wrap items-center gap-3">
-						<Button asChild>
-							<Link to="/events">Explore events</Link>
+					<div className="flex flex-wrap items-center gap-4">
+						<Button asChild size="lg" className="rounded-full shadow-glow">
+							<Link to="/events">Khám phá sự kiện</Link>
 						</Button>
-						<Button asChild variant="outline">
-							<Link to="/tickets">View tickets</Link>
+						<Button asChild variant="outline" size="lg" className="rounded-full hover:border-glow hover:shadow-glow transition-all duration-300">
+							<Link to="/tickets">Xem ví vé</Link>
 						</Button>
 					</div>
 				</div>
