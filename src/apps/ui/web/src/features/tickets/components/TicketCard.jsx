@@ -1,8 +1,12 @@
+import { useState } from 'react'
 import { Badge } from '../../../shared/ui/badge'
 import { formatLongDate, formatTime } from '../../../shared/utils/format'
 import QRCode from 'react-qr-code'
 
 export function TicketCard({ ticket }) {
+  const [isHovered, setIsHovered] = useState(false)
+  const [isClicked, setIsClicked] = useState(false)
+  const showQR = isHovered || isClicked
   const getStatusText = (status) => {
     switch (status) {
       case 'CONFIRMED': return 'Đã xác nhận'
@@ -123,12 +127,18 @@ export function TicketCard({ ticket }) {
 
       {/* QR Code Section */}
       <div className="relative flex flex-col items-center justify-center p-8 lg:p-10 bg-gradient-to-br from-white/5 to-transparent z-10 border-t lg:border-t-0 border-white/10">
-        <div className="group/qr relative p-4 rounded-3xl bg-white/10 border border-white/20 backdrop-blur-xl shadow-2xl transition-transform duration-500 hover:scale-105">
-          <div className="absolute inset-0 bg-white opacity-0 group-hover/qr:opacity-100 transition-opacity duration-300 rounded-3xl z-0" />
+        <div 
+          className="group/qr relative p-4 rounded-3xl bg-white/10 border border-white/20 backdrop-blur-xl shadow-2xl transition-all duration-500 hover:scale-105 cursor-pointer overflow-hidden"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={() => setIsClicked(!isClicked)}
+        >
+          {/* White background for scanning when QR is shown */}
+          <div className={`absolute inset-0 bg-white transition-opacity duration-300 rounded-3xl z-0 ${showQR ? 'opacity-100' : 'opacity-0'}`} />
           
           <div className="relative z-10 flex flex-col items-center gap-3">
             {ticket.qrPayload || ticket.code ? (
-              <div className="grid h-36 w-36 place-items-center rounded-2xl bg-white p-3 shadow-inner">
+              <div className={`grid h-36 w-36 place-items-center rounded-2xl p-3 shadow-inner transition-all duration-500 ${showQR ? 'bg-white blur-0' : 'bg-white/5 blur-md'}`}>
                 <QRCode 
                   id={`qr-${ticket.id}`}
                   value={ticket.qrPayload || ticket.code}
@@ -142,6 +152,15 @@ export function TicketCard({ ticket }) {
                 QR
               </div>
             )}
+          </div>
+
+          {/* Security Overlay (Screen Peeking protection) */}
+          <div className={`absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-black/75 backdrop-blur-[6px] rounded-3xl z-20 transition-all duration-500 select-none ${showQR ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-[color:var(--accent)] mb-2 animate-pulse">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            <span className="text-[10px] font-bold text-gray-200 uppercase tracking-wider leading-snug">Chạm hoặc di chuột</span>
+            <span className="text-[9px] text-gray-400 mt-0.5">để hiển thị mã QR</span>
           </div>
         </div>
         <p className="mt-6 text-xs text-gray-400 font-medium uppercase tracking-widest text-center">Sẵn sàng check-in<br/>ngoại tuyến</p>
