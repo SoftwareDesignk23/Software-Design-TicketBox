@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, LogOut, FileText, Settings, Diamond, CircleDot } from 'lucide-react'
+import { LayoutDashboard, Ticket, LogOut, FileText, Settings, Mic2, CircleDot } from 'lucide-react'
 import { clearStoredTokens, loadStoredTokens, logout as logoutRequest, currentUser } from '../../auth'
 import { useEffect, useState } from 'react'
 
@@ -45,9 +45,9 @@ export function AdminLayout() {
   ] : [
     { name: 'Tổng quan', href: '/', icon: LayoutDashboard },
     { name: 'Sự kiện', href: '/concerts', icon: CircleDot },
-    { name: 'Đơn vé', href: '/guestlist', icon: Ticket },
-    { name: 'Doanh thu', href: '/artists', icon: Diamond },
-    { name: 'Cấu hình', href: '/staff', icon: Settings },
+    { name: 'Guestlist', href: '/guestlist', icon: Ticket },
+    { name: 'Nghệ sĩ', href: '/artists', icon: Mic2 },
+    { name: 'Nhân viên', href: '/staff', icon: Settings },
   ]
 
   return (

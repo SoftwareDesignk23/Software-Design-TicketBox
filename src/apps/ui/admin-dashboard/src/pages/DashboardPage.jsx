@@ -7,11 +7,9 @@ import {
   CalendarDays,
   CircleDollarSign,
   Clock3,
-  RefreshCw,
   ShieldCheck,
   Ticket,
   TrendingUp,
-  WalletCards,
 } from 'lucide-react'
 
 const formatVnd = (value) => `${Number(value || 0).toLocaleString('vi-VN')} VND`
@@ -142,10 +140,6 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <div className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl border border-[#cbd6e2] bg-white px-4 text-sm font-black text-[#061527] shadow-[0_10px_24px_rgba(15,35,58,0.06)]">
-          <RefreshCw className="h-4 w-4 text-[#ff7118]" />
-          Snapshot mới nhất
-        </div>
       </header>
 
       <section className="mt-7 grid gap-4 lg:grid-cols-3">
