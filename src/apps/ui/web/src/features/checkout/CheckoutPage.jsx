@@ -139,14 +139,14 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1.4fr_0.9fr]">
+    <div className="grid gap-10 lg:grid-cols-[1.4fr_0.9fr] animate-fade-in-up">
       <div className="space-y-8">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="accent">Bước 3 / 3</Badge>
-            <span className="text-sm text-soft">Ghế đã được giữ an toàn</span>
+            <span className="text-sm text-soft font-mono tracking-tight">Ghế đã được giữ an toàn</span>
           </div>
-          <h1 className="text-3xl font-semibold text-primary">
+          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-muted">
             Hoàn tất thanh toán
           </h1>
           <p className="text-sm text-muted">
@@ -154,8 +154,8 @@ export function CheckoutPage() {
           </p>
         </div>
 
-        <div className="rounded-3xl border border-subtle bg-surface-1 p-6">
-          <h2 className="text-lg font-semibold text-primary">Thông tin khán giả</h2>
+        <div className="rounded-[32px] border border-subtle glass-panel p-8 hover:border-glow hover:shadow-glow transition-all duration-300">
+          <h2 className="text-xl font-bold tracking-tight text-primary">Thông tin khán giả</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="space-y-2 text-xs uppercase tracking-[0.2em] text-soft">
               Họ và tên
@@ -204,15 +204,15 @@ export function CheckoutPage() {
           </p>
         </div>
 
-        <div className="rounded-3xl border border-subtle bg-surface-1 p-6">
-          <h2 className="text-lg font-semibold text-primary">
+        <div className="rounded-[32px] border border-subtle glass-panel p-8 hover:border-glow hover:shadow-glow transition-all duration-300">
+          <h2 className="text-xl font-bold tracking-tight text-primary">
             Phương thức thanh toán
           </h2>
           <div className="mt-4 grid gap-3">
             {['VNPAY'].map((method) => (
               <label
                 key={method}
-                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm transition ${paymentMethod === method ? 'border-[color:var(--accent)] bg-surface-2' : 'border-subtle bg-surface-1'}`}
+                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm transition-all duration-300 cursor-pointer ${paymentMethod === method ? 'border-glow shadow-glow bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]' : 'border-subtle bg-surface-1 hover:border-glow hover:bg-surface-2'}`}
               >
                 <span>{method}</span>
                 <input 
@@ -229,17 +229,17 @@ export function CheckoutPage() {
             Cổng thanh toán đang hoạt động ổn định. Nếu gặp sự cố, bạn có thể thử lại mà không lo bị trừ tiền hai lần cho cùng một hóa đơn.
           </div>
         </div>
-        <div className="rounded-3xl border border-subtle bg-surface-1 p-6">
-          <h2 className="text-lg font-semibold text-primary">Lưu ý hỗ trợ</h2>
+        <div className="rounded-[32px] border border-subtle glass-panel p-8 hover:border-glow hover:shadow-glow transition-all duration-300">
+          <h2 className="text-xl font-bold tracking-tight text-primary">Lưu ý hỗ trợ</h2>
           <p className="mt-2 text-sm text-muted">
             Vui lòng giữ tab này mở cho tới khi thanh toán hoàn tất. Vé QR sẽ được cấp và gửi đến bạn ngay lập tức sau khi giao dịch thành công.
           </p>
         </div>
       </div>
 
-      <aside className="flex h-fit flex-col gap-6 rounded-[32px] border border-subtle bg-surface-1 p-6">
-        <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-soft">
+      <aside className="flex h-fit flex-col gap-6 rounded-[32px] border border-subtle glass-panel p-8 hover:border-glow hover:shadow-glow transition-all duration-300 animate-fade-in-up animate-delay-200">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.3em] font-semibold text-[color:var(--accent)] drop-shadow-md">
             Tóm tắt đơn hàng
           </p>
           <h3 className="text-xl font-semibold text-primary">

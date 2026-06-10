@@ -297,7 +297,7 @@ export class BookingService {
 				items: {
 					include: {
 						ticketType: {
-							select: { name: true },
+							select: { name: true, concert: { select: { title: true } } },
 						},
 						showSeat: {
 							include: { seat: true }

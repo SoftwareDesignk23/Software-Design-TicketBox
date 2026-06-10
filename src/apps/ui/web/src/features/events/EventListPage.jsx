@@ -1,34 +1,55 @@
 import { useEvents } from './hooks/useEvents'
-import { Badge } from '../../shared/ui/badge'
 import { SectionHeading } from '../../shared/components/SectionHeading'
 import { EventCard } from './components/EventCard'
 import { EventCardSkeleton } from './components/EventCardSkeleton'
 import { EmptyState } from '../../shared/components/EmptyState'
 import { ErrorState } from '../../shared/components/ErrorState'
+import { useState } from 'react'
 
 const filters = ['Tất cả', 'Sự kiện HOT', 'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng']
 
 export function EventListPage() {
   const { data, isLoading, isError, refetch } = useEvents()
+  const [activeFilter, setActiveFilter] = useState('Tất cả')
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="relative flex flex-col gap-10 min-h-screen">
+      {/* Background Enhancements */}
+      <div className="absolute top-0 left-1/4 h-[600px] w-[600px] rounded-full bg-[color:color-mix(in_oklab,_var(--accent)_15%,_transparent)] blur-[120px] pointer-events-none animate-pulse" />
+      <div className="absolute top-1/2 right-1/4 h-[500px] w-[500px] rounded-full bg-[color:color-mix(in_oklab,_var(--accent-2)_10%,_transparent)] blur-[100px] pointer-events-none" />
+
       <SectionHeading
+        align="center"
         eyebrow="Lịch sự kiện"
         title="Khám phá các sự kiện sắp diễn ra"
         description="Thông tin vé trực tiếp, các hạng vé rõ ràng và hệ thống xếp hàng công bằng."
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-subtle pb-6">
+        <div className="flex w-full overflow-x-auto pb-2 md:pb-0 hide-scrollbar gap-3" style={{ scrollbarWidth: 'none' }}>
           {filters.map((filter) => (
-            <Badge key={filter} variant={filter === 'Tất cả' ? 'accent' : 'default'}>
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-medium transition-all duration-300 ${
+                activeFilter === filter
+                  ? 'bg-surface-3 text-primary border border-glow shadow-glow'
+                  : 'bg-surface-1/50 text-muted border border-transparent hover:bg-surface-2 hover:text-primary'
+              }`}
+            >
               {filter}
-            </Badge>
+            </button>
           ))}
         </div>
-        <div className="text-sm text-soft">
-          {isLoading ? 'Đang tải sự kiện...' : `${data?.length || 0} sự kiện`}
+        <div className="whitespace-nowrap text-sm text-soft bg-surface-2 px-4 py-2 rounded-full border border-subtle glass-panel">
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[color:var(--accent)] animate-pulse"></span>
+              Đang tải...
+            </span>
+          ) : (
+            `${data?.length || 0} sự kiện`
+          )}
         </div>
       </div>
 
@@ -48,12 +69,18 @@ export function EventListPage() {
         />
       ) : null}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="relative z-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading
           ? Array.from({ length: 6 }).map((_, index) => (
-              <EventCardSkeleton key={`event-${index}`} />
+              <div key={`event-${index}`} className={index === 0 ? "md:col-span-2 lg:col-span-2 xl:col-span-2" : ""}>
+                <EventCardSkeleton />
+              </div>
             ))
-          : data?.map((event) => <EventCard key={event.id} event={event} />)}
+          : data?.map((event, index) => (
+              <div key={event.id} className={index === 0 ? "md:col-span-2 lg:col-span-2 xl:col-span-2" : ""}>
+                <EventCard event={event} isFeatured={index === 0} />
+              </div>
+            ))}
       </div>
     </div>
   )
