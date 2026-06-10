@@ -170,7 +170,7 @@ export function GuestlistPage() {
     <div className="min-h-full bg-[#edf2f7] px-8 py-7 text-[#061527]">
       <header className="flex items-start justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-black tracking-[-0.035em] text-[#061527]">Guestlist</h1>
+          <h1 className="text-4xl font-black tracking-[-0.035em] text-[#061527]">Danh sách khách mời</h1>
           <p className="mt-2 text-lg font-semibold text-[#4f6075]">
             Import khách mời bằng CSV, theo dõi tiến trình xử lý và danh sách vé đã cấp.
           </p>
