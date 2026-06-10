@@ -21,11 +21,11 @@ export function LandingPage() {
         <div className="absolute top-0 h-[500px] w-[500px] rounded-full bg-[color:color-mix(in_oklab,_var(--accent)_20%,_transparent)] blur-[120px] animate-pulse" />
         <div className="relative z-10 flex max-w-4xl flex-col items-center gap-8">
           <Badge variant="accent" className="px-4 py-2 text-sm shadow-glow animate-fade-in-up">Nền tảng bán vé thế hệ mới</Badge>
-          <div className="space-y-6">
-            <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 md:text-6xl lg:text-8xl animate-fade-in-up animate-delay-100">
+          <div className="space-y-6 flex flex-col items-center text-center w-full">
+            <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 md:text-6xl lg:text-8xl animate-fade-in-up animate-delay-100 text-center">
               Chuẩn Mực Mới Của <br/> Nền Tảng Phân Phối Vé.
             </h1>
-            <p className="mx-auto max-w-2xl text-lg text-muted md:text-xl font-light leading-relaxed animate-fade-in-up animate-delay-200">
+            <p className="mx-auto max-w-2xl text-center !text-center text-lg text-muted md:text-xl font-light leading-relaxed animate-fade-in-up animate-delay-200" style={{ textAlign: 'center', margin: '0 auto' }}>
               Trải nghiệm mua vé mượt mà, công bằng và hoàn toàn tự động. Hạ tầng kỹ thuật mạnh mẽ sẵn sàng xử lý hàng trăm nghìn truy cập cùng lúc, mang đến sự an tâm tuyệt đối cho nhà tổ chức và khán giả.
             </p>
           </div>
