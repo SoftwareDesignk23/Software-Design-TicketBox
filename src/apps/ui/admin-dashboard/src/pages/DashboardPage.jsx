@@ -2,21 +2,23 @@ import { useEffect, useMemo, useState } from 'react'
 import { request, loadStoredTokens } from '../auth'
 import {
   Activity,
-  ArrowUpRight,
+  AlertCircle,
+  BarChart3,
   CalendarDays,
   CircleDollarSign,
   Clock3,
-  RadioTower,
+  RefreshCw,
   ShieldCheck,
   Ticket,
+  TrendingUp,
   WalletCards,
 } from 'lucide-react'
 
-const formatVnd = (value) =>
-  `${Number(value || 0).toLocaleString('vi-VN')} VND`
+const formatVnd = (value) => `${Number(value || 0).toLocaleString('vi-VN')} VND`
 
-const compactNumber = (value) =>
-  Number(value || 0).toLocaleString('vi-VN')
+const compactNumber = (value) => Number(value || 0).toLocaleString('vi-VN')
+
+const percent = (value) => `${Math.round(value)}%`
 
 export function DashboardPage() {
   const [stats, setStats] = useState(null)
@@ -44,44 +46,48 @@ export function DashboardPage() {
     const ticketsSold = Number(stats?.totalTicketsSold || 0)
     const activeConcerts = Number(stats?.activeConcerts || 0)
     const averageTicketValue = ticketsSold > 0 ? totalRevenue / ticketsSold : 0
-    const revenueUnits = Math.max(1, Math.ceil(totalRevenue / 1000000))
-    const soldDensity = Math.min(100, Math.max(12, ticketsSold * 8))
-    const eventDensity = Math.min(100, Math.max(12, activeConcerts * 18))
+    const ticketsPerConcert = activeConcerts > 0 ? ticketsSold / activeConcerts : 0
+    const revenuePerConcert = activeConcerts > 0 ? totalRevenue / activeConcerts : 0
+    const revenueScore = Math.min(100, Math.max(8, totalRevenue / 10000000))
+    const ticketScore = Math.min(100, Math.max(8, ticketsSold * 5))
+    const concertScore = Math.min(100, Math.max(8, activeConcerts * 20))
 
     return {
       totalRevenue,
       ticketsSold,
       activeConcerts,
       averageTicketValue,
-      revenueUnits,
-      soldDensity,
-      eventDensity,
+      ticketsPerConcert,
+      revenuePerConcert,
+      revenueScore,
+      ticketScore,
+      concertScore,
     }
   }, [stats])
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-28 rounded-xl border border-subtle bg-surface-2/80" />
-        <div className="grid gap-4 lg:grid-cols-3">
+      <div className="min-h-full bg-[#edf2f7] px-8 py-7">
+        <div className="h-24 animate-pulse rounded-2xl bg-white" />
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
           {[0, 1, 2].map((item) => (
-            <div key={item} className="h-36 animate-pulse rounded-xl border border-subtle bg-surface-2" />
+            <div key={item} className="h-36 animate-pulse rounded-2xl bg-white" />
           ))}
         </div>
-        <div className="h-72 animate-pulse rounded-xl border border-subtle bg-surface-2" />
+        <div className="mt-5 h-80 animate-pulse rounded-2xl bg-white" />
       </div>
     )
   }
 
   if (!stats) {
     return (
-      <div className="flex min-h-[480px] items-center justify-center">
-        <div className="max-w-md rounded-xl border border-subtle bg-surface-2 p-8 text-center shadow-soft">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface-3 text-accent">
-            <Activity className="h-6 w-6" />
+      <div className="flex min-h-full items-center justify-center bg-[#edf2f7] p-8">
+        <div className="w-full max-w-md rounded-2xl border border-[#cbd6e2] bg-white p-8 text-center shadow-[0_10px_24px_rgba(15,35,58,0.08)]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#fff0e7] text-[#ff7118]">
+            <AlertCircle className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-semibold text-primary">Khong tai duoc dashboard</h1>
-          <p className="mt-2 text-sm text-muted">Vui long kiem tra lai ket noi backend hoac phien dang nhap.</p>
+          <h1 className="mt-4 text-2xl font-black text-[#061527]">Không tải được tổng quan</h1>
+          <p className="mt-2 text-sm font-semibold text-[#52637a]">Kiểm tra lại backend hoặc phiên đăng nhập.</p>
         </div>
       </div>
     )
@@ -89,196 +95,172 @@ export function DashboardPage() {
 
   const statCards = [
     {
-      name: 'Tong doanh thu',
+      label: 'Tổng doanh thu',
       value: formatVnd(derived.totalRevenue),
-      detail: `${derived.revenueUnits} don vi trieu VND dang ghi nhan`,
+      detail: `${formatVnd(derived.revenuePerConcert)} / sự kiện`,
       icon: CircleDollarSign,
-      tone: 'from-orange-500/20 to-orange-300/5',
+      accent: '#ff7118',
+      bg: '#fff0e7',
     },
     {
-      name: 'Ve da ban',
+      label: 'Vé đã bán',
       value: compactNumber(derived.ticketsSold),
-      detail: `Gia tri TB ${formatVnd(derived.averageTicketValue)}`,
+      detail: `${compactNumber(derived.ticketsPerConcert)} vé / sự kiện`,
       icon: Ticket,
-      tone: 'from-cyan-400/20 to-cyan-300/5',
+      accent: '#236bff',
+      bg: '#eaf0ff',
     },
     {
-      name: 'Su kien dang mo',
+      label: 'Sự kiện đang mở',
       value: compactNumber(derived.activeConcerts),
-      detail: 'Concert dang o trang thai published',
+      detail: 'Concert ở trạng thái published',
       icon: CalendarDays,
-      tone: 'from-emerald-400/20 to-emerald-300/5',
+      accent: '#0aa24f',
+      bg: '#e8f8ee',
     },
   ]
 
-  const revenueBars = [
-    { label: 'Doanh thu', width: Math.min(100, Math.max(18, derived.revenueUnits * 7)) },
-    { label: 'Ve ban', width: derived.soldDensity },
-    { label: 'Su kien', width: derived.eventDensity },
+  const progressRows = [
+    { label: 'Doanh thu', value: derived.revenueScore, amount: formatVnd(derived.totalRevenue), color: '#ff7118' },
+    { label: 'Vé bán', value: derived.ticketScore, amount: compactNumber(derived.ticketsSold), color: '#236bff' },
+    { label: 'Sự kiện', value: derived.concertScore, amount: compactNumber(derived.activeConcerts), color: '#0aa24f' },
+  ]
+
+  const summaryRows = [
+    ['Giá trị trung bình / vé', formatVnd(derived.averageTicketValue)],
+    ['Vé trung bình / sự kiện', compactNumber(derived.ticketsPerConcert)],
+    ['Doanh thu trung bình / sự kiện', formatVnd(derived.revenuePerConcert)],
   ]
 
   return (
-    <div className="relative min-h-full overflow-hidden">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-44 rounded-xl border border-orange-400/10 bg-[radial-gradient(circle_at_18%_20%,rgba(249,115,22,0.20),transparent_32%),radial-gradient(circle_at_82%_12%,rgba(34,211,238,0.15),transparent_30%)]" />
+    <div className="min-h-full bg-[#edf2f7] px-8 py-7 text-[#061527]">
+      <header className="flex items-start justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black tracking-[-0.035em] text-[#061527]">Tổng quan</h1>
+          <p className="mt-2 text-lg font-semibold text-[#4f6075]">
+            Theo dõi hiệu suất bán vé, doanh thu và trạng thái vận hành của organizer.
+          </p>
+        </div>
 
-      <div className="relative space-y-6">
-        <section className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-          <div className="rounded-xl border border-subtle bg-surface-2/90 p-6 shadow-soft backdrop-blur">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-soft">TicketBox Admin</p>
-                <h1 className="mt-3 text-4xl font-semibold text-primary">Bang dieu khien van hanh</h1>
-                <p className="mt-3 max-w-2xl text-sm text-muted">
-                  Theo doi doanh thu, luong ve da ban va so concert dang mo trong cung mot man hinh.
-                </p>
+        <div className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl border border-[#cbd6e2] bg-white px-4 text-sm font-black text-[#061527] shadow-[0_10px_24px_rgba(15,35,58,0.06)]">
+          <RefreshCw className="h-4 w-4 text-[#ff7118]" />
+          Snapshot mới nhất
+        </div>
+      </header>
+
+      <section className="mt-7 grid gap-4 lg:grid-cols-3">
+        {statCards.map((item) => (
+          <article
+            key={item.label}
+            className="rounded-2xl border border-[#cbd6e2] bg-white p-5 shadow-[0_10px_24px_rgba(15,35,58,0.08)]"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-black text-[#061527]">{item.label}</p>
+                <p className="mt-3 truncate text-3xl font-black tracking-[-0.04em] text-[#061527]">{item.value}</p>
               </div>
-              <div className="flex items-center gap-2 rounded-lg border border-subtle bg-surface-1 px-3 py-2 text-xs text-muted">
-                <RadioTower className="h-4 w-4 text-accent" />
-                Live snapshot
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: item.bg, color: item.accent }}>
+                <item.icon className="h-5 w-5" />
               </div>
             </div>
+            <p className="mt-4 text-sm font-semibold text-[#52637a]">{item.detail}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="mt-5 grid gap-5 xl:grid-cols-[1.35fr_0.75fr]">
+        <div className="rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
+          <div className="flex items-center justify-between border-b border-[#d8e0ea] px-5 py-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">Hiệu suất</p>
+              <h2 className="mt-1 text-2xl font-black text-[#061527]">Chỉ số kinh doanh</h2>
+            </div>
+            <BarChart3 className="h-6 w-6 text-[#ff7118]" />
           </div>
 
-          <div className="rounded-xl border border-subtle bg-surface-2/90 p-5 shadow-soft backdrop-blur">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-soft">Trang thai</p>
-                <h2 className="mt-2 text-xl font-semibold text-primary">San sang ban ve</h2>
-              </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-300">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg border border-subtle bg-surface-1 p-3">
-                <p className="text-xs text-soft">Cap nhat</p>
-                <p className="mt-1 font-semibold text-primary">Realtime</p>
-              </div>
-              <div className="rounded-lg border border-subtle bg-surface-1 p-3">
-                <p className="text-xs text-soft">Phien</p>
-                <p className="mt-1 font-semibold text-primary">Da xac thuc</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {statCards.map((item) => (
-            <article
-              key={item.name}
-              className={`group rounded-xl border border-subtle bg-gradient-to-br ${item.tone} p-5 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:border-white/20`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-surface-1/70 text-accent">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <ArrowUpRight className="h-4 w-4 text-soft transition group-hover:text-primary" />
-              </div>
-              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-soft">{item.name}</p>
-              <p className="mt-2 text-3xl font-semibold text-primary">{item.value}</p>
-              <p className="mt-2 text-sm text-muted">{item.detail}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr]">
-          <div className="rounded-xl border border-subtle bg-surface-2 p-6 shadow-soft">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-soft">Hieu suat</p>
-                <h2 className="mt-2 text-2xl font-semibold text-primary">Chi so kinh doanh</h2>
-              </div>
-              <WalletCards className="h-6 w-6 text-accent" />
-            </div>
-
-            <div className="mt-7 space-y-5">
-              {revenueBars.map((item) => (
+          <div className="px-5 py-5">
+            <div className="space-y-5">
+              {progressRows.map((item) => (
                 <div key={item.label}>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-muted">{item.label}</span>
-                    <span className="font-semibold text-primary">{Math.round(item.width)}%</span>
+                  <div className="mb-2 flex items-center justify-between gap-4">
+                    <span className="text-sm font-black text-[#061527]">{item.label}</span>
+                    <span className="text-sm font-bold text-[#52637a]">{item.amount}</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-surface-1">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,var(--accent),var(--accent-2))]"
-                      style={{ width: `${item.width}%` }}
-                    />
+                  <div className="h-3 overflow-hidden rounded-full bg-[#e7edf5]">
+                    <div className="h-full rounded-full" style={{ width: percent(item.value), backgroundColor: item.color }} />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-subtle bg-surface-1 p-4">
-                <p className="text-xs text-soft">Gia tri TB / ve</p>
-                <p className="mt-2 text-lg font-semibold text-primary">{formatVnd(derived.averageTicketValue)}</p>
-              </div>
-              <div className="rounded-lg border border-subtle bg-surface-1 p-4">
-                <p className="text-xs text-soft">Ve / su kien</p>
-                <p className="mt-2 text-lg font-semibold text-primary">
-                  {derived.activeConcerts ? compactNumber(derived.ticketsSold / derived.activeConcerts) : '0'}
-                </p>
-              </div>
-              <div className="rounded-lg border border-subtle bg-surface-1 p-4">
-                <p className="text-xs text-soft">Doanh thu / su kien</p>
-                <p className="mt-2 text-lg font-semibold text-primary">
-                  {formatVnd(derived.activeConcerts ? derived.totalRevenue / derived.activeConcerts : 0)}
-                </p>
-              </div>
+            <div className="mt-7 overflow-hidden rounded-xl border border-[#d8e0ea]">
+              {summaryRows.map(([label, value]) => (
+                <div key={label} className="grid grid-cols-[1fr_auto] gap-4 border-b border-[#d8e0ea] px-4 py-3 last:border-b-0">
+                  <span className="text-sm font-semibold text-[#52637a]">{label}</span>
+                  <span className="text-sm font-black text-[#061527]">{value}</span>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
 
-          <div className="grid gap-4">
-            <div className="rounded-xl border border-subtle bg-surface-2 p-5 shadow-soft">
+        <aside className="rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
+          <div className="border-b border-[#d8e0ea] px-5 py-4">
+            <p className="text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">Vận hành</p>
+            <h2 className="mt-1 text-2xl font-black text-[#061527]">Hôm nay</h2>
+          </div>
+
+          <div className="divide-y divide-[#d8e0ea]">
+            <div className="flex items-center justify-between gap-4 px-5 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400/10 text-cyan-300">
-                  <Activity className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-soft">Nhac viec</p>
-                  <h2 className="text-lg font-semibold text-primary">Van hanh hom nay</h2>
-                </div>
+                <ShieldCheck className="h-5 w-5 text-[#0aa24f]" />
+                <span className="text-sm font-black text-[#061527]">Phiên bán vé</span>
               </div>
-              <div className="mt-5 space-y-3">
-                <div className="flex items-center justify-between rounded-lg border border-subtle bg-surface-1 px-4 py-3">
-                  <span className="text-sm text-muted">Kiem tra webhook thanh toan</span>
-                  <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-xs text-emerald-300">OK</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-subtle bg-surface-1 px-4 py-3">
-                  <span className="text-sm text-muted">Theo doi concert dang mo</span>
-                  <span className="font-semibold text-primary">{compactNumber(derived.activeConcerts)}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-subtle bg-surface-1 px-4 py-3">
-                  <span className="text-sm text-muted">Doanh thu ghi nhan</span>
-                  <span className="font-semibold text-primary">{formatVnd(derived.totalRevenue)}</span>
-                </div>
-              </div>
+              <span className="status-pill status-pill-active">Ổn định</span>
             </div>
 
-            <div className="rounded-xl border border-subtle bg-surface-2 p-5 shadow-soft">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-soft">Chu ky</p>
-                  <h2 className="mt-1 text-lg font-semibold text-primary">Bao cao tiep theo</h2>
-                </div>
-                <Clock3 className="h-5 w-5 text-accent" />
+            <div className="flex items-center justify-between gap-4 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <Activity className="h-5 w-5 text-[#236bff]" />
+                <span className="text-sm font-black text-[#061527]">Concert đang mở</span>
               </div>
-              <p className="mt-4 text-sm text-muted">
-                Du lieu hien thi theo snapshot moi nhat tu backend. Lam moi trang de cap nhat lai chi so.
+              <span className="text-base font-black text-[#061527]">{compactNumber(derived.activeConcerts)}</span>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-5 w-5 text-[#ff7118]" />
+                <span className="text-sm font-black text-[#061527]">Doanh thu ghi nhận</span>
+              </div>
+              <span className="text-base font-black text-[#061527]">{formatVnd(derived.totalRevenue)}</span>
+            </div>
+
+            <div className="flex items-start gap-3 px-5 py-4">
+              <Clock3 className="mt-0.5 h-5 w-5 text-[#52637a]" />
+              <p className="text-sm font-semibold leading-6 text-[#52637a]">
+                Dữ liệu lấy từ snapshot backend mới nhất. Làm mới trang để cập nhật chỉ số vận hành.
               </p>
             </div>
           </div>
-        </section>
+        </aside>
+      </section>
 
-        <a
-          href="https://deerflow.tech"
-          target="_blank"
-          rel="noreferrer"
-          className="fixed bottom-4 right-5 rounded-full border border-white/10 bg-surface-2/80 px-3 py-1.5 text-[11px] text-soft opacity-70 backdrop-blur transition hover:border-orange-300/40 hover:text-primary hover:opacity-100"
-        >
-          Created By Deerflow
-        </a>
-      </div>
+      <section className="mt-5 rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
+        <div className="grid gap-0 md:grid-cols-3">
+          <div className="border-b border-[#d8e0ea] px-5 py-4 md:border-b-0 md:border-r">
+            <p className="text-sm font-black text-[#42536a]">Tín hiệu chính</p>
+            <p className="mt-2 text-xl font-black text-[#061527]">Bán vé đang hoạt động</p>
+          </div>
+          <div className="border-b border-[#d8e0ea] px-5 py-4 md:border-b-0 md:border-r">
+            <p className="text-sm font-black text-[#42536a]">Ưu tiên kiểm tra</p>
+            <p className="mt-2 text-xl font-black text-[#061527]">Tồn kho vé và thanh toán</p>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-sm font-black text-[#42536a]">Nhịp báo cáo</p>
+            <p className="mt-2 text-xl font-black text-[#061527]">Theo phiên vận hành</p>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
