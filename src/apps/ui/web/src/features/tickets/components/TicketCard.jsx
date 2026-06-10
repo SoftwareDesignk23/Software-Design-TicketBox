@@ -57,71 +57,94 @@ export function TicketCard({ ticket }) {
   };
 
   return (
-    <div className="grid gap-6 rounded-[32px] border border-subtle glass-panel p-6 lg:grid-cols-[1.4fr_0.6fr] hover:border-glow transition-all duration-300">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+    <div className="relative overflow-hidden grid lg:grid-cols-[1.4fr_0.6fr] rounded-[36px] border border-white/10 bg-white/5 backdrop-blur-xl shadow-lg hover:border-[color:var(--accent)]/40 hover:shadow-glow transition-all duration-500 group">
+      
+      {/* Subtle Glow inside the card */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(168,85,247,0.08),_transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+      {/* Ticket cutouts for the stub effect */}
+      <div className="hidden lg:block absolute left-[58.33%] top-0 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[color:var(--bg)] border-b border-white/10 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.5)] z-10" />
+      <div className="hidden lg:block absolute left-[58.33%] bottom-0 -translate-x-1/2 translate-y-1/2 w-8 h-8 rounded-full bg-[color:var(--bg)] border-t border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] z-10" />
+      
+      {/* Dashed line separating info from QR */}
+      <div className="hidden lg:block absolute left-[58.33%] top-4 bottom-4 w-px border-l-2 border-dashed border-white/10 z-0" />
+
+      {/* Main Info Section */}
+      <div className="relative flex flex-col p-8 md:p-10 z-10">
+        <div className="flex items-center justify-between gap-4 mb-6">
           <div>
-            <h3 className="text-xl font-bold tracking-tight text-primary">
+            <h3 className="text-2xl font-extrabold tracking-tight text-white group-hover:text-[color:var(--accent)] transition-colors duration-300">
               {ticket.eventName}
             </h3>
-            <p className="text-sm text-muted">{ticket.venue}</p>
+            <p className="text-sm text-gray-400 mt-1">{ticket.venue}</p>
           </div>
-          <Badge variant="accent">{getStatusText(ticket.status)}</Badge>
+          <Badge variant="accent" className="bg-[color:var(--accent)]/20 text-[color:var(--accent)] border border-[color:var(--accent)]/30 backdrop-blur-md whitespace-nowrap">
+            {getStatusText(ticket.status)}
+          </Badge>
         </div>
-        <div className="grid gap-4 text-sm text-muted md:grid-cols-2">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-soft">Ngày diễn</p>
-            <p className="text-primary">
-              {formatLongDate(ticket.date)} lúc {formatTime(ticket.date)}
+
+        <div className="grid gap-6 text-sm md:grid-cols-2 mb-8">
+          <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-1">Ngày diễn</p>
+            <p className="text-white font-medium text-base">
+              {formatLongDate(ticket.date)} <br/>
+              <span className="text-gray-400 text-sm">{formatTime(ticket.date)}</span>
             </p>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-soft">Chỗ ngồi</p>
-            <p className="text-primary">{ticket.seats || 'Đang cập nhật'}</p>
+          <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-1">Chỗ ngồi</p>
+            <p className="text-[color:var(--accent)] font-bold text-lg">{ticket.seats || 'Đang cập nhật'}</p>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-soft">Hạng vé</p>
-            <p className="text-primary">{ticket.tier}</p>
+          <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-1">Hạng vé</p>
+            <p className="text-white font-medium text-base">{ticket.tier}</p>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-soft">
-              Mã vé
-            </p>
-            <p className="text-primary">{ticket.id.slice(0, 8).toUpperCase()}</p>
+          <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-1">Mã vé</p>
+            <p className="text-white font-mono text-base tracking-widest">{ticket.id.slice(0, 8).toUpperCase()}</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <button className="rounded-full border border-subtle px-4 py-2 text-xs font-semibold text-muted transition-all duration-300 hover:bg-surface-3 hover:text-primary hover:border-glow">
+
+        <div className="mt-auto flex flex-wrap gap-3">
+          <button className="rounded-full bg-white/5 border border-white/10 px-5 py-2.5 text-xs font-bold text-white transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-95 shadow-soft">
             Thêm vào ví
           </button>
           <button 
-            className="rounded-full border border-subtle px-4 py-2 text-xs font-semibold text-[color:var(--accent)] transition-all duration-300 hover:bg-accent hover:text-white shadow-[0_0_10px_color-mix(in_oklab,var(--accent)_20%,transparent)] hover:shadow-[0_0_20px_color-mix(in_oklab,var(--accent)_50%,transparent)]"
+            className="rounded-full px-5 py-2.5 text-xs font-bold text-white transition-all duration-300 bg-[color:var(--accent)] hover:bg-[color:var(--accent-2)] shadow-[0_0_15px_color-mix(in_oklab,var(--accent)_30%,transparent)] hover:shadow-[0_0_25px_color-mix(in_oklab,var(--accent)_60%,transparent)] hover:scale-105 active:scale-95"
             onClick={handleDownloadQR}
           >
             Tải mã QR
           </button>
-          <button className="rounded-full border border-subtle px-4 py-2 text-xs font-semibold text-muted transition-all duration-300 hover:bg-surface-3 hover:text-primary hover:border-glow">
+          <button className="rounded-full bg-white/5 border border-white/10 px-5 py-2.5 text-xs font-bold text-white transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-95 shadow-soft">
             Chuyển nhượng vé
           </button>
         </div>
       </div>
-      <div className="flex flex-col items-center justify-center gap-4 rounded-[24px] border border-subtle bg-surface-2/50 backdrop-blur-sm p-6 text-center">
-        {ticket.qrPayload || ticket.code ? (
-          <div className="grid h-28 w-28 place-items-center rounded-2xl bg-white p-2">
-            <QRCode 
-              id={`qr-${ticket.id}`}
-              value={ticket.qrPayload || ticket.code}
-              size={96}
-              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-              viewBox={`0 0 96 96`}
-            />
+
+      {/* QR Code Section */}
+      <div className="relative flex flex-col items-center justify-center p-8 lg:p-10 bg-gradient-to-br from-white/5 to-transparent z-10 border-t lg:border-t-0 border-white/10">
+        <div className="group/qr relative p-4 rounded-3xl bg-white/10 border border-white/20 backdrop-blur-xl shadow-2xl transition-transform duration-500 hover:scale-105">
+          <div className="absolute inset-0 bg-white opacity-0 group-hover/qr:opacity-100 transition-opacity duration-300 rounded-3xl z-0" />
+          
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            {ticket.qrPayload || ticket.code ? (
+              <div className="grid h-36 w-36 place-items-center rounded-2xl bg-white p-3 shadow-inner">
+                <QRCode 
+                  id={`qr-${ticket.id}`}
+                  value={ticket.qrPayload || ticket.code}
+                  size={120}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  viewBox={`0 0 120 120`}
+                />
+              </div>
+            ) : (
+              <div className="grid h-36 w-36 place-items-center rounded-2xl bg-[color:color-mix(in_oklab,_var(--surface-3)_70%,_transparent)] text-xs text-soft">
+                QR
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="grid h-28 w-28 place-items-center rounded-2xl bg-[color:color-mix(in_oklab,_var(--surface-3)_70%,_transparent)] text-xs text-soft">
-            QR
-          </div>
-        )}
-        <p className="text-xs text-muted">Sẵn sàng check-in ngoại tuyến</p>
+        </div>
+        <p className="mt-6 text-xs text-gray-400 font-medium uppercase tracking-widest text-center">Sẵn sàng check-in<br/>ngoại tuyến</p>
       </div>
 
       {/* Hidden Full Ticket SVG for Download */}
