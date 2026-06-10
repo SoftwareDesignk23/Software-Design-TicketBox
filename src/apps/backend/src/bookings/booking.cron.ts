@@ -58,6 +58,14 @@ export class BookingCronService {
 							data: { soldQuantity: { decrement: item.quantity } },
 						})
 					}
+
+					// 4. Release coupon usage
+					if (booking.couponId) {
+						await tx.coupon.update({
+							where: { id: booking.couponId },
+							data: { usedCount: { decrement: 1 } }
+						})
+					}
 				})
 
 				this.logger.log(`Released expired booking ${booking.id}`)

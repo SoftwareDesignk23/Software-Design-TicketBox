@@ -50,6 +50,7 @@ export function ConcertDetailPage() {
   const navigate = useNavigate()
   const [concert, setConcert] = useState(null)
   const [artists, setArtists] = useState([])
+  const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('shows')
 
@@ -77,18 +78,24 @@ export function ConcertDetailPage() {
   const [newArtistRole, setNewArtistRole] = useState('Ca sĩ chính')
   const [artistFormError, setArtistFormError] = useState('')
 
+  const [newCouponCode, setNewCouponCode] = useState('')
+  const [newCouponDiscount, setNewCouponDiscount] = useState('')
+  const [newCouponMaxUsage, setNewCouponMaxUsage] = useState('')
+
   const fetchData = async () => {
     try {
       setLoading(true)
       const tokens = loadStoredTokens()
       
-      const [concertData, artistsData] = await Promise.all([
+      const [concertData, artistsData, couponsData] = await Promise.all([
         request(`/concerts/${id}`),
-        request('/admin/artists', { headers: { Authorization: `Bearer ${tokens.accessToken}` } })
+        request('/admin/artists', { headers: { Authorization: `Bearer ${tokens.accessToken}` } }),
+        request(`/concerts/${id}/coupons`, { headers: { Authorization: `Bearer ${tokens.accessToken}` } }).catch(() => [])
       ])
       
       setConcert(concertData)
       setArtists(artistsData)
+      setCoupons(couponsData)
       if (artistsData.length > 0) setNewArtistId(artistsData[0].id)
     } catch (e) {
       console.error(e)
@@ -362,6 +369,50 @@ export function ConcertDetailPage() {
     }
   }
 
+  const handleCreateCoupon = async () => {
+    if (!newCouponCode || !newCouponDiscount || !newCouponMaxUsage) return alert('Nhap du thong tin ma giam gia')
+    try {
+      const tokens = loadStoredTokens()
+      await request(`/concerts/${id}/coupons`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${tokens.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: newCouponCode,
+          discountPercentage: Number(newCouponDiscount),
+          maxUsage: Number(newCouponMaxUsage)
+        })
+      })
+      setNewCouponCode('')
+      setNewCouponDiscount('')
+      setNewCouponMaxUsage('')
+      fetchData()
+    } catch (e) {
+      alert('Loi tao ma giam gia: ' + e.message)
+    }
+  }
+
+  const handleToggleCoupon = async (coupon) => {
+    try {
+      const tokens = loadStoredTokens()
+      await request(`/concerts/${id}/coupons/${coupon.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${tokens.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          isActive: !coupon.isActive
+        })
+      })
+      fetchData()
+    } catch (e) {
+      alert('Loi cap nhat ma giam gia: ' + e.message)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-full bg-[#edf2f7] px-8 py-7">
@@ -389,6 +440,7 @@ export function ConcertDetailPage() {
     { key: 'shows', label: 'Suất diễn', icon: CalendarDays, count: concert.shows?.length || 0 },
     { key: 'tickets', label: 'Hạng vé', icon: Ticket, count: concert.ticketTypes?.length || 0 },
     { key: 'artists', label: 'Nghệ sĩ', icon: Users, count: concert.artists?.length || 0 },
+    { key: 'coupons', label: 'Mã giảm giá', icon: Ticket, count: coupons?.length || 0 },
   ]
 
   return (
@@ -710,6 +762,71 @@ export function ConcertDetailPage() {
                   </tr>
                 ))}
                 {!concert.artists?.length && <tr><td colSpan="3" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">Chưa có nghệ sĩ nào</td></tr>}
+              </tbody>
+            </table>
+          </section>
+        </div>
+      )}
+
+      {activeTab === 'coupons' && (
+        <div className="mt-5 space-y-5">
+          <section className="rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
+            <div className="border-b border-[#d8e0ea] px-5 py-4">
+              <p className="text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">Khuyến mãi</p>
+              <h2 className="mt-1 text-2xl font-black text-[#061527]">Thêm mã giảm giá</h2>
+            </div>
+            <div className="grid gap-4 px-5 py-5 md:grid-cols-3">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-black text-[#061527]">Mã (Code)</span>
+                <input type="text" placeholder="VD: SUMMER20" value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value)} className={inputClass} />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-black text-[#061527]">Giảm giá (%)</span>
+                <input type="number" placeholder="VD: 20" value={newCouponDiscount} onChange={(e) => setNewCouponDiscount(e.target.value)} className={inputClass} />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-black text-[#061527]">Giới hạn sử dụng</span>
+                <input type="number" placeholder="VD: 100" value={newCouponMaxUsage} onChange={(e) => setNewCouponMaxUsage(e.target.value)} className={inputClass} />
+              </label>
+            </div>
+            <div className="border-t border-[#d8e0ea] px-5 py-4">
+              <button onClick={handleCreateCoupon} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#ff7118] px-5 text-sm font-black text-white transition hover:bg-[#ff5d0a]">
+                <Plus className="h-4 w-4" />
+                Thêm mã giảm giá
+              </button>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-[#cbd6e2] bg-[#f8fafc] text-left text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">
+                  <th className="px-5 py-4">Mã (Code)</th>
+                  <th className="px-5 py-4">Giảm giá</th>
+                  <th className="px-5 py-4">Đã dùng / Giới hạn</th>
+                  <th className="px-5 py-4">Trạng thái</th>
+                  <th className="px-5 py-4 text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coupons?.map((c) => (
+                  <tr key={c.id} className="border-b border-[#d8e0ea] last:border-b-0">
+                    <td className="px-5 py-5 text-sm font-black text-[#061527]">{c.code}</td>
+                    <td className="px-5 py-5 text-sm font-black text-[#061527]">{c.discountPercentage}%</td>
+                    <td className="px-5 py-5 text-sm font-bold text-[#52637a]">{c.usedCount} / {c.maxUsage}</td>
+                    <td className="px-5 py-5 text-sm">
+                      <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-black ${c.isActive ? 'bg-[#e8f8ee] text-[#0aa24f]' : 'bg-[#fff0f1] text-[#ef2534]'}`}>
+                        {c.isActive ? 'Đang hoạt động' : 'Tạm khóa'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-5 text-right">
+                      <button onClick={() => handleToggleCoupon(c)} className="inline-flex h-9 items-center justify-center rounded-lg border border-[#d8e0ea] bg-white px-3 text-sm font-black text-[#ff7118] transition hover:border-[#ff7118] hover:bg-[#fff0e7]">
+                        {c.isActive ? 'Khóa' : 'Mở khóa'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {!coupons?.length && <tr><td colSpan="5" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">Chưa có mã giảm giá nào</td></tr>}
               </tbody>
             </table>
           </section>

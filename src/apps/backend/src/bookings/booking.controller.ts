@@ -37,4 +37,14 @@ export class BookingController {
 	async getBooking(@Param('id') id: string, @Request() req: any) {
 		return this.bookingService.getBooking(id, req.user.sub)
 	}
+
+	@Post(':id/coupon')
+	@Roles('AUDIENCE')
+	async applyCoupon(
+		@Param('id') bookingId: string,
+		@Body() body: { code?: string },
+		@Request() req: any
+	) {
+		return this.bookingService.applyCouponToBooking(bookingId, body.code, req.user.sub)
+	}
 }
