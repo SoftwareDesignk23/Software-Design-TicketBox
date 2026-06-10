@@ -95,7 +95,7 @@ export function BookingHistoryPage() {
                   Mã đơn • {booking.id.split('-')[0].toUpperCase()}
                 </p>
                 <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-[color:var(--accent)] transition-colors duration-300 drop-shadow-lg">
-                  {booking.concert?.title || 'Sự kiện không xác định'}
+                  {booking.items?.[0]?.ticketType?.concert?.title || 'Sự kiện không xác định'}
                 </h3>
                 <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-500">

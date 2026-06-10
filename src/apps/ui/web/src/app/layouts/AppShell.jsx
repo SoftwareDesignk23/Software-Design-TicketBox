@@ -1,4 +1,4 @@
-import { Outlet, Link, NavLink, useLocation } from 'react-router-dom'
+import { Outlet, Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Bell, Search, Ticket } from 'lucide-react'
 import { Button } from '../../shared/ui/button'
@@ -16,6 +16,7 @@ const navLinkClass = ({ isActive }) =>
 
 export function AppShell() {
 	const location = useLocation()
+	const navigate = useNavigate()
 	const { isNotificationsOpen, toggleNotifications, toggleSearch, closeNotifications } =
 		useUiStore()
 	const { status, user, logout } = useAuthStore()
@@ -91,7 +92,7 @@ export function AppShell() {
 						{status === 'authenticated' ? (
 							<button
 								className="hidden sm:inline-flex rounded-full bg-white/5 border border-white/10 px-5 py-2 text-sm font-bold text-gray-300 transition-all duration-300 hover:bg-white/10 hover:text-white hover:border-white/20 hover:scale-105 active:scale-95 shadow-sm"
-								onClick={async () => { await logout() }}
+								onClick={async () => { await logout(); navigate('/'); }}
 							>
 								{`Đăng xuất${user ? ` (${user.displayName})` : ''}`}
 							</button>

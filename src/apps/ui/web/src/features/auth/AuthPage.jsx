@@ -8,6 +8,7 @@ export function AuthPage() {
 	const [email, setEmail] = useState('audience@ticketbox.local')
 	const [password, setPassword] = useState('password123')
 	const [error, setError] = useState(null)
+	const [isLoggingIn, setIsLoggingIn] = useState(false)
 	const login = useAuthStore((state) => state.login)
 	const status = useAuthStore((state) => state.status)
 	const navigate = useNavigate()
@@ -15,11 +16,14 @@ export function AuthPage() {
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 		setError(null)
+		setIsLoggingIn(true)
 		try {
 			await login(email, password)
 			navigate('/')
 		} catch (loginError) {
-			setError(loginError.message ?? 'Unable to sign in.')
+			setError(loginError.message ?? 'Đăng nhập thất bại.')
+		} finally {
+			setIsLoggingIn(false)
 		}
 	}
 
@@ -27,16 +31,20 @@ export function AuthPage() {
 	const [registerEmail, setRegisterEmail] = useState('')
 	const [registerPassword, setRegisterPassword] = useState('')
 	const [registerError, setRegisterError] = useState(null)
+	const [isRegistering, setIsRegistering] = useState(false)
 	const register = useAuthStore((state) => state.register)
 
 	const handleRegister = async (event) => {
 		event.preventDefault()
 		setRegisterError(null)
+		setIsRegistering(true)
 		try {
 			await register(registerName, registerEmail, registerPassword)
 			navigate('/')
 		} catch (err) {
-			setRegisterError(err.message ?? 'Unable to create account.')
+			setRegisterError(err.message ?? 'Đăng ký thất bại.')
+		} finally {
+			setIsRegistering(false)
 		}
 	}
 
@@ -85,9 +93,9 @@ export function AuthPage() {
 							<button 
 								className="w-full rounded-full px-6 py-4 text-sm font-bold text-white transition-all duration-300 bg-[color:var(--accent)] hover:bg-[color:var(--accent-2)] shadow-[0_0_15px_color-mix(in_oklab,var(--accent)_30%,transparent)] hover:shadow-[0_0_25px_color-mix(in_oklab,var(--accent)_60%,transparent)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none mt-2" 
 								type="submit" 
-								disabled={status === 'loading'}
+								disabled={isLoggingIn || status === 'loading'}
 							>
-								{status === 'loading' ? 'Đang xử lý...' : 'Đăng nhập'}
+								{isLoggingIn ? 'Đang xử lý...' : 'Đăng nhập'}
 							</button>
 						</form>
 						<div className="mt-8 space-y-4">
@@ -156,9 +164,9 @@ export function AuthPage() {
 							<button 
 								className="w-full rounded-full bg-white/10 border border-white/20 px-6 py-4 text-sm font-bold text-white transition-all duration-300 hover:bg-white/20 hover:border-white/30 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none mt-4" 
 								type="submit" 
-								disabled={status === 'loading'}
+								disabled={isRegistering || status === 'loading'}
 							>
-								{status === 'loading' ? 'Đang tạo...' : 'Đăng ký ngay'}
+								{isRegistering ? 'Đang tạo...' : 'Đăng ký ngay'}
 							</button>
 						</form>
 						<div className="mt-8 pt-6 border-t border-white/10">
