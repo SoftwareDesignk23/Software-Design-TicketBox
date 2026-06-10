@@ -4,11 +4,11 @@
     "slug": "mobile-checkin",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/expo.icon",
+    "icon": "./assets/expo.icon/app.png",
     "scheme": "mobilecheckin",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon/app.png"
     },
     "android": {
       "predictiveBackGestureEnabled": false
