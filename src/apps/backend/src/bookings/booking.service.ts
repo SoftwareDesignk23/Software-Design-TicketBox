@@ -1,11 +1,11 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { PrismaService } from '../../prisma/prisma.service.js'
-import { AppException } from '../../exception/app-exception.js'
-import { ErrorCode } from '../../exception/error-code.js'
+import { PrismaService } from '../prisma/prisma.service.js'
+import { AppException } from '../exception/app-exception.js'
+import { ErrorCode } from '../exception/error-code.js'
 import { createBookingSchema } from './booking.dto.js'
-import { RedisService } from '../../redis/redis.service.js'
-import { SeatGateway } from '../../concerts/seat.gateway.js'
+import { RedisService } from '../redis/redis.service.js'
+import { SeatGateway } from '../concerts/seat.gateway.js'
 
 const BOOKING_TTL_MINUTES = 15
 

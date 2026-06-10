@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, Param, UseGuards, Request } from '@nestjs/common'
 import { BookingService } from './booking.service.js'
-import { JwtAuthGuard, RolesGuard } from '../auth.guards.js'
-import { Roles } from '../auth.decorators.js'
+import { JwtAuthGuard, RolesGuard } from '../auth/auth.guards.js'
+import { Roles } from '../auth/auth.decorators.js'
 
 @Controller('bookings')
 @UseGuards(JwtAuthGuard, RolesGuard)
