@@ -105,15 +105,15 @@ export default function TicketsScreen() {
           <Text style={styles.statLabel}>Tổng</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: '#28a745' }]}>{checkedIn}</Text>
+          <Text style={[styles.statNum, styles.successText]}>{checkedIn}</Text>
           <Text style={styles.statLabel}>Đã vào</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: '#ffc107' }]}>{total - checkedIn}</Text>
+          <Text style={[styles.statNum, styles.warningText]}>{total - checkedIn}</Text>
           <Text style={styles.statLabel}>Chờ</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: '#e94560' }]}>{pct}%</Text>
+          <Text style={[styles.statNum, styles.percentText]}>{pct}%</Text>
           <Text style={styles.statLabel}>Check-in</Text>
         </View>
       </View>
@@ -144,7 +144,7 @@ export default function TicketsScreen() {
         <TextInput
           style={styles.searchInput}
           placeholder="Tìm theo tên, email, mã vé, cổng..."
-          placeholderTextColor="#666"
+          placeholderTextColor="#7f8da3"
           value={search}
           onChangeText={setSearch}
           autoCapitalize="none"
@@ -159,7 +159,7 @@ export default function TicketsScreen() {
       {/* List */}
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#e94560" />
+          <ActivityIndicator size="large" color="#0f7f78" />
           <Text style={styles.loadingText}>Đang tải dữ liệu local...</Text>
         </View>
       ) : (
@@ -168,7 +168,7 @@ export default function TicketsScreen() {
           keyExtractor={item => item.ticketId}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor="#e94560" />}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor="#0f7f78" />}
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyIcon}>🎟️</Text>
@@ -186,103 +186,148 @@ export default function TicketsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e' },
+  container: { flex: 1, backgroundColor: '#edf3f8' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 50,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#16213e',
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#0f3460',
-    gap: 10,
+    borderBottomColor: '#d8e2ec',
+    gap: 12,
   },
-  backBtn: { padding: 6 },
-  backText: { color: '#eee', fontSize: 22, fontWeight: 'bold' },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: '#f8fbfd',
+    borderWidth: 1,
+    borderColor: '#cdd9e5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backText: { color: '#263a52', fontSize: 22, fontWeight: '800' },
   headerText: { flex: 1 },
-  headerTitle: { color: '#eee', fontSize: 18, fontWeight: 'bold' },
-  headerSub: { color: '#888', fontSize: 12, marginTop: 2 },
-  refreshBtn: { padding: 6 },
+  headerTitle: { color: '#102033', fontSize: 20, fontWeight: '800', letterSpacing: 0 },
+  headerSub: { color: '#627086', fontSize: 13, marginTop: 3, fontWeight: '700' },
+  refreshBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: '#f8fbfd',
+    borderWidth: 1,
+    borderColor: '#cdd9e5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   refreshText: { fontSize: 20 },
   statsBar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 14,
-    backgroundColor: '#16213e',
-    borderBottomWidth: 1,
-    borderBottomColor: '#0f3460',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d8e2ec',
+    borderRadius: 14,
   },
-  statItem: { alignItems: 'center' },
-  statNum: { fontSize: 22, fontWeight: 'bold', color: '#eee' },
-  statLabel: { fontSize: 11, color: '#888', marginTop: 2 },
+  statItem: {
+    flex: 1,
+    minHeight: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f6f9fc',
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#e2eaf2',
+  },
+  statNum: { fontSize: 22, fontWeight: '800', color: '#102033' },
+  successText: { color: '#0f7f78' },
+  warningText: { color: '#b76b00' },
+  percentText: { color: '#153a63' },
+  statLabel: { fontSize: 11, color: '#627086', marginTop: 2, fontWeight: '700' },
   progressContainer: {
-    height: 4,
-    backgroundColor: '#0f3460',
+    height: 6,
+    backgroundColor: '#d8e2ec',
+    borderRadius: 999,
+    marginHorizontal: 16,
+    marginTop: 12,
+    overflow: 'hidden',
   },
   progressBar: {
-    height: 4,
-    backgroundColor: '#28a745',
+    height: 6,
+    backgroundColor: '#0f7f78',
   },
   filterRow: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
   filterBtn: {
     flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: '#16213e',
+    minHeight: 38,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#f8fbfd',
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: '#cdd9e5',
   },
   filterBtnActive: {
-    backgroundColor: '#e94560',
-    borderColor: '#e94560',
+    backgroundColor: '#0f7f78',
+    borderColor: '#0f7f78',
   },
-  filterText: { color: '#888', fontSize: 12, fontWeight: '600' },
-  filterTextActive: { color: '#fff' },
+  filterText: { color: '#40546b', fontSize: 12, fontWeight: '800' },
+  filterTextActive: { color: '#ffffff' },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16213e',
+    backgroundColor: '#ffffff',
     marginHorizontal: 16,
     marginBottom: 10,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingHorizontal: 13,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: '#cdd9e5',
   },
   searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, color: '#eee', paddingVertical: 10, fontSize: 14 },
-  clearIcon: { color: '#888', fontSize: 16, padding: 4 },
+  searchInput: { flex: 1, color: '#102033', paddingVertical: 11, fontSize: 14 },
+  clearIcon: { color: '#627086', fontSize: 16, padding: 4 },
   ticketCard: {
-    backgroundColor: '#16213e',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
     padding: 14,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: '#d8e2ec',
+    shadowColor: '#102033',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   ticketCardCheckedIn: {
-    borderColor: '#1a4a2a',
-    backgroundColor: '#0d2a18',
+    borderColor: '#bdeee3',
+    backgroundColor: '#ecfdf8',
   },
   ticketRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   ticketInfo: { flex: 1, marginRight: 10 },
-  attendeeName: { fontSize: 15, fontWeight: 'bold', color: '#eee' },
-  attendeeEmail: { fontSize: 12, color: '#888', marginTop: 2 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  badgeChecked: { backgroundColor: 'rgba(40, 167, 69, 0.2)', borderWidth: 1, borderColor: '#28a745' },
-  badgePending: { backgroundColor: 'rgba(255, 193, 7, 0.15)', borderWidth: 1, borderColor: '#ffc107' },
-  badgeText: { fontSize: 12, fontWeight: '600', color: '#eee' },
+  attendeeName: { fontSize: 15, fontWeight: '800', color: '#102033' },
+  attendeeEmail: { fontSize: 12, color: '#627086', marginTop: 2, fontWeight: '700' },
+  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1 },
+  badgeChecked: { backgroundColor: '#dffaf3', borderColor: '#bdeee3' },
+  badgePending: { backgroundColor: '#fff7e7', borderColor: '#ffe0a6' },
+  badgeText: { fontSize: 12, fontWeight: '800', color: '#263a52' },
   ticketMeta: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  metaChip: { fontSize: 12, color: '#aaa' },
+  metaChip: { fontSize: 12, color: '#40546b', fontWeight: '700' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
-  loadingText: { color: '#888', marginTop: 10 },
+  loadingText: { color: '#627086', marginTop: 10, fontWeight: '700' },
   emptyIcon: { fontSize: 40, marginBottom: 12 },
-  emptyText: { color: '#888', fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  emptyText: { color: '#627086', fontSize: 15, textAlign: 'center', lineHeight: 22 },
 });
