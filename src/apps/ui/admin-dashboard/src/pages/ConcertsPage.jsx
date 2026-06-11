@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { request, loadStoredTokens } from '../auth'
 import {
   CalendarDays,
   Edit,
+  ExternalLink,
   MapPin,
   Plus,
   Settings,
@@ -12,6 +13,8 @@ import {
   X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useAdminDialog } from '../components/feedback/useAdminDialog'
+import { openGoogleMapsSearch, venueMapQuery } from '../utils/maps'
 
 const statusMeta = {
   PUBLISHED: { label: 'Công khai', className: 'status-pill-active' },
@@ -48,6 +51,7 @@ function ConcertImage({ src, title }) {
 
 export function ConcertsPage() {
   const navigate = useNavigate()
+  const { showAlert, showConfirm, DialogHost } = useAdminDialog()
   const [concerts, setConcerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -88,7 +92,7 @@ export function ConcertsPage() {
       if (!uploadRes.fileUrl) throw new Error('Không nhận được file URL từ server')
       setUrl(uploadRes.fileUrl)
     } catch (err) {
-      alert('Lỗi upload ảnh: ' + err.message)
+      showAlert('Không thể upload ảnh: ' + err.message)
     } finally {
       setIsUploading(false)
       event.target.value = null
@@ -136,7 +140,12 @@ export function ConcertsPage() {
   }, [concerts])
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Chắc chắn muốn xóa sự kiện này?')) return
+    const confirmed = await showConfirm({
+      title: 'Xóa sự kiện?',
+      message: 'Sự kiện sẽ bị xóa khỏi hệ thống. Thao tác này không thể hoàn tác.',
+      confirmLabel: 'Xóa',
+    })
+    if (!confirmed) return
     try {
       const tokens = loadStoredTokens()
       await request(`/concerts/${id}`, {
@@ -145,14 +154,44 @@ export function ConcertsPage() {
       })
       fetchConcerts()
     } catch (e) {
-      alert('Lỗi xóa sự kiện: ' + e.message)
+      showAlert('Không thể xóa sự kiện: ' + e.message)
     }
   }
 
+  const handleOpenVenueMap = (venue) => {
+    openGoogleMapsSearch(venueMapQuery(venue), () => {
+      showAlert('Vui lòng nhập tên hoặc địa chỉ địa điểm trước khi mở Google Maps.', {
+        title: 'Chưa đủ thông tin địa điểm',
+      })
+    })
+  }
+
+  const handleOpenCurrentVenueMap = () => {
+    const selectedVenue = venues.find((venue) => venue.id === newVenueId)
+    const query = isCreatingVenue
+      ? [newVenueName, newVenueAddress].filter(Boolean).join(' ')
+      : venueMapQuery(selectedVenue)
+
+    openGoogleMapsSearch(query, () => {
+      showAlert('Vui lòng nhập tên hoặc địa chỉ địa điểm trước khi mở Google Maps.', {
+        title: 'Chưa đủ thông tin địa điểm',
+      })
+    })
+  }
+
   const handleCreateOrUpdate = async () => {
-    if (!newTitle) return alert('Vui lòng nhập tên sự kiện')
-    if (isCreatingVenue && (!newVenueName || !newVenueAddress)) return alert('Vui lòng nhập tên và địa chỉ địa điểm mới')
-    if (!isCreatingVenue && !newVenueId) return alert('Vui lòng chọn địa điểm')
+    if (!newTitle) {
+      showAlert('Vui lòng nhập tên sự kiện.')
+      return
+    }
+    if (isCreatingVenue && (!newVenueName || !newVenueAddress)) {
+      showAlert('Vui lòng nhập tên và địa chỉ địa điểm mới.')
+      return
+    }
+    if (!isCreatingVenue && !newVenueId) {
+      showAlert('Vui lòng chọn địa điểm.')
+      return
+    }
 
     setIsCreating(true)
     try {
@@ -204,7 +243,7 @@ export function ConcertsPage() {
       fetchConcerts()
       fetchVenues()
     } catch (e) {
-      alert(`Lỗi ${editingConcert ? 'chỉnh sửa' : 'tạo'} sự kiện: ` + e.message)
+      showAlert(`Không thể ${editingConcert ? 'chỉnh sửa' : 'tạo'} sự kiện: ${e.message}`)
     } finally {
       setIsCreating(false)
     }
@@ -340,9 +379,20 @@ export function ConcertsPage() {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-5 py-5">
-                      <div className="flex items-center gap-2 text-sm font-black text-[#061527]">
-                        <MapPin className="h-4 w-4 text-[#ff7118]" />
-                        {concert.venue?.name || 'Chưa chọn'}
+                      <div className="flex items-center gap-2">
+                        <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#061527]">
+                          <MapPin className="h-4 w-4 shrink-0 text-[#ff7118]" />
+                          <span className="truncate">{concert.venue?.name || 'Chưa chọn'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenVenueMap(concert.venue)}
+                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#d8e0ea] bg-white text-[#52637a] transition hover:border-[#ff7118] hover:bg-[#fff0e7] hover:text-[#ff7118]"
+                          title="Mở địa điểm trên Google Maps"
+                          aria-label="Mở địa điểm trên Google Maps"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-5 py-5">
@@ -430,26 +480,37 @@ export function ConcertsPage() {
                     <span className="mb-1.5 block text-sm font-black text-[#061527]">
                       Địa điểm <span className="text-[#ef2534]">*</span>
                     </span>
-                    <select
-                      value={isCreatingVenue ? 'new' : newVenueId}
-                      onChange={(event) => {
-                        if (event.target.value === 'new') {
-                          setIsCreatingVenue(true)
-                        } else {
-                          setIsCreatingVenue(false)
-                          setNewVenueId(event.target.value)
-                        }
-                      }}
-                      className="h-12 w-full rounded-xl border border-[#d8e0ea] bg-white px-4 text-[#061527] outline-none focus:border-[#ff7118]"
-                    >
-                      <option value="">-- Chọn địa điểm --</option>
-                      {venues.map((venue) => (
-                        <option key={venue.id} value={venue.id}>
-                          {venue.name}
-                        </option>
-                      ))}
-                      <option value="new">+ Tạo địa điểm mới...</option>
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={isCreatingVenue ? 'new' : newVenueId}
+                        onChange={(event) => {
+                          if (event.target.value === 'new') {
+                            setIsCreatingVenue(true)
+                          } else {
+                            setIsCreatingVenue(false)
+                            setNewVenueId(event.target.value)
+                          }
+                        }}
+                        className="h-12 min-w-0 flex-1 rounded-xl border border-[#d8e0ea] bg-white px-4 text-[#061527] outline-none focus:border-[#ff7118]"
+                      >
+                        <option value="">-- Chọn địa điểm --</option>
+                        {venues.map((venue) => (
+                          <option key={venue.id} value={venue.id}>
+                            {venue.name}
+                          </option>
+                        ))}
+                        <option value="new">+ Tạo địa điểm mới...</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleOpenCurrentVenueMap}
+                        className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#d8e0ea] bg-white text-[#52637a] transition hover:border-[#ff7118] hover:bg-[#fff0e7] hover:text-[#ff7118]"
+                        title="Mở địa điểm trên Google Maps"
+                        aria-label="Mở địa điểm trên Google Maps"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
+                    </div>
                   </label>
 
                   <label className="block">
@@ -490,6 +551,14 @@ export function ConcertsPage() {
                         />
                       </label>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenCurrentVenueMap}
+                      className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e0ea] bg-white px-4 text-sm font-black text-[#061527] transition hover:border-[#ff7118] hover:text-[#ff7118]"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Kiểm tra trên Maps
+                    </button>
                   </div>
                 )}
 
@@ -562,6 +631,7 @@ export function ConcertsPage() {
           </div>
         </div>
       )}
+      <DialogHost />
     </div>
   )
 }

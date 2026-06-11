@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { getPublicImageUrl } from '../utils/image'
 import { request, loadStoredTokens } from '../auth'
 import { AlertCircle, CheckCircle, Clock, Edit, FileText, Mic2, Sparkles, Trash2, UploadCloud, Users, X } from 'lucide-react'
+import { useAdminDialog } from '../components/feedback/useAdminDialog'
 
 const inputClass = 'h-12 w-full rounded-xl border border-[#d8e0ea] bg-white px-4 text-[#061527] outline-none placeholder:text-[#7a8a9e] focus:border-[#ff7118]'
 
@@ -30,6 +31,7 @@ function ArtistAvatar({ artist, size = 'md' }) {
 }
 
 export function ArtistBioPage() {
+  const { showConfirm, DialogHost } = useAdminDialog()
   const [concerts, setConcerts] = useState([])
   const [artists, setArtists] = useState([])
   const [selectedConcert, setSelectedConcert] = useState('')
@@ -152,7 +154,12 @@ export function ArtistBioPage() {
   }
 
   const handleDeleteArtist = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa nghệ sĩ này không? Tất cả lịch diễn liên quan sẽ bị gỡ bỏ.')) return
+    const confirmed = await showConfirm({
+      title: 'Xóa nghệ sĩ?',
+      message: 'Nghệ sĩ sẽ bị xóa và tất cả lịch diễn liên quan sẽ bị gỡ bỏ.',
+      confirmLabel: 'Xóa',
+    })
+    if (!confirmed) return
     try {
       const tokens = loadStoredTokens()
       await request(`/admin/artists/${id}`, {
@@ -482,6 +489,7 @@ export function ArtistBioPage() {
           </div>
         </div>
       )}
+      <DialogHost />
     </div>
   )
 }
