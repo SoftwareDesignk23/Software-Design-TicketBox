@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+﻿import { useEffect, useState, useMemo } from "react";
 import { request, loadStoredTokens } from "../auth";
 import {
   Plus,
@@ -8,8 +8,10 @@ import {
   RefreshCw,
   Users,
 } from "lucide-react";
+import { useAdminDialog } from "../components/feedback/useAdminDialog";
 
 export function StaffPage() {
+  const { showAlert, showConfirm, DialogHost } = useAdminDialog();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -59,12 +61,17 @@ export function StaffPage() {
       });
       fetchStaff();
     } catch (e) {
-      alert("Lỗi cập nhật trạng thái");
+      showAlert("Không thể cập nhật trạng thái nhân viên. Vui lòng thử lại.");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) return;
+    const confirmed = await showConfirm({
+      title: "Xóa nhân viên?",
+      message: "Tài khoản nhân viên sẽ bị xóa khỏi hệ thống. Thao tác này không thể hoàn tác.",
+      confirmLabel: "Xóa",
+    });
+    if (!confirmed) return;
     try {
       const tokens = loadStoredTokens();
       await request(`/admin/users/staff/${id}`, {
@@ -73,7 +80,7 @@ export function StaffPage() {
       });
       fetchStaff();
     } catch (e) {
-      alert("Lỗi xóa nhân viên");
+      showAlert("Không thể xóa nhân viên. Vui lòng thử lại.");
     }
   };
 
@@ -94,7 +101,7 @@ export function StaffPage() {
       setFormData({ email: "", password: "", displayName: "" });
       fetchStaff();
     } catch (err) {
-      alert(err.message || "Lỗi tạo tài khoản");
+      showAlert(err.message || "Không thể tạo tài khoản nhân viên. Vui lòng thử lại.");
     } finally {
       setIsCreating(false);
     }
@@ -361,6 +368,7 @@ export function StaffPage() {
           </div>
         </div>
       )}
+      <DialogHost />
     </div>
   );
 }

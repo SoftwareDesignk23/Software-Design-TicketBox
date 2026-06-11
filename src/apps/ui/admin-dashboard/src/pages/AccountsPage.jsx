@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { request, loadStoredTokens } from '../auth'
 import { CheckCircle, ChevronDown, Clock3, Plus, Search, X, XCircle } from 'lucide-react'
+import { useAdminDialog } from '../components/feedback/useAdminDialog'
 
 const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`
 
@@ -22,6 +23,7 @@ const accountStatus = (user) => {
 }
 
 export function AccountsPage() {
+  const { showAlert, showConfirm, DialogHost } = useAdminDialog()
   const [organizers, setOrganizers] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -83,12 +85,17 @@ export function AccountsPage() {
       })
       fetchOrganizers()
     } catch (e) {
-      alert('Lỗi cập nhật trạng thái')
+      showAlert('Không thể cập nhật trạng thái tài khoản. Vui lòng thử lại.')
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa ban tổ chức này?')) return
+    const confirmed = await showConfirm({
+      title: 'Xóa ban tổ chức?',
+      message: 'Tài khoản ban tổ chức sẽ bị xóa khỏi hệ thống. Thao tác này không thể hoàn tác.',
+      confirmLabel: 'Xóa',
+    })
+    if (!confirmed) return
     try {
       const tokens = loadStoredTokens()
       await request(`/admin/users/${id}`, {
@@ -97,7 +104,7 @@ export function AccountsPage() {
       })
       fetchOrganizers()
     } catch (e) {
-      alert('Lỗi xóa ban tổ chức')
+      showAlert('Không thể xóa ban tổ chức. Vui lòng thử lại.')
     }
   }
 
@@ -117,7 +124,7 @@ export function AccountsPage() {
       setFormData({ email: '', password: '', displayName: '', organizerName: '' })
       fetchOrganizers()
     } catch (err) {
-      alert(err.message || 'Lỗi tạo tài khoản')
+      showAlert(err.message || 'Không thể tạo tài khoản. Vui lòng thử lại.')
     }
   }
 
@@ -326,6 +333,7 @@ export function AccountsPage() {
           </div>
         </div>
       )}
+      <DialogHost />
     </div>
   )
 }

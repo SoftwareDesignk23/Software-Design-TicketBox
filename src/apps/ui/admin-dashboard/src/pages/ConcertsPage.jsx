@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { request, loadStoredTokens } from '../auth'
 import {
   CalendarDays,
   Edit,
+  ExternalLink,
   MapPin,
   Plus,
   Settings,
@@ -12,6 +13,8 @@ import {
   X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useAdminDialog } from '../components/feedback/useAdminDialog'
+import { openGoogleMapsSearch, venueMapQuery } from '../utils/maps'
 
 const statusMeta = {
   PUBLISHED: { label: 'Công khai', className: 'status-pill-active' },
@@ -48,6 +51,7 @@ function ConcertImage({ src, title }) {
 
 export function ConcertsPage() {
   const navigate = useNavigate()
+  const { showAlert, showConfirm, DialogHost } = useAdminDialog()
   const [concerts, setConcerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -88,7 +92,7 @@ export function ConcertsPage() {
       if (!uploadRes.fileUrl) throw new Error('Không nhận được file URL từ server')
       setUrl(uploadRes.fileUrl)
     } catch (err) {
-      alert('Lỗi upload ảnh: ' + err.message)
+      showAlert('Không thể upload ảnh: ' + err.message)
     } finally {
       setIsUploading(false)
       event.target.value = null
@@ -136,7 +140,12 @@ export function ConcertsPage() {
   }, [concerts])
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Chắc chắn muốn xóa sự kiện này?')) return
+    const confirmed = await showConfirm({
+      title: 'Xóa sự kiện?',
+      message: 'Sự kiện sẽ bị xóa khỏi hệ thống. Thao tác này không thể hoàn tác.',
+      confirmLabel: 'Xóa',
+    })
+    if (!confirmed) return
     try {
       const tokens = loadStoredTokens()
       await request(`/concerts/${id}`, {
@@ -145,14 +154,44 @@ export function ConcertsPage() {
       })
       fetchConcerts()
     } catch (e) {
-      alert('Lỗi xóa sự kiện: ' + e.message)
+      showAlert('Không thể xóa sự kiện: ' + e.message)
     }
   }
 
+  const handleOpenVenueMap = (venue) => {
+    openGoogleMapsSearch(venueMapQuery(venue), () => {
+      showAlert('Vui lòng nhập tên hoặc địa chỉ địa điểm trước khi mở Google Maps.', {
+        title: 'Chưa đủ thông tin địa điểm',
+      })
+    })
+  }
+
+  const handleOpenCurrentVenueMap = () => {
+    const selectedVenue = venues.find((venue) => venue.id === newVenueId)
+    const query = isCreatingVenue
+      ? [newVenueName, newVenueAddress].filter(Boolean).join(' ')
+      : venueMapQuery(selectedVenue)
+
+    openGoogleMapsSearch(query, () => {
+      showAlert('Vui lòng nhập tên hoặc địa chỉ địa điểm trước khi mở Google Maps.', {
+        title: 'Chưa đủ thông tin địa điểm',
+      })
+    })
+  }
+
   const handleCreateOrUpdate = async () => {
-    if (!newTitle) return alert('Vui lòng nhập tên sự kiện')
-    if (isCreatingVenue && (!newVenueName || !newVenueAddress)) return alert('Vui lòng nhập tên và địa chỉ địa điểm mới')
-    if (!isCreatingVenue && !newVenueId) return alert('Vui lòng chọn địa điểm')
+    if (!newTitle) {
+      showAlert('Vui lòng nhập tên sự kiện.')
+      return
+    }
+    if (isCreatingVenue && (!newVenueName || !newVenueAddress)) {
+      showAlert('Vui lòng nhập tên và địa chỉ địa điểm mới.')
+      return
+    }
+    if (!isCreatingVenue && !newVenueId) {
+      showAlert('Vui lòng chọn địa điểm.')
+      return
+    }
 
     setIsCreating(true)
     try {
@@ -204,7 +243,7 @@ export function ConcertsPage() {
       fetchConcerts()
       fetchVenues()
     } catch (e) {
-      alert(`Lỗi ${editingConcert ? 'chỉnh sửa' : 'tạo'} sự kiện: ` + e.message)
+      showAlert(`Không thể ${editingConcert ? 'chỉnh sửa' : 'tạo'} sự kiện: ${e.message}`)
     } finally {
       setIsCreating(false)
     }
@@ -243,9 +282,9 @@ export function ConcertsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-full bg-[#edf2f7] px-8 py-7">
+      <div className="min-h-full bg-[#edf2f7] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
         <div className="h-24 animate-pulse rounded-2xl bg-white" />
-        <div className="mt-6 grid gap-4 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[0, 1, 2, 3].map((item) => (
             <div key={item} className="h-28 animate-pulse rounded-2xl bg-white" />
           ))}
@@ -263,25 +302,25 @@ export function ConcertsPage() {
   ]
 
   return (
-    <div className="min-h-full bg-[#edf2f7] px-8 py-7 text-[#061527]">
-      <header className="flex items-start justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-[-0.035em] text-[#061527]">Quản lý sự kiện</h1>
-          <p className="mt-2 text-lg font-semibold text-[#4f6075]">
+    <div className="min-h-full bg-[#edf2f7] px-4 py-5 text-[#061527] sm:px-6 lg:px-8 lg:py-7">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-black tracking-[-0.035em] text-[#061527] sm:text-4xl">Quản lý sự kiện</h1>
+          <p className="mt-2 max-w-4xl text-base font-semibold text-[#4f6075] sm:text-lg">
             Theo dõi concert, trạng thái phát hành, hạng vé và cấu hình vận hành.
           </p>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#ff7118] px-6 text-sm font-black text-white shadow-[0_12px_28px_rgba(255,113,24,0.24)] transition hover:bg-[#ff5d0a]"
+          className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#ff7118] px-6 text-sm font-black text-white shadow-[0_12px_28px_rgba(255,113,24,0.24)] transition hover:bg-[#ff5d0a] sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Tạo sự kiện
         </button>
       </header>
 
-      <section className="mt-7 grid gap-4 lg:grid-cols-4">
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:mt-7 xl:grid-cols-4">
         {statCards.map((item) => (
           <article key={item.label} className="rounded-2xl border border-[#cbd6e2] bg-white p-5 shadow-[0_10px_24px_rgba(15,35,58,0.08)]">
             <div className="flex items-start justify-between gap-4">
@@ -298,26 +337,26 @@ export function ConcertsPage() {
       </section>
 
       <section className="mt-5 overflow-hidden rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
-        <div className="flex items-center justify-between border-b border-[#d8e0ea] px-5 py-4">
+        <div className="flex flex-col gap-3 border-b border-[#d8e0ea] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">Danh sách</p>
-            <h2 className="mt-1 text-2xl font-black text-[#061527]">Concert đang quản lý</h2>
+            <h2 className="mt-1 text-xl font-black text-[#061527] sm:text-2xl">Concert đang quản lý</h2>
           </div>
-          <span className="rounded-full bg-[#eef3f8] px-3 py-1.5 text-sm font-black text-[#42536a]">
+          <span className="w-fit rounded-full bg-[#eef3f8] px-3 py-1.5 text-sm font-black text-[#42536a]">
             {concerts.length} sự kiện
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
+        <div className="hidden overflow-x-auto xl:block">
+          <table className="w-full min-w-[1120px] table-fixed">
             <thead>
               <tr className="border-b border-[#cbd6e2] bg-[#f8fafc] text-left text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">
-                <th className="px-5 py-4">Sự kiện</th>
-                <th className="px-5 py-4">Địa điểm</th>
-                <th className="px-5 py-4">Trạng thái</th>
-                <th className="px-5 py-4">Cấu hình</th>
-                <th className="px-5 py-4">Ngày tạo</th>
-                <th className="px-5 py-4 text-right">Hành động</th>
+                <th className="w-[34%] px-5 py-4">Sự kiện</th>
+                <th className="w-[20%] px-5 py-4">Địa điểm</th>
+                <th className="w-[13%] px-5 py-4">Trạng thái</th>
+                <th className="w-[16%] px-5 py-4">Cấu hình</th>
+                <th className="w-[9%] px-5 py-4">Ngày tạo</th>
+                <th className="w-[8%] px-5 py-4 text-right">Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -340,15 +379,26 @@ export function ConcertsPage() {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-5 py-5">
-                      <div className="flex items-center gap-2 text-sm font-black text-[#061527]">
-                        <MapPin className="h-4 w-4 text-[#ff7118]" />
-                        {concert.venue?.name || 'Chưa chọn'}
+                      <div className="flex items-center gap-2">
+                        <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#061527]">
+                          <MapPin className="h-4 w-4 shrink-0 text-[#ff7118]" />
+                          <span className="truncate">{concert.venue?.name || 'Chưa chọn'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenVenueMap(concert.venue)}
+                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#d8e0ea] bg-white text-[#52637a] transition hover:border-[#ff7118] hover:bg-[#fff0e7] hover:text-[#ff7118]"
+                          title="Mở địa điểm trên Google Maps"
+                          aria-label="Mở địa điểm trên Google Maps"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-5 py-5">
                       <span className={`status-pill ${status.className}`}>{status.label}</span>
                     </td>
-                    <td className="whitespace-nowrap px-5 py-5 text-sm font-black text-[#061527]">
+                    <td className="px-5 py-5 text-sm font-black text-[#061527]">
                       {concert.ticketTypes?.length || 0} hạng vé · {concert.shows?.length || 0} suất diễn
                     </td>
                     <td className="whitespace-nowrap px-5 py-5 text-sm font-bold text-[#52637a]">{formatDate(concert.createdAt)}</td>
@@ -390,10 +440,88 @@ export function ConcertsPage() {
             </tbody>
           </table>
         </div>
+
+        <div className="grid gap-4 p-4 xl:hidden">
+          {concerts.map((concert) => {
+            const status = statusMeta[concert.status] ?? statusMeta.DRAFT
+            const description = plainText(concert.description)
+
+            return (
+              <article key={concert.id} className="rounded-2xl border border-[#d8e0ea] bg-white p-4 shadow-[0_8px_20px_rgba(15,35,58,0.06)]">
+                <div className="flex gap-3">
+                  <div className="h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-[#eaf0fa]">
+                    <ConcertImage src={concert.heroImageUrl} title={concert.title} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="line-clamp-2 text-base font-black leading-6 text-[#061527]">{concert.title}</h3>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-[#52637a]">
+                      {description || 'Chưa có mô tả'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className={`status-pill ${status.className}`}>{status.label}</span>
+                  <span className="rounded-full bg-[#eef3f8] px-3 py-1.5 text-xs font-black text-[#42536a]">
+                    {concert.ticketTypes?.length || 0} hạng vé · {concert.shows?.length || 0} suất diễn
+                  </span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-[#f8fafc] px-3 py-3">
+                  <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#061527]">
+                    <MapPin className="h-4 w-4 shrink-0 text-[#ff7118]" />
+                    <span className="truncate">{concert.venue?.name || 'Chưa chọn'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenVenueMap(concert.venue)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#d8e0ea] bg-white text-[#52637a] transition hover:border-[#ff7118] hover:bg-[#fff0e7] hover:text-[#ff7118]"
+                    title="Mở địa điểm trên Google Maps"
+                    aria-label="Mở địa điểm trên Google Maps"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-[#52637a]">{formatDate(concert.createdAt)}</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate(`/concerts/${concert.id}`)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#d8e0ea] bg-white text-[#236bff] transition hover:border-[#236bff] hover:bg-[#eef3ff]"
+                      title="Cấu hình chi tiết"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => openEditModal(concert)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#d8e0ea] bg-white text-[#ff7118] transition hover:border-[#ff7118] hover:bg-[#fff0e7]"
+                      title="Chỉnh sửa thông tin chung"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(concert.id)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#d8e0ea] bg-white text-[#ef2534] transition hover:border-[#ef2534] hover:bg-[#fff0f1]"
+                      title="Xóa"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            )
+          })}
+          {concerts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#cbd6e2] bg-[#f8fafc] px-6 py-14 text-center text-sm font-bold text-[#52637a]">
+              Chưa có sự kiện nào.
+            </div>
+          ) : null}
+        </div>
       </section>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#061527]/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#061527]/50 p-3 backdrop-blur-sm sm:p-4">
           <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-[#d8e0ea] bg-white shadow-[0_24px_80px_rgba(6,21,39,0.24)]">
             <div className="flex items-start justify-between gap-4 border-b border-[#d8e0ea] px-6 py-5">
               <div>
@@ -430,26 +558,37 @@ export function ConcertsPage() {
                     <span className="mb-1.5 block text-sm font-black text-[#061527]">
                       Địa điểm <span className="text-[#ef2534]">*</span>
                     </span>
-                    <select
-                      value={isCreatingVenue ? 'new' : newVenueId}
-                      onChange={(event) => {
-                        if (event.target.value === 'new') {
-                          setIsCreatingVenue(true)
-                        } else {
-                          setIsCreatingVenue(false)
-                          setNewVenueId(event.target.value)
-                        }
-                      }}
-                      className="h-12 w-full rounded-xl border border-[#d8e0ea] bg-white px-4 text-[#061527] outline-none focus:border-[#ff7118]"
-                    >
-                      <option value="">-- Chọn địa điểm --</option>
-                      {venues.map((venue) => (
-                        <option key={venue.id} value={venue.id}>
-                          {venue.name}
-                        </option>
-                      ))}
-                      <option value="new">+ Tạo địa điểm mới...</option>
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={isCreatingVenue ? 'new' : newVenueId}
+                        onChange={(event) => {
+                          if (event.target.value === 'new') {
+                            setIsCreatingVenue(true)
+                          } else {
+                            setIsCreatingVenue(false)
+                            setNewVenueId(event.target.value)
+                          }
+                        }}
+                        className="h-12 min-w-0 flex-1 rounded-xl border border-[#d8e0ea] bg-white px-4 text-[#061527] outline-none focus:border-[#ff7118]"
+                      >
+                        <option value="">-- Chọn địa điểm --</option>
+                        {venues.map((venue) => (
+                          <option key={venue.id} value={venue.id}>
+                            {venue.name}
+                          </option>
+                        ))}
+                        <option value="new">+ Tạo địa điểm mới...</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleOpenCurrentVenueMap}
+                        className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#d8e0ea] bg-white text-[#52637a] transition hover:border-[#ff7118] hover:bg-[#fff0e7] hover:text-[#ff7118]"
+                        title="Mở địa điểm trên Google Maps"
+                        aria-label="Mở địa điểm trên Google Maps"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
+                    </div>
                   </label>
 
                   <label className="block">
@@ -490,6 +629,14 @@ export function ConcertsPage() {
                         />
                       </label>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenCurrentVenueMap}
+                      className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e0ea] bg-white px-4 text-sm font-black text-[#061527] transition hover:border-[#ff7118] hover:text-[#ff7118]"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Kiểm tra trên Maps
+                    </button>
                   </div>
                 )}
 
@@ -562,6 +709,7 @@ export function ConcertsPage() {
           </div>
         </div>
       )}
+      <DialogHost />
     </div>
   )
 }

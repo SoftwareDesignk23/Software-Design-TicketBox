@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { request, loadStoredTokens } from '../auth'
-import { ArrowLeft, CalendarDays, Edit2, Plus, Save, Ticket, Trash2, Users, X } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Edit2, ExternalLink, MapPin, Plus, Save, Ticket, Trash2, Users, X } from 'lucide-react'
+import { useAdminDialog } from '../components/feedback/useAdminDialog'
+import { openGoogleMapsSearch, venueMapQuery } from '../utils/maps'
 
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString('vi-VN') : '-')
 const formatVnd = (value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`
@@ -48,6 +50,7 @@ function ArtistAvatar({ artist }) {
 export function ConcertDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { showAlert, showConfirm, DialogHost } = useAdminDialog()
   const [concert, setConcert] = useState(null)
   const [artists, setArtists] = useState([])
   const [coupons, setCoupons] = useState([])
@@ -99,7 +102,7 @@ export function ConcertDetailPage() {
       if (artistsData.length > 0) setNewArtistId(artistsData[0].id)
     } catch (e) {
       console.error(e)
-      alert('Lỗi tải dữ liệu sự kiện')
+      showAlert('Không thể tải dữ liệu sự kiện. Vui lòng thử lại.')
     } finally {
       setLoading(false)
     }
@@ -158,7 +161,7 @@ export function ConcertDetailPage() {
       setNewShowSalesOpensAt('')
       fetchData()
     } catch (e) {
-      alert('Lỗi tạo suất diễn: ' + e.message)
+      showAlert('Không thể tạo suất diễn: ' + e.message)
     }
   }
 
@@ -224,7 +227,7 @@ export function ConcertDetailPage() {
       setNewTicketSeatsPerRow('')
       fetchData()
     } catch (e) {
-      alert('Lỗi tạo hạng vé: ' + e.message)
+      showAlert('Không thể tạo hạng vé: ' + e.message)
     }
   }
 
@@ -300,12 +303,17 @@ export function ConcertDetailPage() {
       setEditingTicketId(null)
       fetchData()
     } catch (e) {
-      alert('Lỗi cập nhật hạng vé: ' + e.message)
+      showAlert('Không thể cập nhật hạng vé: ' + e.message)
     }
   }
 
   const handleDeleteTicketType = async (ticketTypeId) => {
-    if (!window.confirm('Xóa hạng vé này khỏi sự kiện?')) return
+    const confirmed = await showConfirm({
+      title: 'Xóa hạng vé?',
+      message: 'Hạng vé này sẽ bị xóa khỏi sự kiện. Thao tác này không thể hoàn tác.',
+      confirmLabel: 'Xóa',
+    })
+    if (!confirmed) return
     try {
       const tokens = loadStoredTokens()
       await request(`/concerts/${id}/ticket-types/${ticketTypeId}`, {
@@ -314,7 +322,7 @@ export function ConcertDetailPage() {
       })
       fetchData()
     } catch (e) {
-      alert('Lỗi xóa hạng vé: ' + e.message)
+      showAlert('Không thể xóa hạng vé: ' + e.message)
     }
   }
 
@@ -351,12 +359,17 @@ export function ConcertDetailPage() {
       setNewArtistRole('Ca sĩ chính')
       fetchData()
     } catch (e) {
-      alert('Lỗi thêm nghệ sĩ: ' + e.message)
+      showAlert('Không thể thêm nghệ sĩ: ' + e.message)
     }
   }
 
   const handleRemoveArtist = async (artistId) => {
-    if (!window.confirm('Xóa nghệ sĩ này khỏi sự kiện?')) return
+    const confirmed = await showConfirm({
+      title: 'Xóa nghệ sĩ khỏi sự kiện?',
+      message: 'Nghệ sĩ sẽ được gỡ khỏi lineup của sự kiện này.',
+      confirmLabel: 'Xóa',
+    })
+    if (!confirmed) return
     try {
       const tokens = loadStoredTokens()
       await request(`/concerts/${id}/artists/${artistId}`, {
@@ -365,12 +378,15 @@ export function ConcertDetailPage() {
       })
       fetchData()
     } catch (e) {
-      alert('Lỗi xóa nghệ sĩ: ' + e.message)
+      showAlert('Không thể xóa nghệ sĩ: ' + e.message)
     }
   }
 
   const handleCreateCoupon = async () => {
-    if (!newCouponCode || !newCouponDiscount || !newCouponMaxUsage) return alert('Nhap du thong tin ma giam gia')
+    if (!newCouponCode || !newCouponDiscount || !newCouponMaxUsage) {
+      showAlert('Vui lòng nhập đủ thông tin mã giảm giá.')
+      return
+    }
     try {
       const tokens = loadStoredTokens()
       await request(`/concerts/${id}/coupons`, {
@@ -390,7 +406,7 @@ export function ConcertDetailPage() {
       setNewCouponMaxUsage('')
       fetchData()
     } catch (e) {
-      alert('Loi tao ma giam gia: ' + e.message)
+      showAlert('Không thể tạo mã giảm giá: ' + e.message)
     }
   }
 
@@ -409,8 +425,16 @@ export function ConcertDetailPage() {
       })
       fetchData()
     } catch (e) {
-      alert('Loi cap nhat ma giam gia: ' + e.message)
+      showAlert('Không thể cập nhật mã giảm giá: ' + e.message)
     }
+  }
+
+  const handleOpenVenueMap = () => {
+    openGoogleMapsSearch(venueMapQuery(concert?.venue), () => {
+      showAlert('Vui lòng nhập tên hoặc địa chỉ địa điểm trước khi mở Google Maps.', {
+        title: 'Chưa đủ thông tin địa điểm',
+      })
+    })
   }
 
   if (loading) {
@@ -457,6 +481,16 @@ export function ConcertDetailPage() {
           <div>
             <h1 className="text-4xl font-black tracking-[-0.035em] text-[#061527]">Cấu hình sự kiện</h1>
             <p className="mt-2 text-lg font-semibold text-[#4f6075]">{concert.title}</p>
+            <button
+              type="button"
+              onClick={handleOpenVenueMap}
+              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[#cbd6e2] bg-white px-3 py-2 text-sm font-black text-[#061527] shadow-[0_8px_18px_rgba(15,35,58,0.06)] transition hover:border-[#ff7118] hover:text-[#ff7118]"
+              title="Mở địa điểm trên Google Maps"
+            >
+              <MapPin className="h-4 w-4 text-[#ff7118]" />
+              <span>{concert.venue?.name || 'Chưa chọn địa điểm'}</span>
+              <ExternalLink className="h-3.5 w-3.5 text-[#52637a]" />
+            </button>
           </div>
         </div>
 
@@ -832,6 +866,7 @@ export function ConcertDetailPage() {
           </section>
         </div>
       )}
+      <DialogHost />
     </div>
   )
 }
