@@ -154,8 +154,7 @@ export class VNPayProvider implements IPaymentProvider {
 		const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex')
 
 		if (secureHash === signed) {
-			// Check if response code indicates success
-			return vnp_Params['vnp_ResponseCode'] === '00'
+			return true
 		}
 
 		return false
