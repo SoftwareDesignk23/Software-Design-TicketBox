@@ -262,7 +262,7 @@ async function main() {
 		data: {
 			title: 'Anh Trai Say Hi - Live Concert',
 			description: '<h1>Concert hoành tráng nhất năm 2024</h1><p>Quy tụ dàn anh trai cực hot từ chương trình thực tế Anh Trai Say Hi.</p>',
-			heroImageUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/anh_trai_say_hi_banner.jpg',
+			heroImageUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
 			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
 			organizerId: datVietVac.id,
 			venueId: svdQuanKhu7.id,
@@ -294,7 +294,7 @@ async function main() {
 		data: {
 			title: 'Chị Đẹp Đạp Gió Rẽ Sóng 2024',
 			description: '<h1>Đêm chung kết và trao giải</h1>',
-			heroImageUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/chi_dep.jpg',
+			heroImageUrl: 'https://images.unsplash.com/photo-1582711012124-a56cf82307a0?q=80&w=1540&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
 			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
 			organizerId: yeah1.id,
 			venueId: nhaThiDauPhuTho.id,
@@ -407,7 +407,7 @@ async function main() {
 		data: {
 			title: 'Vũ Trụ Cò Bay - Live Concert',
 			description: '<h1>Vươn đôi cánh văn hóa dân tộc</h1><p>Phương Mỹ Chi mang đến không gian âm nhạc giao thoa giữa truyền thống và hiện đại, một đêm nhạc đầy tự hào với những câu chuyện văn hóa Việt Nam được kể bằng âm nhạc đầy màu sắc.</p>',
-			heroImageUrl: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f9af?q=80&w=1200&auto=format&fit=crop',
+			heroImageUrl: 'https://images.unsplash.com/photo-1603190287605-e6ade32fa852?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
 			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
 			organizerId: datVietVac.id,
 			venueId: svdQuanKhu7.id,
