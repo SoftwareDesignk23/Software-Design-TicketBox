@@ -12,6 +12,7 @@ import * as crypto from 'crypto'
 import { encryptAES } from '../utils/crypto.util.js'
 
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq'
+import { SeatGateway } from '../concerts/seat.gateway.js'
 
 @Injectable()
 export class PaymentService {
@@ -20,6 +21,7 @@ export class PaymentService {
 		private readonly vnpay: VNPayProvider,
 		private readonly momo: MoMoProvider,
 		private readonly amqpConnection: AmqpConnection,
+		private readonly seatGateway: SeatGateway,
 	) {}
 
 	private getProvider(providerType: PaymentProvider): IPaymentProvider {
@@ -244,6 +246,42 @@ export class PaymentService {
 					where: { id: payment.bookingId },
 					data: { status: 'CANCELLED' },
 				})
+
+				const booking = payment.booking
+				
+				// 1. Release explicit seats
+				const showSeatIds = booking.items.map((item: any) => item.showSeatId).filter(Boolean) as string[]
+				if (showSeatIds.length > 0) {
+					await tx.showSeat.updateMany({
+						where: { id: { in: showSeatIds } },
+						data: { status: 'AVAILABLE' },
+					})
+
+					// Find the showId from one of the seats to broadcast
+					const firstSeat = await tx.showSeat.findUnique({ where: { id: showSeatIds[0] } })
+					if (firstSeat) {
+						this.seatGateway.notifySeatUpdate(
+							firstSeat.showId,
+							showSeatIds.map(id => ({ showSeatId: id, status: 'AVAILABLE' }))
+						)
+					}
+				}
+
+				// 2. Increment inventory back
+				for (const item of booking.items) {
+					await tx.ticketType.update({
+						where: { id: item.ticketTypeId },
+						data: { soldQuantity: { decrement: item.quantity } },
+					})
+				}
+
+				// 3. Release coupon usage
+				if (booking.couponId) {
+					await tx.coupon.update({
+						where: { id: booking.couponId },
+						data: { usedCount: { decrement: 1 } }
+					})
+				}
 			}
 		})
 

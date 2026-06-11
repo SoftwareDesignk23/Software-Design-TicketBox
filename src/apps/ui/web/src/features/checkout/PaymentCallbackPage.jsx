@@ -9,16 +9,21 @@ export function PaymentCallbackPage() {
   useEffect(() => {
     const processPayment = async () => {
       const rspCode = searchParams.get('vnp_ResponseCode')
-      if (rspCode === '00') {
+      
+      if (rspCode) {
+        // Luôn gọi webhook để backend cập nhật trạng thái (Thành công hoặc Thất bại/Hủy)
         try {
           const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
           await fetch(`${API_URL}/payments/webhook/vnpay_ipn?${searchParams.toString()}`)
         } catch (e) {
           console.error('Lỗi cập nhật trạng thái thanh toán:', e)
         }
-        setStatus('success')
-      } else if (rspCode) {
-        setStatus('error')
+
+        if (rspCode === '00') {
+          setStatus('success')
+        } else {
+          setStatus('error')
+        }
       }
     }
     processPayment()

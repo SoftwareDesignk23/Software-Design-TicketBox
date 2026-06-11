@@ -6,6 +6,7 @@ import { Button } from '../../shared/ui/button'
 import { Input } from '../../shared/ui/input'
 import { Badge } from '../../shared/ui/badge'
 import { Skeleton } from '../../shared/ui/skeleton'
+import { useToast } from '../../shared/ui/Toast'
 import { formatCurrency } from '../../shared/utils/format'
 import { createPaymentUrl, fetchBookingById, applyCoupon } from '../../shared/services/api'
 
@@ -15,6 +16,8 @@ export function CheckoutPage() {
   const eventId = searchParams.get('eventId')
   const ticketTypeId = searchParams.get('ticketTypeId')
   const quantity = parseInt(searchParams.get('quantity') || '1', 10)
+  
+  const toast = useToast()
 
   const { data: event, isLoading } = useEvent(eventId)
   
@@ -110,12 +113,12 @@ export function CheckoutPage() {
     
     // Validation
     if (!attendeeInfo.name || !attendeeInfo.email || !attendeeInfo.phone || !attendeeInfo.idCard) {
-      alert('Vui lòng nhập đầy đủ thông tin khán giả.')
+      toast.warning('Vui lòng nhập đầy đủ thông tin khán giả.')
       return
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(attendeeInfo.email)) {
-      alert('Vui lòng nhập địa chỉ email hợp lệ.')
+      toast.warning('Vui lòng nhập địa chỉ email hợp lệ.')
       return
     }
 
@@ -128,7 +131,7 @@ export function CheckoutPage() {
         window.location.href = paymentRes.paymentUrl
       }
     } catch (err) {
-      alert('Không thể tiến hành thanh toán. Phiên giao dịch có thể đã hết hạn.')
+      toast.error('Không thể tiến hành thanh toán. Phiên giao dịch có thể đã hết hạn.')
       console.error(err)
       setIsProcessing(false)
     }
