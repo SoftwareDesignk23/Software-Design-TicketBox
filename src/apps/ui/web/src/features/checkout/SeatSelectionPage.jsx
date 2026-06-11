@@ -7,6 +7,7 @@ import { SeatZoneMap } from '../events/components/SeatZoneMap'
 import { SeatGrid } from '../events/components/SeatGrid'
 import { Button } from '../../shared/ui/button'
 import { Badge } from '../../shared/ui/badge'
+import { useToast } from '../../shared/ui/Toast'
 import { Skeleton } from '../../shared/ui/skeleton'
 import { formatCurrency, formatLongDate, formatTime } from '../../shared/utils/format'
 import { ErrorState } from '../../shared/components/ErrorState'
@@ -20,6 +21,7 @@ export function SeatSelectionPage() {
   const { data, isLoading, isError, refetch } = useEvent(eventId)
   const [selectedShow, setSelectedShow] = useState(null)
   const [selectedZone, setSelectedZone] = useState(null)
+  const toast = useToast()
   
   const [showSeats, setShowSeats] = useState([])
   const [selectedSeats, setSelectedSeats] = useState([])
@@ -182,7 +184,7 @@ export function SeatSelectionPage() {
       }
     } else {
       if (selectedSeats.length >= maxSelectable) {
-        alert(maxSelectable === 0 
+        toast.warning(maxSelectable === 0 
           ? `Bạn đã mua đủ giới hạn vé cho khu vực này.` 
           : `Bạn chỉ được chọn tối đa ${maxSelectable} vé (đã tính các vé mua trước đó).`)
         return
@@ -191,7 +193,7 @@ export function SeatSelectionPage() {
         await lockSeat(seat.id)
         setSelectedSeats(prev => [...prev, seat])
       } catch (err) {
-        alert('Ghế này đã bị người khác chọn. Vui lòng chọn ghế khác.')
+        toast.error('Ghế này đã bị người khác chọn. Vui lòng chọn ghế khác.')
         return
       }
     }
@@ -220,14 +222,14 @@ export function SeatSelectionPage() {
   const handleCheckout = async () => {
     try {
       if (!selectedShow) {
-        alert('Vui lòng chọn ngày giờ biểu diễn trước.')
+        toast.warning('Vui lòng chọn ngày giờ biểu diễn trước.')
         return
       }
       
       const isGaZone = visibleSeats.length === 0 && (zone?.label?.toLowerCase().includes('ga') || zone?.id === 'ga')
       
       if (!isGaZone && selectedSeats.length === 0) {
-        alert('Vui lòng chọn ít nhất 1 ghế trên sơ đồ.')
+        toast.warning('Vui lòng chọn ít nhất 1 ghế trên sơ đồ.')
         return
       }
 
@@ -253,7 +255,7 @@ export function SeatSelectionPage() {
       const res = await createReservation(selectedShow, items)
       navigate(`/checkout?bookingId=${res.id}&eventId=${eventId}&ticketTypeId=${zone?.id || selectedZone}&quantity=${isGaZone ? gaQuantity : selectedSeats.length}`)
     } catch (err) {
-      alert('Không thể giữ chỗ. Vé có thể đã được người khác mua hoặc bạn chưa đăng nhập.')
+      toast.error('Không thể giữ chỗ. Vé có thể đã được người khác mua hoặc bạn chưa đăng nhập.')
       console.error(err)
     } finally {
       setIsReserving(false)
