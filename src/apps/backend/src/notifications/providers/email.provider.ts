@@ -61,7 +61,7 @@ export class EmailProvider implements INotificationProvider {
 									${payload.tickets.map((t: any) => `
 										<div style="text-align: center; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px dashed #ddd;">
 											<p style="font-weight: bold; margin-bottom: 8px; color: #333;">${t.ticketName} ${t.seat ? ` - Ghế: ${t.seat}` : ''}</p>
-											<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(t.id)}" style="max-width: 200px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: white;" />
+											<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(t.qrPayload || t.id)}" style="max-width: 200px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: white;" />
 										</div>
 									`).join('')}
 								</div>

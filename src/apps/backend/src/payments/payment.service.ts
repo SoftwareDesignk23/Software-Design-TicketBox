@@ -220,6 +220,7 @@ export class PaymentService {
 						generatedTickets.push({
 							id: createdTicket.id,
 							code: createdTicket.code,
+							qrPayload: createdTicket.qrPayload,
 							ticketName: item.ticketType.name,
 							seat: item.showSeat?.seat?.label
 						})

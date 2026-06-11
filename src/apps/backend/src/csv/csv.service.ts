@@ -156,6 +156,7 @@ export class CsvService {
 									const generatedTickets = [{
 										id: existingTicket.id,
 										code: existingTicket.code,
+										qrPayload: existingTicket.qrPayload,
 										ticketName: existingTicket.ticketType.name,
 										seat: seatLabel
 									}];
@@ -260,6 +261,7 @@ export class CsvService {
 							const generatedTickets = [{
 								id: ticketId,
 								code: code,
+								qrPayload: qrPayload,
 								ticketName: ticketName,
 								seat: seatLabel
 							}];
