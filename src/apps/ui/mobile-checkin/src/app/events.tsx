@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { checkinService, authService } from '../services/api';
+import { checkinService } from '../services/api';
 import { getLocalTicketStats, upsertValidTickets } from '../services/db';
-import { clearSession } from '../services/auth';
 import { useAuth } from './_layout';
 
 type EventItem = {
@@ -38,8 +37,7 @@ export default function EventsScreen() {
       const nextEvents = data.events || [];
       setEvents(nextEvents);
       await refreshAllStats(nextEvents);
-    } catch (e: any) {
-      console.warn('loadEvents error:', e?.message);
+    } catch (_) {
       Alert.alert('Lỗi', 'Không thể tải danh sách sự kiện. Vui lòng kiểm tra kết nối mạng.');
     } finally {
       setLoading(false);
@@ -93,11 +91,13 @@ export default function EventsScreen() {
   };
 
   const handleLogout = async () => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    await authService.logout();
-    await clearSession();
-    await auth.refresh();
-    router.replace('/');
+    try {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      await auth.logout();
+      router.replace('/');
+    } catch (_) {
+      Alert.alert('Không thể đăng xuất', 'Ứng dụng chưa thể quay về màn hình đăng nhập. Vui lòng thử lại.');
+    }
   };
 
   const formatTime = (date: Date) => {

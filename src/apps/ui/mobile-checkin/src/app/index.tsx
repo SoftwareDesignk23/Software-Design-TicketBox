@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,7 +18,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const auth = useAuth();
 
   useEffect(() => {
@@ -32,19 +32,24 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setError('Vui lòng nhập email và mật khẩu.');
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập email và mật khẩu.');
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
       await authService.login(email.trim(), password);
       await auth.refresh();
       router.replace('/events');
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Đăng nhập thất bại. Kiểm tra lại thông tin.';
-      setError(msg);
+      const status = err.response?.status;
+      const message = !err.response
+        ? 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng rồi thử lại.'
+        : status === 401
+          ? 'Email hoặc mật khẩu không đúng.'
+          : 'Đăng nhập thất bại. Vui lòng thử lại sau.';
+
+      Alert.alert('Không thể đăng nhập', message);
     } finally {
       setLoading(false);
     }
@@ -87,9 +92,6 @@ export default function LoginScreen() {
               textContentType="password"
             />
           </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
           <Pressable
             style={({ pressed }) => [styles.button, pressed && !loading && styles.buttonPressed, loading && styles.buttonDisabled]}
             onPress={handleLogin}
@@ -180,18 +182,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     fontSize: 16,
-  },
-  error: {
-    color: '#c9364d',
-    backgroundColor: '#fff1f3',
-    borderColor: '#ffd5db',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 11,
-    marginBottom: 14,
-    fontSize: 13,
-    lineHeight: 18,
   },
   button: {
     minHeight: 52,

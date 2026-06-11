@@ -1,22 +1,46 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { clearSession, restoreSession } from '../services/auth';
 
 type AuthState = {
   status: 'loading' | 'authenticated' | 'forbidden' | 'unauthenticated';
   displayName: string;
   refresh: () => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthState>({
   status: 'loading',
   displayName: '',
   refresh: async () => {},
+  logout: async () => {},
 });
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+export function ErrorBoundary({ retry }: { error: Error; retry: () => void }) {
+  useEffect(() => {
+    Alert.alert(
+      'Có lỗi xảy ra',
+      'Ứng dụng gặp sự cố khi mở màn hình này. Vui lòng thử lại.',
+      [{ text: 'Thử lại', onPress: retry }]
+    );
+  }, [retry]);
+
+  return (
+    <View style={styles.centerScreen}>
+      <View style={styles.noticeCard}>
+        <Text style={styles.stateTitle}>Không thể mở màn hình</Text>
+        <Text style={styles.stateText}>Vui lòng thử lại. Nếu lỗi còn xuất hiện, hãy đăng nhập lại ứng dụng.</Text>
+        <Pressable style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]} onPress={retry}>
+          <Text style={styles.primaryButtonText}>Thử lại</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
 }
 
 export default function RootLayout() {
@@ -48,6 +72,12 @@ export default function RootLayout() {
     checkAuth();
   }, [checkAuth]);
 
+  const logout = useCallback(async () => {
+    await clearSession();
+    setDisplayName('');
+    setStatus('unauthenticated');
+  }, []);
+
   if (status === 'loading') {
     return (
       <View style={styles.centerScreen}>
@@ -66,8 +96,7 @@ export default function RootLayout() {
           <Text style={styles.stateText}>Tài khoản này chưa được phân quyền cho ứng dụng check-in.</Text>
           <Pressable
             onPress={async () => {
-              await clearSession();
-              setStatus('unauthenticated');
+              await logout();
             }}
             style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
           >
@@ -79,7 +108,7 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthContext.Provider value={{ status, displayName, refresh: checkAuth }}>
+    <AuthContext.Provider value={{ status, displayName, refresh: checkAuth, logout }}>
       <Stack screenOptions={{ headerShown: false }} />
     </AuthContext.Provider>
   );
