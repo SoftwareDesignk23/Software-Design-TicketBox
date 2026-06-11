@@ -261,10 +261,8 @@ async function main() {
 	const atshConcert = await prisma.concert.create({
 		data: {
 			title: 'Anh Trai Say Hi - Live Concert',
-			description:
-				'<h1>Concert hoành tráng nhất năm 2024</h1><p>Quy tụ dàn anh trai cực hot từ chương trình thực tế Anh Trai Say Hi.</p>',
-			heroImageUrl:
-				'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/anh_trai_say_hi_banner.jpg',
+			description: '<h1>Concert hoành tráng nhất năm 2024</h1><p>Quy tụ dàn anh trai cực hot từ chương trình thực tế Anh Trai Say Hi.</p>',
+			heroImageUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/anh_trai_say_hi_banner.jpg',
 			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
 			organizerId: datVietVac.id,
 			venueId: svdQuanKhu7.id,
@@ -284,9 +282,9 @@ async function main() {
 	const atshDay1 = await prisma.concertShow.create({
 		data: {
 			concertId: atshConcert.id,
-			startsAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // in 10 days
+			startsAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
 			endsAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000),
-			salesOpensAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // opened yesterday
+			salesOpensAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
 		},
 	})
 	await createVenueSeatsAndTickets(svdQuanKhu7.id, atshDay1.id, atshConcert.id)
@@ -312,7 +310,7 @@ async function main() {
 			concertId: cddgrsConcert.id,
 			startsAt: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
 			endsAt: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000),
-			salesOpensAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // starts in 5 days
+			salesOpensAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
 		},
 	})
 	await createVenueSeatsAndTickets(nhaThiDauPhuTho.id, cddgrsShow.id, cddgrsConcert.id)
@@ -321,9 +319,8 @@ async function main() {
 	const atvncgConcert = await prisma.concert.create({
 		data: {
 			title: 'Anh Trai Vượt Ngàn Chông Gai - The Concert',
-			description: '<h1>Siêu concert đỉnh cao</h1><p>Đêm hội tụ 33 anh tài.</p>',
-			heroImageUrl:
-				'https://images.unsplash.com/photo-1540039155732-68473500d1cb?q=80&w=1200&auto=format&fit=crop', // Placeholder
+			description: '<h1>Siêu concert đỉnh cao</h1><p>Đêm hội tụ 33 anh tài. Chương trình thực tế tạo tiếng vang lớn nhất 2024 sẽ chính thức bước ra đời thực với sân khấu vô cùng hoành tráng.</p>',
+			heroImageUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=1200&auto=format&fit=crop',
 			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
 			organizerId: viettel.id,
 			venueId: svdMyDinh.id,
@@ -351,9 +348,8 @@ async function main() {
 	const emxinhConcert = await prisma.concert.create({
 		data: {
 			title: 'Em Xinh Say Hi - School Fest',
-			description: '<h1>Lễ hội âm nhạc dành cho giới trẻ</h1>',
-			heroImageUrl:
-				'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=1200&auto=format&fit=crop', // Placeholder
+			description: '<h1>Lễ hội âm nhạc lớn nhất dành cho sinh viên</h1><p>School Fest năm nay mang đến dàn line-up đình đám nhất.</p>',
+			heroImageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop',
 			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
 			organizerId: datVietVac.id,
 			venueId: svdQuanKhu7.id,
@@ -378,8 +374,145 @@ async function main() {
 	})
 	await createVenueSeatsAndTickets(svdQuanKhu7.id, emxinhShow.id, emxinhConcert.id)
 
+	// 10. Concert 5: Show Của Đen 2024
+	const showCuaDen = await prisma.concert.create({
+		data: {
+			title: 'Show của Đen 2024 - Hà Nội',
+			description: '<h1>Hành trình âm nhạc của những người Đồng Âm</h1><p>Đen Vâu trở lại với liveshow hoành tráng nhất trong sự nghiệp tại thủ đô Hà Nội. Cùng đắm chìm trong những bản rap đậm chất đời, những giai điệu mộc mạc và câu chuyện âm nhạc đầy cảm xúc.</p>',
+			heroImageUrl: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1200&auto=format&fit=crop',
+			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
+			organizerId: viettel.id,
+			venueId: svdMyDinh.id,
+			status: 'PUBLISHED',
+			artists: {
+				create: [{ artistId: denVau.id, role: 'Rapper Chính' }],
+			},
+			sponsors: {
+				create: [{ sponsorId: mbBank.id, tier: 'Nhà Tài Trợ Chính' }],
+			},
+		},
+	})
+	const showCuaDenShow = await prisma.concertShow.create({
+		data: {
+			concertId: showCuaDen.id,
+			startsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+			endsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000),
+			salesOpensAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+		},
+	})
+	await createVenueSeatsAndTickets(svdMyDinh.id, showCuaDenShow.id, showCuaDen.id)
+
+	// 7. Concert 2: Vũ Trụ Cò Bay - Phương Mỹ Chi
+	const vuTruCoBay = await prisma.concert.create({
+		data: {
+			title: 'Vũ Trụ Cò Bay - Live Concert',
+			description: '<h1>Vươn đôi cánh văn hóa dân tộc</h1><p>Phương Mỹ Chi mang đến không gian âm nhạc giao thoa giữa truyền thống và hiện đại, một đêm nhạc đầy tự hào với những câu chuyện văn hóa Việt Nam được kể bằng âm nhạc đầy màu sắc.</p>',
+			heroImageUrl: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f9af?q=80&w=1200&auto=format&fit=crop',
+			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
+			organizerId: datVietVac.id,
+			venueId: svdQuanKhu7.id,
+			status: 'PUBLISHED',
+			artists: {
+				create: [{ artistId: phuongMyChi.id, role: 'Ca sĩ chính' }],
+			},
+		},
+	})
+	const vuTruCoBayShow = await prisma.concertShow.create({
+		data: {
+			concertId: vuTruCoBay.id,
+			startsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+			endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + 3.5 * 60 * 60 * 1000),
+			salesOpensAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+		},
+	})
+	await createVenueSeatsAndTickets(svdQuanKhu7.id, vuTruCoBayShow.id, vuTruCoBay.id)
+
+	// 8. Concert 3: MONO Live - Yêu
+	const monoLive = await prisma.concert.create({
+		data: {
+			title: 'MONO Live Concert - YÊU',
+			description: '<h1>Bùng cháy cùng năng lượng tuổi trẻ</h1><p>Lần đầu tiên, MONO mang đến một Live Concert trọn vẹn với những bản hit đình đám. Hệ thống âm thanh ánh sáng chuẩn quốc tế, sân khấu bùng nổ cùng hàng ngàn khán giả.</p>',
+			heroImageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1200&auto=format&fit=crop',
+			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
+			organizerId: yeah1.id,
+			venueId: nhaThiDauPhuTho.id,
+			status: 'PUBLISHED',
+			artists: {
+				create: [{ artistId: mono.id, role: 'Ca sĩ chính' }],
+			},
+			sponsors: {
+				create: [{ sponsorId: pepsi.id, tier: 'Nhà Tài Trợ Độc Quyền' }],
+			},
+		},
+	})
+	const monoLiveShow = await prisma.concertShow.create({
+		data: {
+			concertId: monoLive.id,
+			startsAt: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+			endsAt: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000),
+			salesOpensAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+		},
+	})
+	await createVenueSeatsAndTickets(nhaThiDauPhuTho.id, monoLiveShow.id, monoLive.id)
+
+	// 9. Concert 4: ÁI - Tlinh Solo Tour
+	const tlinhTour = await prisma.concert.create({
+		data: {
+			title: 'ÁI - Tlinh Solo Tour',
+			description: '<h1>Tuyên ngôn nghệ thuật của nữ Rapper thế hệ mới</h1><p>Bước vào thế giới nghệ thuật đa sắc thái của Tlinh qua album "Ái". Một không gian âm nhạc táo bạo, chân thực và vô cùng cuốn hút.</p>',
+			heroImageUrl: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=1200&auto=format&fit=crop',
+			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
+			organizerId: datVietVac.id,
+			venueId: svdQuanKhu7.id,
+			status: 'PUBLISHED',
+			artists: {
+				create: [{ artistId: tlinh.id, role: 'Headliner' }, { artistId: mlee.id, role: 'Khách mời' }],
+			},
+		},
+	})
+	const tlinhTourShow = await prisma.concertShow.create({
+		data: {
+			concertId: tlinhTour.id,
+			startsAt: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
+			endsAt: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000),
+			salesOpensAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+		},
+	})
+	await createVenueSeatsAndTickets(svdQuanKhu7.id, tlinhTourShow.id, tlinhTour.id)
+
+	// 10. Concert 5: HIEUTHUHAI & Isaac - Đêm Nhạc Hội Ánh Sáng
+	const lightFest = await prisma.concert.create({
+		data: {
+			title: 'Đêm Nhạc Hội Ánh Sáng - The Light Fest',
+			description: '<h1>Cuộc đối đầu của hai hoàng tử V-Pop</h1><p>Sự kết hợp chưa từng có giữa HIEUTHUHAI và Isaac trên cùng một sân khấu. Đêm nhạc hội hứa hẹn mang đến trải nghiệm thị giác và thính giác đỉnh cao nhất mùa lễ hội năm nay.</p>',
+			heroImageUrl: 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=1200&auto=format&fit=crop',
+			seatMapUrl: 'https://res.cloudinary.com/dts1ofmtk/image/upload/v1731633519/seatmap-atsh.png',
+			organizerId: viettel.id,
+			venueId: nhaThiDauPhuTho.id,
+			status: 'PUBLISHED',
+			artists: {
+				create: [
+					{ artistId: hieuthuhai.id, role: 'Co-Headliner' },
+					{ artistId: isaac.id, role: 'Co-Headliner' }
+				],
+			},
+			sponsors: {
+				create: [{ sponsorId: pepsi.id, tier: 'Nhà Tài Trợ Kim Cương' }],
+			},
+		},
+	})
+	const lightFestShow = await prisma.concertShow.create({
+		data: {
+			concertId: lightFest.id,
+			startsAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+			endsAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000),
+			salesOpensAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+		},
+	})
+	await createVenueSeatsAndTickets(nhaThiDauPhuTho.id, lightFestShow.id, lightFest.id)
+
 	console.log(
-		'Seed data inserted successfully! Included 4 concerts with SVIP, VIP, CAT1, CAT2, GA.',
+		'Seed data inserted successfully! Included 9 realistic Vietnamese concerts with SVIP, VIP, CAT1, CAT2, GA.',
 	)
 }
 
