@@ -20,6 +20,7 @@ export default function EventsScreen() {
   const [localStats, setLocalStats] = useState<Record<string, Record<string, number>>>({});
   const [pollingEvent, setPollingEvent] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const auth = useAuth();
 
@@ -93,6 +94,7 @@ export default function EventsScreen() {
   const handleLogout = async () => {
     try {
       if (pollingRef.current) clearInterval(pollingRef.current);
+      setAccountMenuOpen(false);
       await auth.logout();
       router.replace('/');
     } catch (_) {
@@ -200,6 +202,14 @@ export default function EventsScreen() {
     );
   };
 
+  const displayName = auth.displayName || 'Nhân viên';
+  const initials = displayName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'NV';
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -208,11 +218,33 @@ export default function EventsScreen() {
             <Text style={styles.kicker}>Khu vực nhân viên</Text>
             <Text style={styles.headerTitle}>Sự kiện hôm nay</Text>
           </View>
-          <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutPressed]} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Đăng xuất</Text>
-          </Pressable>
+          <View style={styles.accountMenuWrap}>
+            <Pressable
+              style={({ pressed }) => [styles.avatarButton, pressed && styles.avatarButtonPressed, accountMenuOpen && styles.avatarButtonActive]}
+              onPress={() => setAccountMenuOpen((open) => !open)}
+            >
+              <Text style={styles.avatarText}>{initials}</Text>
+            </Pressable>
+
+            {accountMenuOpen ? (
+              <View style={styles.accountMenu}>
+                <View style={styles.accountHeader}>
+                  <View style={styles.accountAvatar}>
+                    <Text style={styles.accountAvatarText}>{initials}</Text>
+                  </View>
+                  <View style={styles.accountInfo}>
+                    <Text style={styles.accountName} numberOfLines={1}>{displayName}</Text>
+                    <Text style={styles.accountRole}>Nhân viên check-in</Text>
+                  </View>
+                </View>
+                <View style={styles.menuDivider} />
+                <Pressable style={({ pressed }) => [styles.menuAction, pressed && styles.menuActionPressed]} onPress={handleLogout}>
+                  <Text style={styles.menuActionText}>Đăng xuất</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
         </View>
-        <Text style={styles.headerSub}>Xin chào, {auth.displayName || 'nhân viên'}.</Text>
       </View>
 
       {loading ? (
@@ -253,6 +285,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#d8e2ec',
+    zIndex: 10,
   },
   headerTop: {
     flexDirection: 'row',
@@ -273,26 +306,108 @@ const styles = StyleSheet.create({
     marginTop: 3,
     letterSpacing: 0,
   },
-  headerSub: {
-    color: '#627086',
+  accountMenuWrap: {
+    position: 'relative',
+    zIndex: 20,
+  },
+  avatarButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#153a63',
+    borderWidth: 2,
+    borderColor: '#d8e2ec',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#102033',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  avatarButtonPressed: {
+    backgroundColor: '#102f52',
+  },
+  avatarButtonActive: {
+    borderColor: '#0f7f78',
+  },
+  avatarText: {
+    color: '#ffffff',
     fontSize: 14,
-    marginTop: 7,
+    fontWeight: '800',
+    letterSpacing: 0,
   },
-  logoutBtn: {
-    minHeight: 38,
-    paddingVertical: 9,
-    paddingHorizontal: 13,
-    backgroundColor: '#f8fbfd',
-    borderRadius: 11,
+  accountMenu: {
+    position: 'absolute',
+    top: 54,
+    right: 0,
+    width: 248,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#cdd9e5',
+    borderColor: '#d8e2ec',
+    shadowColor: '#102033',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    elevation: 8,
   },
-  logoutPressed: {
-    backgroundColor: '#eef5f7',
+  accountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  logoutText: {
-    color: '#263a52',
+  accountAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ecfdf8',
+    borderWidth: 1,
+    borderColor: '#bdeee3',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountAvatarText: {
+    color: '#0f7f78',
     fontSize: 13,
+    fontWeight: '800',
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountName: {
+    color: '#102033',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  accountRole: {
+    color: '#627086',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#e2eaf2',
+    marginVertical: 10,
+  },
+  menuAction: {
+    minHeight: 42,
+    borderRadius: 11,
+    backgroundColor: '#fff1f3',
+    borderWidth: 1,
+    borderColor: '#ffd5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  menuActionPressed: {
+    backgroundColor: '#ffe8ec',
+  },
+  menuActionText: {
+    color: '#b4233a',
+    fontSize: 14,
     fontWeight: '800',
   },
   listContent: {
