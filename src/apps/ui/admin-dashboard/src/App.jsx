@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -6,6 +6,7 @@ import {
   Navigate,
   useNavigate,
 } from "react-router-dom";
+import { ArrowRight, Loader2, LockKeyhole, Mail } from "lucide-react";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ConcertsPage } from "./pages/ConcertsPage";
@@ -15,11 +16,7 @@ import { ArtistBioPage } from "./pages/ArtistBioPage";
 import { AccountsPage } from "./pages/AccountsPage";
 import { StaffPage } from "./pages/StaffPage";
 import { AuthProvider, useAuth } from "./AuthContext";
-import {
-  clearStoredTokens,
-  loadStoredTokens,
-  login as loginRequest,
-} from "./auth";
+import { clearStoredTokens, login as loginRequest } from "./auth";
 
 function LoginPage() {
   const [email, setEmail] = useState("admin@ticketbox.local");
@@ -44,7 +41,6 @@ function LoginPage() {
         setLoading(false);
         return;
       }
-      // Lưu user data vào context
       setUserData(response.user);
       navigate("/");
     } catch (error) {
@@ -54,58 +50,86 @@ function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-surface-1 p-4">
-      <form
-        className="bg-surface-2 p-8 rounded-2xl shadow-strong w-full max-w-md border border-subtle"
-        onSubmit={handleLogin}
-      >
-        <h1 className="text-3xl font-bold text-primary mb-2 text-center">
-          Đăng nhập Admin
-        </h1>
-        <p className="text-muted mb-8 text-center">
-          Sử dụng tài khoản quản trị để tiếp tục.
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-primary mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              className="w-full rounded-md border border-subtle bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@ticketbox.local"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-primary mb-1">
-              Mật khẩu
-            </label>
-            <input
-              type="password"
-              className="w-full rounded-md border border-subtle bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
+    <main className="flex min-h-screen items-center justify-center bg-[#edf2f7] px-5 py-10 text-[#061527]">
+      <div className="w-full max-w-[480px]">
+        <div className="mb-6">
+          <p className="text-sm font-black uppercase tracking-[0.08em] text-[#ff7118]">
+            TicketOps Console
+          </p>
+          <h1 className="mt-2 text-4xl font-black tracking-[-0.035em] text-[#061527]">
+            Đăng nhập
+          </h1>
+          <p className="mt-2 text-base font-semibold text-[#4f6075]">
+            Sử dụng tài khoản quản trị hoặc organizer để tiếp tục.
+          </p>
         </div>
 
-        {error ? (
-          <p className="mt-4 text-error text-sm text-center">
-            {error.message ?? "Đăng nhập thất bại."}
-          </p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-6 w-full rounded-md bg-accent px-4 py-2 text-white font-semibold hover:bg-accent-hover disabled:opacity-50 transition-colors"
+        <form
+          className="rounded-2xl border border-[#cbd6e2] bg-white p-5 shadow-[0_10px_24px_rgba(15,35,58,0.08)] sm:p-6"
+          onSubmit={handleLogin}
         >
-          {loading ? "Đang xử lý..." : "Đăng nhập"}
-        </button>
-      </form>
+          <div className="space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-black text-[#061527]">
+                Email
+              </span>
+              <span className="relative block">
+                <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#506177]" />
+                <input
+                  type="email"
+                  className="h-12 w-full rounded-xl border border-[#cbd6e2] bg-white pl-11 pr-4 text-sm font-semibold text-[#061527] outline-none transition placeholder:text-[#7a8a9e] hover:border-[#ff7118] focus:border-[#ff7118]"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="admin@ticketbox.local"
+                  autoComplete="email"
+                  required
+                />
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-black text-[#061527]">
+                Mật khẩu
+              </span>
+              <span className="relative block">
+                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#506177]" />
+                <input
+                  type="password"
+                  className="h-12 w-full rounded-xl border border-[#cbd6e2] bg-white pl-11 pr-4 text-sm font-semibold text-[#061527] outline-none transition placeholder:text-[#7a8a9e] hover:border-[#ff7118] focus:border-[#ff7118]"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </span>
+            </label>
+          </div>
+
+          {error ? (
+            <div className="mt-4 rounded-xl border border-[#ffd3dd] bg-[#fff2f5] px-4 py-3 text-sm font-bold text-[#c0182f]">
+              {error.message ?? "Đăng nhập thất bại."}
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#ff7118] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(255,113,24,0.24)] transition hover:bg-[#ff5d0a] disabled:opacity-60"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Đang xử lý
+              </>
+            ) : (
+              <>
+                Đăng nhập
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
