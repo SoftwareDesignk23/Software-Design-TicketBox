@@ -104,7 +104,7 @@ README.md
 | ---------- | ----------------- |
 | 23120200   | Nguyễn Hưng Thịnh |
 | 23120222   | Lê Thành Công     |
-| 231220252  | Nguyễn Phúc Hậu   |
+| 23120252  | Nguyễn Phúc Hậu   |
 
 ---
 
