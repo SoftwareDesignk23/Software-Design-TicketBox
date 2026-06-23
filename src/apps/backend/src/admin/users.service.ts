@@ -9,15 +9,56 @@ export class UsersService {
 	constructor(private readonly prisma: PrismaService) {}
 
 	async listOrganizers() {
-		return this.prisma.user.findMany({
+		const users = await this.prisma.user.findMany({
 			where: { role: 'ORGANIZER' },
 			include: {
-				organizer: true,
+				organizer: {
+					include: {
+						_count: {
+							select: { concerts: true }
+						}
+					}
+				},
 			},
 			orderBy: {
 				createdAt: 'desc',
 			},
 		})
+
+		const now = new Date()
+		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+		return Promise.all(users.map(async (u) => {
+			if (!u.organizerId) return u
+
+			const bookings = await this.prisma.booking.findMany({
+				where: {
+					status: 'PAID',
+					createdAt: { gte: startOfMonth },
+					items: {
+						some: {
+							ticketType: {
+								concert: {
+									organizerId: u.organizerId
+								}
+							}
+						}
+					}
+				},
+				select: { totalAmount: true }
+			})
+
+			const monthlyRevenue = bookings.reduce((sum, b) => sum + Number(b.totalAmount), 0)
+
+			return {
+				...u,
+				organizer: {
+					...u.organizer,
+					concertsCount: u.organizer?._count?.concerts || 0,
+					monthlyRevenue
+				}
+			}
+		}))
 	}
 
 	async listStaff(creatorId: string, creatorRole: string) {

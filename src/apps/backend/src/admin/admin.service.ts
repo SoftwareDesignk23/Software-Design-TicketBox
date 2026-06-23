@@ -126,6 +126,14 @@ export class AdminService {
 		})
 	}
 
+	async listJobs(userId: string, role: Role) {
+		return this.prisma.backgroundJob.findMany({
+			where: role === 'ADMIN' ? {} : { createdBy: userId },
+			orderBy: { createdAt: 'desc' },
+			take: 20
+		})
+	}
+
 	async getJobStatus(jobId: string) {
 		const job = await this.prisma.backgroundJob.findUnique({ where: { id: jobId } })
 		if (!job) return null

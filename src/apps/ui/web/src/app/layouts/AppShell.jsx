@@ -40,9 +40,6 @@ export function AppShell() {
 							</div>
 							<span className="text-xl font-extrabold tracking-tight text-white transition-colors group-hover:text-[color:var(--accent)] drop-shadow-md hidden sm:block">TicketBox</span>
 						</Link>
-						<Badge variant="accent" className="hidden md:inline-flex bg-[color:var(--accent)]/20 text-[color:var(--accent)] border-[color:var(--accent)]/30 font-bold tracking-wider">
-							Mở bán: 10:00 AM
-						</Badge>
 					</div>
 					<nav className="hidden items-center gap-2 md:flex bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-md">
 						<NavLink to="/events" className={navLinkClass}>

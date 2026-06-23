@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { request, loadStoredTokens } from '../auth'
 import { CheckCircle, ChevronDown, Clock3, Plus, Search, X, XCircle } from 'lucide-react'
 import { useAdminDialog } from '../components/feedback/useAdminDialog'
@@ -6,10 +6,10 @@ import { useAdminDialog } from '../components/feedback/useAdminDialog'
 const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`
 
 const accountRevenue = (user, index) =>
-  user.monthlyRevenue ?? user.revenue ?? user.organizer?.monthlyRevenue ?? (user.isActive ? (index + 6) * 115000000 : 0)
+  user.monthlyRevenue ?? user.revenue ?? user.organizer?.monthlyRevenue ?? 0
 
 const accountEvents = (user, index) =>
-  user.activeConcerts ?? user.concertsCount ?? user.organizer?.concertsCount ?? (user.isActive ? Math.max(1, 12 - index * 2) : 0)
+  user.activeConcerts ?? user.concertsCount ?? user.organizer?.concertsCount ?? 0
 
 const accountStatus = (user) => {
   const rawStatus = String(user.status ?? user.organizer?.status ?? '').toUpperCase()

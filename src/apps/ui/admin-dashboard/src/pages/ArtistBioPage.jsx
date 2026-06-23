@@ -75,6 +75,52 @@ export function ArtistBioPage() {
   }, [])
 
   useEffect(() => {
+    const fetchActiveJob = async () => {
+      try {
+        const tokens = loadStoredTokens()
+        const jobs = await request('/admin/jobs', {
+          headers: { Authorization: `Bearer ${tokens.accessToken}` },
+        })
+        
+        // Find any active job globally first to restore selection
+        const globalActiveJob = jobs.find(job => 
+          job.type === 'AI_ARTIST_BIO' && 
+          (job.status === 'PENDING' || job.status === 'PROCESSING')
+        )
+        
+        if (globalActiveJob && globalActiveJob.data?.concertId && !selectedConcert) {
+          setSelectedConcert(globalActiveJob.data.concertId)
+          setCurrentJob(globalActiveJob)
+          return
+        }
+
+        if (!selectedConcert) return
+
+        const activeAiJob = jobs.find(job => 
+          job.type === 'AI_ARTIST_BIO' && 
+          job.data?.concertId === selectedConcert && 
+          (job.status === 'PENDING' || job.status === 'PROCESSING')
+        )
+        
+        if (activeAiJob) {
+          setCurrentJob(activeAiJob)
+        } else if (!currentJob || (currentJob.status !== 'PENDING' && currentJob.status !== 'PROCESSING')) {
+          const latestJob = jobs.find(job => job.type === 'AI_ARTIST_BIO' && job.data?.concertId === selectedConcert)
+          if (latestJob && (!currentJob || currentJob.id !== latestJob.id)) {
+            setCurrentJob(latestJob)
+          } else if (!latestJob && currentJob) {
+            setCurrentJob(null)
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load background jobs', e)
+      }
+    }
+    
+    fetchActiveJob()
+  }, [selectedConcert])
+
+  useEffect(() => {
     if (!currentJob || currentJob.status === 'COMPLETED' || currentJob.status === 'FAILED') return
 
     const interval = setInterval(async () => {

@@ -110,17 +110,11 @@ export function TicketCard({ ticket }) {
         </div>
 
         <div className="mt-auto flex flex-wrap gap-3">
-          <button className="rounded-full bg-white/5 border border-white/10 px-5 py-2.5 text-xs font-bold text-white transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-95 shadow-soft">
-            Thêm vào ví
-          </button>
           <button 
             className="rounded-full px-5 py-2.5 text-xs font-bold text-white transition-all duration-300 bg-[color:var(--accent)] hover:bg-[color:var(--accent-2)] shadow-[0_0_15px_color-mix(in_oklab,var(--accent)_30%,transparent)] hover:shadow-[0_0_25px_color-mix(in_oklab,var(--accent)_60%,transparent)] hover:scale-105 active:scale-95"
             onClick={handleDownloadQR}
           >
             Tải mã QR
-          </button>
-          <button className="rounded-full bg-white/5 border border-white/10 px-5 py-2.5 text-xs font-bold text-white transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-95 shadow-soft">
-            Chuyển nhượng vé
           </button>
         </div>
       </div>

@@ -12,6 +12,15 @@ export function EventListPage() {
   const { data, isLoading, isError, refetch } = useEvents()
   const [activeFilter, setActiveFilter] = useState('Tất cả')
 
+  const filteredData = data?.filter((event) => {
+    if (activeFilter === 'Tất cả') return true;
+    if (activeFilter === 'Sự kiện HOT') return true; // Currently all events are shown, in a real app this would check a flag
+    if (activeFilter === 'Hà Nội') return event.venueName?.includes('Hà Nội');
+    if (activeFilter === 'TP. Hồ Chí Minh') return event.venueName?.includes('Hồ Chí Minh') || event.venueName?.includes('HCM');
+    if (activeFilter === 'Đà Nẵng') return event.venueName?.includes('Đà Nẵng');
+    return true;
+  });
+
   return (
     <div className="relative flex flex-col gap-10 min-h-screen">
       {/* Background Enhancements */}
@@ -48,7 +57,7 @@ export function EventListPage() {
               Đang tải...
             </span>
           ) : (
-            `${data?.length || 0} sự kiện`
+            `${filteredData?.length || 0} sự kiện`
           )}
         </div>
       </div>
@@ -62,7 +71,7 @@ export function EventListPage() {
         />
       ) : null}
 
-      {!isLoading && data?.length === 0 ? (
+      {!isLoading && filteredData?.length === 0 ? (
         <EmptyState
           title="Chưa có sự kiện nào"
           description="Các sự kiện âm nhạc mới sẽ xuất hiện ở đây ngay khi được công bố."
@@ -76,7 +85,7 @@ export function EventListPage() {
                 <EventCardSkeleton />
               </div>
             ))
-          : data?.map((event, index) => (
+          : filteredData?.map((event, index) => (
               <div key={event.id} className={index === 0 ? "md:col-span-2 lg:col-span-2 xl:col-span-2" : ""}>
                 <EventCard event={event} isFeatured={index === 0} />
               </div>

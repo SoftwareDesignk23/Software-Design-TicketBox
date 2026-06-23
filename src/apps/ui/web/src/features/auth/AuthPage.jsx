@@ -98,19 +98,6 @@ export function AuthPage() {
 								{isLoggingIn ? 'Đang xử lý...' : 'Đăng nhập'}
 							</button>
 						</form>
-						<div className="mt-8 space-y-4">
-							<div className="relative flex items-center py-2">
-								<div className="flex-grow border-t border-white/10"></div>
-								<span className="mx-4 flex-shrink-0 text-xs font-medium text-gray-500 uppercase tracking-widest">Hoặc</span>
-								<div className="flex-grow border-t border-white/10"></div>
-							</div>
-							<button className="w-full rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-sm active:scale-95">
-								Tiếp tục với Google
-							</button>
-							<button className="w-full rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-sm active:scale-95">
-								Tiếp tục với Apple
-							</button>
-						</div>
 					</div>
 				</div>
 

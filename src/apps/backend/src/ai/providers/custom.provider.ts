@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 import { AppException } from '../../exception/app-exception.js'
 import { ErrorCode } from '../../exception/error-code.js'
 import lodash from 'lodash'
+import axios from 'axios'
 
 const { get } = lodash
 const __filename = fileURLToPath(import.meta.url)
@@ -61,19 +62,14 @@ export class CustomAiProvider implements IAiProvider {
 		bodyStr = bodyStr.replace(/{{inputText}}/g, escapedInput)
 
 		try {
-			const response = await fetch(apiUrl, {
+			const response = await axios({
+				url: apiUrl,
 				method: method || 'POST',
 				headers: headers || { 'Content-Type': 'application/json' },
-				body: bodyStr,
+				data: JSON.parse(bodyStr),
 			})
 
-			if (!response.ok) {
-				const errorText = await response.text()
-				this.logger.error(`Custom AI Provider failed with status ${response.status}`, errorText)
-				throw new Error(`Custom AI request failed: ${response.statusText}`)
-			}
-
-			const data = await response.json()
+			const data = response.data
 
 			// Extract field using lodash.get
 			const result = get(data, resultFieldPath)
@@ -83,8 +79,8 @@ export class CustomAiProvider implements IAiProvider {
 			}
 
 			return result
-		} catch (error) {
-			this.logger.error('CustomAiProvider generateBio error', error)
+		} catch (error: any) {
+			this.logger.error('CustomAiProvider generateBio error', error.response?.data || error.message)
 			throw new AppException(ErrorCode.InternalServerError, { reason: 'custom_ai_failed' })
 		}
 	}

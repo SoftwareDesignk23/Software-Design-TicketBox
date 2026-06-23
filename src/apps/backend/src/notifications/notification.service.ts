@@ -6,6 +6,7 @@ import { sendNotificationSchema } from './notification.dto.js'
 import { NotificationProviderFactory } from './providers/notification-provider.factory.js'
 import { RabbitSubscribe, Nack, AmqpConnection } from '@golevelup/nestjs-rabbitmq'
 import { NotificationGateway } from './notification.gateway.js'
+import { withRetry } from '../utils/circuit-breaker.util.js'
 
 @Injectable()
 export class NotificationService {
@@ -44,12 +45,15 @@ export class NotificationService {
 		let success = false
 		try {
 			const provider = this.providerFactory.getProvider(parsed.data.channel)
-			success = await provider.send({
-				userId: user.id,
-				recipient: parsed.data.channel === 'EMAIL' ? (parsed.data.payload?.attendeeEmail || user.email) : user.id,
-				subject: `Notification for ${parsed.data.type}`,
-				content: JSON.stringify(parsed.data.payload),
-			})
+			success = await withRetry(
+				() => provider.send({
+					userId: user.id,
+					recipient: parsed.data.channel === 'EMAIL' ? (parsed.data.payload?.attendeeEmail || user.email) : user.id,
+					subject: `Notification for ${parsed.data.type}`,
+					content: JSON.stringify(parsed.data.payload),
+				}),
+				3, 1000
+			)
 
 			const updated = await this.prisma.notification.update({
 				where: { id: notification.id },

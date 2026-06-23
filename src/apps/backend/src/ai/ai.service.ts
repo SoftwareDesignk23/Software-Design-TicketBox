@@ -10,10 +10,28 @@ import * as fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { CircuitBreaker, withRetry } from '../utils/circuit-breaker.util.js'
 
 @Injectable()
 export class AiService {
 	private readonly logger = new Logger(AiService.name)
+	private readonly aiCircuitBreaker = new CircuitBreaker({
+		failureThreshold: 3,
+		timeout: 60000,
+		shouldTrip: (err: any) => {
+			// Don't trip for 4xx errors (e.g. 401 Unauthorized for bad API keys in round-robin)
+			if (err?.response?.status && err.response.status >= 400 && err.response.status < 500) {
+				return false;
+			}
+			// CustomAiProvider throws AppException with 'custom_ai_failed'
+			// In custom.provider.ts, the error might contain the original status code.
+			// Let's also check if error message contains "401" or "403"
+			if (err?.message?.includes('401') || err?.message?.includes('403') || err?.message?.includes('Unauthorized')) {
+				return false;
+			}
+			return true;
+		}
+	})
 
 	constructor(
 		private readonly prisma: PrismaService,
@@ -139,7 +157,10 @@ ${extractedText.substring(0, 10000)}`
 				try {
 					this.logger.log(`Calling AI Provider (${aiProvider}) for concert ${concertId}...`)
 					const provider = this.aiProviderFactory.getProvider(aiProvider)
-					const responseText = await provider.generateBio(prompt)
+					const responseText = await withRetry(
+						() => this.aiCircuitBreaker.fire(() => provider.generateBio(prompt)),
+						3, 2000
+					)
 					
 					// Try to parse JSON from AI response
 					const jsonMatch = responseText.match(/\{[\s\S]*\}/);

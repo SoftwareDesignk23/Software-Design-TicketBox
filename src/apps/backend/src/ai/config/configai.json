@@ -3,11 +3,11 @@
   "method": "POST",
   "headers": {
     "Content-Type": "application/json",
-    "Authorization": "Bearer YOUR_OPENROUTER_API_KEY",
+    "Authorization": "Bearer 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",
     "X-OpenRouter-Experimental-Metadata": "enabled"
   },
   "bodyTemplate": {
-    "model": "openai/gpt-4",
+    "model": "openai/gpt-oss-120b:free",
     "temperature": 0.7,
     "max_tokens": 500,
     "messages": [

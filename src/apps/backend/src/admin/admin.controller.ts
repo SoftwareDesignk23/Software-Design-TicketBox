@@ -20,6 +20,11 @@ export class AdminController {
 		return this.adminService.listConcerts(user.sub, user.role)
 	}
 
+	@Get('jobs')
+	listJobs(@CurrentUser() user: AuthTokenPayload) {
+		return this.adminService.listJobs(user.sub, user.role)
+	}
+
 	@Get('jobs/:id')
 	getJobStatus(@Param('id') id: string) {
 		return this.adminService.getJobStatus(id)

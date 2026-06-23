@@ -198,3 +198,4 @@ project_sample
 
 __pycache__
 *.pyc
+configai.json

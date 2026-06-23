@@ -46,7 +46,10 @@ export class CsvService {
 		});
 		
 		for (const job of jobs) {
-			await this.processGuestlistJob(job.id);
+			this.logger.log(`Publishing CSV job ${job.id} to queue`);
+			await this.amqpConnection.publish('ticketbox.exchange', 'job.csv.import', {
+				jobId: job.id
+			});
 		}
 	}
 
@@ -173,23 +176,24 @@ export class CsvService {
 								}
 							}
 
-							// Find available seat
-							const availableSeat = await tx.showSeat.findFirst({
-								where: {
-									showId: show.id,
-									ticketTypeId: ticketTypeId,
-									status: 'AVAILABLE'
-								},
-								include: { seat: true },
-								orderBy: [
-									{ seat: { row: 'asc' } },
-									{ seat: { number: 'asc' } }
-								]
-							});
+							// Find available seat with lock to prevent race conditions
+							const availableSeats = await tx.$queryRaw<any[]>`
+								SELECT ss.id, s.row, s.number, s.label
+								FROM "ShowSeat" ss
+								JOIN "Seat" s ON ss."seatId" = s.id
+								WHERE ss."showId" = ${show.id}
+								  AND ss."ticketTypeId" = ${ticketTypeId}
+								  AND ss.status = 'AVAILABLE'
+								ORDER BY s.row ASC, s.number ASC
+								LIMIT 1
+								FOR UPDATE SKIP LOCKED
+							`;
 
-							if (!availableSeat) {
+							if (!availableSeats || availableSeats.length === 0) {
 								throw new Error(`Hết ghế trống trong khu vực ${ticketType.name}`);
 							}
+
+							const availableSeat = availableSeats[0];
 
 							// Mark seat as sold
 							await tx.showSeat.update({
@@ -255,7 +259,7 @@ export class CsvService {
 								}
 							});
 
-							const seatLabel = availableSeat.seat.row ? `${availableSeat.seat.row}${availableSeat.seat.number}` : availableSeat.seat.label;
+							const seatLabel = availableSeat.row ? `${availableSeat.row}${availableSeat.number}` : availableSeat.label;
 							const ticketName = ticketType.name;
 
 							const generatedTickets = [{

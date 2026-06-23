@@ -309,7 +309,7 @@ export class ConcertsService {
 		})
 
 		if (result.data.isSeated && result.data.rows && result.data.seatsPerRow) {
-			const sectionName = `Khu ${ticketType.name}`;
+			const sectionName = `Khu ${ticketType.name} - ${concertId}`;
 			let section = await this.prisma.seatSection.findUnique({
 				where: { venueId_name: { venueId: concert.venueId, name: sectionName } }
 			});
@@ -382,7 +382,7 @@ export class ConcertsService {
 
 		// Delete related SeatSection if it was a seated section
 		if (ticketType.rows && ticketType.seatsPerRow) {
-			const sectionName = `Khu ${ticketType.name}`;
+			const sectionName = `Khu ${ticketType.name} - ${concertId}`;
 			await this.prisma.seatSection.deleteMany({
 				where: { venueId: concert.venueId, name: sectionName }
 			});
@@ -417,7 +417,7 @@ export class ConcertsService {
 					throw new AppException(ErrorCode.ConcertValidationFailed, { reason: 'cannot_change_seats_with_sales' })
 				}
 				
-				const sectionName = `Khu ${result.data.name || existingTT.name}`;
+				const sectionName = `Khu ${result.data.name || existingTT.name} - ${concertId}`;
 				let section = await this.prisma.seatSection.findUnique({
 					where: { venueId_name: { venueId: concert.venueId, name: sectionName } }
 				});
@@ -501,7 +501,7 @@ export class ConcertsService {
 		// Generate ShowSeats for all existing TicketTypes that are seated
 		const ticketTypes = await this.prisma.ticketType.findMany({ where: { concertId } });
 		for (const tt of ticketTypes) {
-			const sectionName = `Khu ${tt.name}`;
+			const sectionName = `Khu ${tt.name} - ${concertId}`;
 			const section = await this.prisma.seatSection.findUnique({
 				where: { venueId_name: { venueId: concert.venueId, name: sectionName } }
 			});
@@ -533,6 +533,14 @@ export class ConcertsService {
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
 			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+		}
+
+		const existingAssignment = await this.prisma.concertArtist.findUnique({
+			where: { concertId_artistId: { concertId, artistId: result.data.artistId } }
+		})
+
+		if (existingAssignment) {
+			throw new AppException(ErrorCode.ConcertValidationFailed, { reason: 'Nghệ sĩ này đã được thêm vào sự kiện' })
 		}
 
 		const artistAssignment = await this.prisma.concertArtist.create({
