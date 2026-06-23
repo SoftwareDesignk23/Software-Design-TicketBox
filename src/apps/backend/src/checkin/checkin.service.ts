@@ -21,11 +21,18 @@ export class CheckinService {
 			// Find ticket
 			const ticket = await this.prisma.ticket.findUnique({
 				where: { id: log.ticketId },
-				include: { checkInLogs: true },
+				include: { checkInLogs: true, gate: true },
 			})
 
 			if (!ticket) {
 				results.push({ ticketId: log.ticketId, status: 'NOT_FOUND' })
+				continue
+			}
+
+			// Validate Gate
+			const staff = await this.prisma.user.findUnique({ where: { id: userId } })
+			if (staff?.assignedGateId && staff.assignedGateId !== ticket.gateId) {
+				results.push({ ticketId: log.ticketId, status: 'INVALID_GATE' })
 				continue
 			}
 
@@ -83,7 +90,8 @@ export class CheckinService {
 				shows: {
 					orderBy: { startsAt: 'asc' }
 				},
-				venue: true
+				venue: true,
+				gates: true
 			},
 			orderBy: { createdAt: 'desc' }
 		})
@@ -95,12 +103,16 @@ export class CheckinService {
 				title: e.title,
 				bannerUrl: e.bannerUrl,
 				venueName: e.venue.name,
-				gatesCount: e.gatesCount,
-				gateCapacity: e.gateCapacity,
 				shows: e.shows.map((s: any) => ({
 					id: s.id,
 					startsAt: s.startsAt,
 					status: s.status
+				})),
+				gates: e.gates.map((g: any) => ({
+					id: g.id,
+					name: g.name,
+					capacity: g.capacity,
+					type: g.type
 				}))
 			}))
 		}
@@ -120,7 +132,7 @@ export class CheckinService {
 			select: {
 				id: true,
 				code: true,
-				gate: true,
+				gate: { select: { id: true, name: true } },
 				status: true,
 				show: {
 					select: { concertId: true }
@@ -138,7 +150,8 @@ export class CheckinService {
 			tickets: tickets.map(t => ({
 				id: t.id,
 				code: t.code,
-				gate: t.gate,
+				gateId: t.gate?.id,
+				gate: t.gate?.name,
 				status: t.status,
 				eventId: t.show.concertId,
 				attendeeName: t.booking?.attendeeName || '',
@@ -189,6 +202,22 @@ export class CheckinService {
 
 			if (!ticket) {
 				throw new AppException(ErrorCode.ValidationFailed, { reason: 'invalid_ticket' })
+			}
+
+			// Validate Gate
+			const staff = await tx.user.findUnique({ where: { id: userId } })
+			if (staff?.assignedGateId && staff.assignedGateId !== ticket.gateId) {
+				// Record invalid scan due to wrong gate
+				await tx.checkInLog.create({
+					data: {
+						ticketId,
+						staffId: userId,
+						scannedAt: new Date(),
+						deviceId: 'online',
+						status: 'INVALID',
+					},
+				})
+				throw new AppException(ErrorCode.ValidationFailed, { reason: 'wrong_gate' })
 			}
 
 			if (ticket.status === 'CHECKED_IN') {

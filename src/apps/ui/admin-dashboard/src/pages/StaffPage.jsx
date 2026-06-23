@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { request, loadStoredTokens } from "../auth";
 import {
   Plus,
@@ -17,18 +17,22 @@ export function StaffPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
     password: "",
     displayName: "",
+    eventId: "",
+    assignedGateId: "",
   });
+  const [events, setEvents] = useState([]);
 
   const fetchStaff = async () => {
     try {
       const tokens = loadStoredTokens();
-      const data = await request("/admin/users/staff", {
-        headers: { Authorization: `Bearer ${tokens.accessToken}` },
-      });
-      setStaff(data);
+      const [staffData, eventsData] = await Promise.all([
+        request("/admin/users/staff", { headers: { Authorization: `Bearer ${tokens.accessToken}` } }),
+        request("/checkin/events", { headers: { Authorization: `Bearer ${tokens.accessToken}` } }).catch(() => ({ events: [] }))
+      ]);
+      setStaff(staffData);
+      setEvents(eventsData.events || []);
     } catch (e) {
       console.error("Failed to load staff", e);
     } finally {
@@ -95,10 +99,14 @@ export function StaffPage() {
           Authorization: `Bearer ${tokens.accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          displayName: formData.displayName,
+          password: formData.password,
+          assignedGateId: formData.assignedGateId
+        }),
       });
       setShowCreateModal(false);
-      setFormData({ email: "", password: "", displayName: "" });
+      setFormData({ password: "", displayName: "", eventId: "", assignedGateId: "" });
       fetchStaff();
     } catch (err) {
       showAlert(err.message || "Không thể tạo tài khoản nhân viên. Vui lòng thử lại.");
@@ -318,18 +326,41 @@ export function StaffPage() {
 
               <div>
                 <label className="block text-sm font-black text-[#061527] mb-1.5">
-                  Email Đăng nhập
+                  Chọn Sự Kiện
                 </label>
-                <input
+                <select
                   required
-                  type="email"
-                  value={formData.email}
+                  value={formData.eventId}
                   onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                    setFormData({ ...formData, eventId: e.target.value, assignedGateId: "" })
                   }
                   className="h-10 w-full rounded-xl border border-[#cbd6e2] bg-white px-4 text-[#061527] outline-none transition focus:border-[#ff7118]"
-                  placeholder="email@domain.com"
-                />
+                >
+                  <option value="" disabled>-- Chọn sự kiện --</option>
+                  {events.map((ev) => (
+                    <option key={ev.id} value={ev.id}>{ev.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-black text-[#061527] mb-1.5">
+                  Phân công Cổng
+                </label>
+                <select
+                  required
+                  disabled={!formData.eventId}
+                  value={formData.assignedGateId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, assignedGateId: e.target.value })
+                  }
+                  className="h-10 w-full rounded-xl border border-[#cbd6e2] bg-white px-4 text-[#061527] outline-none transition focus:border-[#ff7118] disabled:bg-[#f8fafc] disabled:text-[#8a98aa]"
+                >
+                  <option value="" disabled>-- Chọn cổng --</option>
+                  {events.find(e => e.id === formData.eventId)?.gates?.map((gate) => (
+                    <option key={gate.id} value={gate.id}>{gate.name} ({gate.type === 'VIP' ? 'VIP' : 'Thường'})</option>
+                  ))}
+                </select>
               </div>
 
               <div>

@@ -101,6 +101,8 @@ model User {
   checkInLogs   CheckInLog[]
   notifications Notification[]
   assignments   ConcertAssignment[]
+  assignedGateId String?
+  assignedGate   Gate?   @relation("StaffGate", fields: [assignedGateId], references: [id])
 }
 
 model RefreshSession {
@@ -182,8 +184,6 @@ model Concert {
   status           ConcertStatus   @default(DRAFT)
   organizerId      String
   venueId          String
-  gatesCount       Int             @default(1)
-  gateCapacity     Int             @default(1000)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -196,6 +196,7 @@ model Concert {
   ticketTypes      TicketType[]
   assignments      ConcertAssignment[]
   coupons          Coupon[]
+  gates            Gate[]
 }
 
 model ConcertArtist {
@@ -216,6 +217,20 @@ model ConcertSponsor {
   sponsor   Sponsor   @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
 
   @@id([concertId, sponsorId])
+}
+
+model Gate {
+  id        String   @id @default(uuid())
+  concertId String
+  name      String   // E.g., Gate A, VIP Gate
+  capacity  Int
+  type      String   // REGULAR or VIP
+  
+  concert   Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  tickets   Ticket[]
+  staffs    User[]   @relation("StaffGate")
+
+  @@unique([concertId, name])
 }
 
 // 4. Schedule & Seats
@@ -388,7 +403,8 @@ model Ticket {
   ownerId       String
   code          String        @unique // QR Code / Hash
   qrPayload     String
-  gate          String?
+  gateId        String?
+  gate          Gate?         @relation(fields: [gateId], references: [id], onDelete: SetNull)
   status        TicketStatus  @default(ISSUED)
   issuedAt      DateTime      @default(now())
   checkedInAt   DateTime?

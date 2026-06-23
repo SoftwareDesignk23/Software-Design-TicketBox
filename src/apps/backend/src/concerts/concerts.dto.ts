@@ -8,8 +8,6 @@ const concertPayloadSchema = z.object({
 	heroImageUrl: z.string().trim().min(1).optional(),
 	bannerUrl: z.string().trim().min(1).optional(),
 	seatMapUrl: z.string().trim().min(1).optional(),
-	gatesCount: z.number().int().min(1).optional(),
-	gateCapacity: z.number().int().min(1).optional(),
 })
 
 export const createConcertSchema = concertPayloadSchema
@@ -48,4 +46,12 @@ export const updateShowSchema = createShowSchema.partial()
 export const assignArtistSchema = z.object({
 	artistId: z.string().trim().min(1),
 	role: z.string().trim().min(1),
+})
+
+export const updateConcertGatesSchema = z.object({
+	gates: z.array(z.object({
+		name: z.string().trim().min(1),
+		capacity: z.number().int().min(1),
+		type: z.enum(['REGULAR', 'GUEST']),
+	})),
 })

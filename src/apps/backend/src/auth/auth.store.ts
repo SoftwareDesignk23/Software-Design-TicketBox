@@ -17,6 +17,7 @@ export class AuthStore {
 		isActive: boolean
 		createdAt: Date
 		organizerId?: string | null
+		assignedGateId?: string | null
 	}): User {
 		return {
 			id: model.id,
@@ -27,6 +28,7 @@ export class AuthStore {
 			isActive: model.isActive,
 			createdAt: model.createdAt,
 			organizerId: model.organizerId,
+			assignedGateId: model.assignedGateId,
 		}
 	}
 
@@ -52,7 +54,7 @@ export class AuthStore {
 		return user ? this.toUser(user) : null
 	}
 
-	async createUser(email: string, passwordHash: string, displayName: string, role: Role, organizerId?: string) {
+	async createUser(email: string, passwordHash: string, displayName: string, role: Role, organizerId?: string, assignedGateId?: string) {
 		const user = await this.prisma.user.create({
 			data: {
 				email,
@@ -60,9 +62,14 @@ export class AuthStore {
 				displayName,
 				role,
 				organizerId,
+				assignedGateId,
 			},
 		})
 		return this.toUser(user)
+	}
+
+	async getGateById(gateId: string) {
+		return this.prisma.gate.findUnique({ where: { id: gateId } })
 	}
 
 	async getAssignmentSummary(userId: string): Promise<AssignmentSummary> {

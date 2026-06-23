@@ -11,6 +11,7 @@ export interface User {
 	isActive: boolean
 	createdAt: Date
 	organizerId?: string | null
+	assignedGateId?: string | null
 }
 
 export interface RefreshSession {

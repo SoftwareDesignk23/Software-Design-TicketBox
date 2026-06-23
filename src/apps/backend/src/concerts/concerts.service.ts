@@ -15,8 +15,6 @@ const concertResponseSelect = {
 	heroImageUrl: true,
 	seatMapUrl: true,
 	bannerUrl: true,
-	gatesCount: true,
-	gateCapacity: true,
 	venue: {
 		select: {
 			id: true,
@@ -85,6 +83,14 @@ const concertResponseSelect = {
 			seatsPerRow: true,
 		}
 	},
+	gates: {
+		select: {
+			id: true,
+			name: true,
+			capacity: true,
+			type: true,
+		}
+	}
 } as const
 
 @Injectable()
@@ -469,10 +475,11 @@ export class ConcertsService {
 			}
 		}
 
+		const { isSeated, ...updateData } = result.data;
 		const ticketType = await this.prisma.ticketType.update({
 			where: { id: ticketTypeId },
 			data: {
-				...result.data,
+				...updateData,
 				totalQuantity: finalTotalQuantity,
 				rows: result.data.isSeated ? result.data.rows : existingTT.rows,
 				seatsPerRow: result.data.isSeated ? result.data.seatsPerRow : existingTT.seatsPerRow,
@@ -570,5 +577,64 @@ export class ConcertsService {
 		})
 		await this.redis.del(`concerts:detail:${concertId}`)
 		return { deleted: true }
+	}
+
+	async getConcertGates(concertId: string) {
+		const gates = await this.prisma.gate.findMany({
+			where: { concertId },
+			orderBy: { name: 'asc' }
+		})
+		return gates
+	}
+
+	async updateConcertGates(concertId: string, body: unknown, userId: string, role: Role) {
+		const { updateConcertGatesSchema } = await import('./concerts.dto.js')
+		const result = updateConcertGatesSchema.safeParse(body)
+		if (!result.success) throw new AppException(ErrorCode.ConcertValidationFailed)
+
+		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true } })
+		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
+		
+		if (role !== 'ADMIN') {
+			const user = await this.prisma.user.findUnique({ where: { id: userId } })
+			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+		}
+
+		// Delete existing gates and recreate
+		// Since Ticket relies on GateId, wait, if we delete Gates, Tickets that referenced them will be SetNull
+		// A better way is to update existing ones if they match by name, and create/delete others.
+		// However, for simplicity, if tickets are already assigned, dropping the gate will lose the ticket's gate assignment.
+		// Since gates usually aren't modified after ticket sales, or if they are, it's fine to reassign.
+		// To be perfectly safe, upsert by name.
+		
+		const currentGates = await this.prisma.gate.findMany({ where: { concertId } })
+		const incomingNames = result.data.gates.map(g => g.name)
+		
+		const toDelete = currentGates.filter(g => !incomingNames.includes(g.name))
+		if (toDelete.length > 0) {
+			await this.prisma.gate.deleteMany({
+				where: { id: { in: toDelete.map(g => g.id) } }
+			})
+		}
+
+		const updatedGates: any[] = []
+		for (const g of result.data.gates) {
+			const existing = currentGates.find(cg => cg.name === g.name)
+			if (existing) {
+				const updated = await this.prisma.gate.update({
+					where: { id: existing.id },
+					data: { capacity: g.capacity, type: g.type }
+				})
+				updatedGates.push(updated)
+			} else {
+				const created = await this.prisma.gate.create({
+					data: { concertId, name: g.name, capacity: g.capacity, type: g.type }
+				})
+				updatedGates.push(created)
+			}
+		}
+
+		await this.redis.del(`concerts:detail:${concertId}`)
+		return updatedGates
 	}
 }

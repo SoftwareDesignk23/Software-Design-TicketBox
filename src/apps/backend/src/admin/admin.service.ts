@@ -158,7 +158,8 @@ export class AdminService {
 				owner: true,
 				showSeat: {
 					include: { seat: true }
-				}
+				},
+				gate: true
 			},
 			orderBy: {
 				issuedAt: 'desc'
@@ -174,6 +175,7 @@ export class AdminService {
 				email: ticket.owner.email,
 				phone: ticket.owner.phoneNumber,
 				seat: seatLabel,
+				gate: ticket.gate?.name || 'Chưa phân cổng',
 				status: ticket.checkedInAt ? 'CHECKED_IN' : 'ISSUED',
 				checkedInAt: ticket.checkedInAt
 			};

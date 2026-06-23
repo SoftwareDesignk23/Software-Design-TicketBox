@@ -25,6 +25,7 @@ export class TicketsService {
 						price: true,
 					},
 				},
+				gate: true,
 			},
 			orderBy: {
 				issuedAt: 'desc',
@@ -40,8 +41,9 @@ export class TicketsService {
 			eventId: t.show.concertId,
 			venue: t.show.concert.venue.name,
 			date: t.show.startsAt,
-			seats: t.showSeat ? `${t.showSeat.seat.section.name} - ${t.showSeat.seat.label}` : 'GA', // GA for general admission
+			seats: t.showSeat ? `${t.showSeat.seat.section.name.replace(/ - [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')} - ${t.showSeat.seat.label}` : 'GA', // GA for general admission
 			tier: t.ticketType.name,
+			gate: t.gate?.name || null,
 		}))
 	}
 }

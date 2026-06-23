@@ -215,18 +215,40 @@ export class CsvService {
 							const ticketId = crypto.randomUUID();
 							const code = `GL-${crypto.randomUUID().split('-')[0].toUpperCase()}`;
 
-							// Fetch gatesCount and gateCapacity for this concert
-							const concert = await tx.concert.findUnique({
-								where: { id: ticketType.concertId }
+							// Fetch gates for this concert
+							const gates = await tx.gate.findMany({
+								where: { concertId: ticketType.concertId }
 							})
-							const gatesCount = concert?.gatesCount || 1
-							const gateCapacity = concert?.gateCapacity || 1000
+							
+							// Guest list uses GUEST gate type
+							let eligibleGates = gates.filter(g => g.type === 'GUEST')
+							if (eligibleGates.length === 0) eligibleGates = gates.filter(g => g.type === 'REGULAR')
+							
+							let assignedGateId: string | null = null
+							let assignedGateName = 'N/A'
 
-							const issuedTickets = await tx.ticket.count({
-								where: { showId: show.id }
-							})
-							const gateNumber = Math.min(Math.floor(issuedTickets / gateCapacity) + 1, gatesCount)
-							const gate = `Cổng ${gateNumber}`
+							if (eligibleGates.length > 0) {
+								const ticketsPerGate = await tx.ticket.groupBy({
+									by: ['gateId'],
+									where: { showId: show.id, gateId: { in: eligibleGates.map(g => g.id) } },
+									_count: { gateId: true }
+								})
+								const loadMap = new Map(ticketsPerGate.map(t => [t.gateId, t._count.gateId]))
+								
+								let bestGate = eligibleGates[0]
+								let lowestLoad = (loadMap.get(bestGate.id) || 0) / bestGate.capacity
+
+								for (let i = 1; i < eligibleGates.length; i++) {
+									const gate = eligibleGates[i]
+									const load = (loadMap.get(gate.id) || 0) / gate.capacity
+									if (load < lowestLoad) {
+										lowestLoad = load
+										bestGate = gate
+									}
+								}
+								assignedGateId = bestGate.id
+								assignedGateName = bestGate.name
+							}
 							
 							const payloadData = {
 								ticketId,
@@ -237,7 +259,7 @@ export class CsvService {
 								attendeeName: name,
 								attendeeEmail: email,
 								attendeePhone: phone,
-								gate,
+								gate: assignedGateName,
 								issuedAt: new Date().toISOString(),
 								guest: true
 							}
@@ -249,11 +271,11 @@ export class CsvService {
 									id: ticketId,
 									bookingId: booking.id,
 									showId: show.id,
-									ticketTypeId,
+									ticketTypeId: ticketTypeId,
 									showSeatId: availableSeat.id, // Assign the seat!
 									ownerId: user.id,
-									code,
-									gate,
+									code: code,
+									gateId: assignedGateId,
 									qrPayload: qrPayload,
 									status: 'ISSUED',
 								}
@@ -267,7 +289,8 @@ export class CsvService {
 								code: code,
 								qrPayload: qrPayload,
 								ticketName: ticketName,
-								seat: seatLabel
+								seat: seatLabel,
+								gate: assignedGateName !== 'N/A' ? assignedGateName : undefined
 							}];
 
 							payloadToPublish = {

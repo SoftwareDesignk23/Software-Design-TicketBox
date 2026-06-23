@@ -392,17 +392,18 @@ export function GuestlistPage() {
                 <th className="px-5 py-4">Email</th>
                 <th className="px-5 py-4">Số điện thoại</th>
                 <th className="px-5 py-4">Ghế</th>
+                <th className="px-5 py-4">Cổng check-in</th>
                 <th className="px-5 py-4">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {loadingGuests ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">Đang tải danh sách...</td>
+                  <td colSpan="6" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">Đang tải danh sách...</td>
                 </tr>
               ) : guests.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">
+                  <td colSpan="6" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">
                     Chưa có khách mời nào được import cho suất diễn này.
                   </td>
                 </tr>
@@ -413,6 +414,7 @@ export function GuestlistPage() {
                     <td className="px-5 py-5 text-sm font-bold text-[#52637a]">{guest.email}</td>
                     <td className="px-5 py-5 text-sm font-bold text-[#52637a]">{guest.phone || '-'}</td>
                     <td className="px-5 py-5 text-sm font-black text-[#ff7118]">{guest.seat || '-'}</td>
+                    <td className="px-5 py-5 text-sm font-bold text-[#a855f7]">{guest.gate || '-'}</td>
                     <td className="px-5 py-5">
                       {guest.status === 'CHECKED_IN' ? (
                         <span className="status-pill status-pill-active">Đã check-in</span>

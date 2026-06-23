@@ -170,23 +170,45 @@ export class PaymentService {
 						if (show) showId = show.id
 					}
 
-					// Fetch gatesCount and gateCapacity for this concert
-					const concert = await tx.concert.findUnique({
-						where: { id: item.ticketType.concertId }
+					// Fetch gates for this concert
+					const gates = await tx.gate.findMany({
+						where: { concertId: item.ticketType.concertId }
 					})
-					const gatesCount = concert?.gatesCount || 1
-					const gateCapacity = concert?.gateCapacity || 1000
+					
+					// Buyers ONLY go to REGULAR gates
+					let eligibleGates = gates.filter(g => g.type === 'REGULAR')
+					if (eligibleGates.length === 0) eligibleGates = gates
+					
+					let assignedGateId: string | null = null
+					let assignedGateName = 'N/A'
+
+					if (eligibleGates.length > 0) {
+						// Calculate load for eligible gates
+						const ticketsPerGate = await tx.ticket.groupBy({
+							by: ['gateId'],
+							where: { showId: showId!, gateId: { in: eligibleGates.map(g => g.id) } },
+							_count: { gateId: true }
+						})
+						const loadMap = new Map(ticketsPerGate.map(t => [t.gateId, t._count.gateId]))
+						
+						let bestGate = eligibleGates[0]
+						let lowestLoad = (loadMap.get(bestGate.id) || 0) / bestGate.capacity
+
+						for (let i = 1; i < eligibleGates.length; i++) {
+							const gate = eligibleGates[i]
+							const load = (loadMap.get(gate.id) || 0) / gate.capacity
+							if (load < lowestLoad) {
+								lowestLoad = load
+								bestGate = gate
+							}
+						}
+						assignedGateId = bestGate.id
+						assignedGateName = bestGate.name
+					}
 					
 					for (let i = 0; i < item.quantity; i++) {
 						const ticketId = crypto.randomUUID()
 						const code = crypto.randomUUID().split('-')[0].toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase()
-						
-						// Determine gate based on issued tickets
-						const issuedTickets = await tx.ticket.count({
-							where: { showId: showId! }
-						})
-						const gateNumber = Math.min(Math.floor(issuedTickets / gateCapacity) + 1, gatesCount)
-						const gate = `Cổng ${gateNumber}`
 						
 						const payloadData = {
 							ticketId,
@@ -197,7 +219,7 @@ export class PaymentService {
 							attendeeName: booking.attendeeName,
 							attendeeEmail: booking.attendeeEmail,
 							attendeePhone: booking.attendeePhone,
-							gate,
+							gate: assignedGateName,
 							issuedAt: new Date().toISOString()
 						}
 						
@@ -212,7 +234,7 @@ export class PaymentService {
 								showSeatId: item.showSeatId,
 								ownerId: booking.userId,
 								code: code,
-								gate: gate,
+								gateId: assignedGateId,
 								qrPayload: qrPayload
 							}
 						})
@@ -222,7 +244,8 @@ export class PaymentService {
 							code: createdTicket.code,
 							qrPayload: createdTicket.qrPayload,
 							ticketName: item.ticketType.name,
-							seat: item.showSeat?.seat?.label
+							seat: item.showSeat?.seat?.label,
+							gate: assignedGateName !== 'N/A' ? assignedGateName : undefined
 						})
 					}
 				}

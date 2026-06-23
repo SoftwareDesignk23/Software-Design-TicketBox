@@ -51,7 +51,7 @@ export class EmailProvider implements INotificationProvider {
 								<div style="background: #f9f9f9; padding: 16px; border-radius: 8px; margin: 20px 0;">
 									<h3 style="margin-top: 0;">Thông tin đơn hàng</h3>
 									<ul style="padding-left: 20px; line-height: 1.6;">
-										${payload.tickets.map((t: any) => `<li>Vé ${t.ticketName} ${t.seat ? `(Ghế: ${t.seat})` : ''}</li>`).join('')}
+										${payload.tickets.map((t: any) => `<li>Vé ${t.ticketName} ${t.seat ? `(Ghế: ${t.seat})` : ''} ${t.gate ? `- Cổng: ${t.gate}` : ''}</li>`).join('')}
 									</ul>
 									<p><strong>Tổng thanh toán:</strong> ${payload.total} VND</p>
 								</div>
@@ -60,7 +60,7 @@ export class EmailProvider implements INotificationProvider {
 									<p style="margin-bottom: 16px; color: #666; font-size: 14px; text-align: center;">Danh sách mã QR check-in sự kiện:</p>
 									${payload.tickets.map((t: any) => `
 										<div style="text-align: center; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px dashed #ddd;">
-											<p style="font-weight: bold; margin-bottom: 8px; color: #333;">${t.ticketName} ${t.seat ? ` - Ghế: ${t.seat}` : ''}</p>
+											<p style="font-weight: bold; margin-bottom: 8px; color: #333;">${t.ticketName} ${t.seat ? ` - Ghế: ${t.seat}` : ''} ${t.gate ? ` - Cổng: ${t.gate}` : ''}</p>
 											<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(t.qrPayload || t.id)}" style="max-width: 200px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: white;" />
 										</div>
 									`).join('')}

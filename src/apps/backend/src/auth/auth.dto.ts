@@ -9,3 +9,9 @@ export const registerSchema = z.object({
 })
 
 export type RegisterDto = z.infer<typeof registerSchema>
+
+export const createStaffSchema = z.object({
+	password: z.string().min(8),
+	displayName: z.string().min(2).trim(),
+	assignedGateId: z.string().trim(),
+})

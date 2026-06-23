@@ -107,6 +107,10 @@ export function TicketCard({ ticket }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-1">Mã vé</p>
             <p className="text-white font-mono text-base tracking-widest">{ticket.id.slice(0, 8).toUpperCase()}</p>
           </div>
+          <div className="bg-white/5 p-4 rounded-2xl border border-white/5 md:col-span-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--accent)] mb-1">Cổng Check-in</p>
+            <p className="text-white font-bold text-lg">{ticket.gate || 'Chưa phân cổng'}</p>
+          </div>
         </div>
 
         <div className="mt-auto flex flex-wrap gap-3">
@@ -190,7 +194,7 @@ export function TicketCard({ ticket }) {
             {ticket.eventName?.length > 35 ? ticket.eventName.substring(0, 35) + '...' : ticket.eventName}
           </text>
           <text x="50" y="165" fill="#a1a1aa" fontSize="18" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
-            {ticket.venue?.length > 50 ? ticket.venue.substring(0, 50) + '...' : ticket.venue}
+            {ticket.venue?.length > 40 ? ticket.venue.substring(0, 40) + '...' : ticket.venue}
           </text>
 
           {/* Grid of Details */}
@@ -208,8 +212,11 @@ export function TicketCard({ ticket }) {
           <text x="50" y="295" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Hạng vé'.toUpperCase()}</text>
           <text x="50" y="320" fill="#ffffff" fontSize="18" fontWeight="600" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{ticket.tier}</text>
           
-          <text x="250" y="295" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Chỗ ngồi'.toUpperCase()}</text>
-          <text x="250" y="320" fill="#a855f7" fontSize="20" fontWeight="bold" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{ticket.seats || '---'}</text>
+          <text x="200" y="295" fill="#a855f7" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Cổng check-in'.toUpperCase()}</text>
+          <text x="200" y="320" fill="#ffffff" fontSize="20" fontWeight="bold" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{ticket.gate || 'Chưa phân cổng'}</text>
+
+          <text x="400" y="295" fill="#71717a" fontSize="12" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" style={{ letterSpacing: '1px' }}>{'Chỗ ngồi'.toUpperCase()}</text>
+          <text x="400" y="320" fill="#a855f7" fontSize="20" fontWeight="bold" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">{ticket.seats || '---'}</text>
 
           {/* Right Content (QR Code) */}
           <rect x="645" y="50" width="160" height="160" rx="16" fill="#ffffff" />

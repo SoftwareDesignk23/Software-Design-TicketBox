@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { request, loadStoredTokens } from '../auth'
-import { ArrowLeft, CalendarDays, Edit2, ExternalLink, MapPin, Plus, Save, Ticket, Trash2, Users, X } from 'lucide-react'
+import { ArrowLeft, CalendarDays, ChevronDown, Edit2, ExternalLink, MapPin, Plus, Save, Ticket, Trash2, Users, X } from 'lucide-react'
 import { useAdminDialog } from '../components/feedback/useAdminDialog'
 import { openGoogleMapsSearch, venueMapQuery } from '../utils/maps'
 
@@ -56,6 +56,11 @@ export function ConcertDetailPage() {
   const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('shows')
+  const [gates, setGates] = useState([])
+  const [newGateName, setNewGateName] = useState('')
+  const [newGateType, setNewGateType] = useState('REGULAR')
+  const [newGateCapacity, setNewGateCapacity] = useState('')
+  const [gateFormError, setGateFormError] = useState('')
 
   // Form states
   const [newShowStartsAt, setNewShowStartsAt] = useState('')
@@ -90,15 +95,17 @@ export function ConcertDetailPage() {
       setLoading(true)
       const tokens = loadStoredTokens()
       
-      const [concertData, artistsData, couponsData] = await Promise.all([
+      const [concertData, artistsData, couponsData, gatesData] = await Promise.all([
         request(`/concerts/${id}`),
         request('/admin/artists', { headers: { Authorization: `Bearer ${tokens.accessToken}` } }),
-        request(`/concerts/${id}/coupons`, { headers: { Authorization: `Bearer ${tokens.accessToken}` } }).catch(() => [])
+        request(`/concerts/${id}/coupons`, { headers: { Authorization: `Bearer ${tokens.accessToken}` } }).catch(() => []),
+        request(`/concerts/${id}/gates`).catch(() => [])
       ])
       
       setConcert(concertData)
       setArtists(artistsData)
       setCoupons(couponsData)
+      setGates(gatesData || [])
       if (artistsData.length > 0) setNewArtistId(artistsData[0].id)
     } catch (e) {
       console.error(e)
@@ -429,6 +436,50 @@ export function ConcertDetailPage() {
     }
   }
 
+  const handleUpdateGates = async (updatedGates) => {
+    try {
+      const tokens = loadStoredTokens()
+      await request(`/concerts/${id}/gates`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${tokens.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ gates: updatedGates })
+      })
+      fetchData()
+    } catch (e) {
+      showAlert('Không thể cập nhật cổng: ' + e.message)
+    }
+  }
+
+  const handleCreateGate = () => {
+    setGateFormError('')
+    const name = newGateName.trim()
+    const capacity = positiveInteger(newGateCapacity)
+
+    if (!name) {
+      setGateFormError('Vui lòng nhập tên cổng.')
+      return
+    }
+    if (!capacity) {
+      setGateFormError('Sức chứa phải là số nguyên lớn hơn 0.')
+      return
+    }
+
+    const newGate = { name, type: newGateType, capacity }
+    handleUpdateGates([...gates, newGate])
+    setNewGateName('')
+    setNewGateType('REGULAR')
+    setNewGateCapacity('')
+  }
+
+  const handleDeleteGate = (index) => {
+    const updated = [...gates]
+    updated.splice(index, 1)
+    handleUpdateGates(updated)
+  }
+
   const handleOpenVenueMap = () => {
     openGoogleMapsSearch(venueMapQuery(concert?.venue), () => {
       showAlert('Vui lòng nhập tên hoặc địa chỉ địa điểm trước khi mở Google Maps.', {
@@ -463,6 +514,7 @@ export function ConcertDetailPage() {
   const tabs = [
     { key: 'shows', label: 'Suất diễn', icon: CalendarDays, count: concert.shows?.length || 0 },
     { key: 'tickets', label: 'Hạng vé', icon: Ticket, count: concert.ticketTypes?.length || 0 },
+    { key: 'gates', label: 'Cổng Check-in', icon: MapPin, count: gates?.length || 0 },
     { key: 'artists', label: 'Nghệ sĩ', icon: Users, count: concert.artists?.length || 0 },
     { key: 'coupons', label: 'Mã giảm giá', icon: Ticket, count: coupons?.length || 0 },
   ]
@@ -584,7 +636,21 @@ export function ConcertDetailPage() {
             <div className="grid grid-cols-2 gap-4 px-5 py-5 md:grid-cols-5">
               <div className="md:col-span-2">
                 <label className="mb-1.5 block text-sm font-black text-[#061527]">Tên hạng vé</label>
-                <input type="text" placeholder="VD: VIP" value={newTicketName} onChange={(e) => setNewTicketName(e.target.value)} className={inputClass} />
+                <div className="relative">
+                  <select
+                    value={newTicketName}
+                    onChange={(e) => setNewTicketName(e.target.value)}
+                    className={`${inputClass} appearance-none pr-10 cursor-pointer`}
+                  >
+                    <option value="" disabled>Chọn hạng vé</option>
+                    <option value="SVIP">SVIP</option>
+                    <option value="VIP">VIP</option>
+                    <option value="CAT 1">CAT 1</option>
+                    <option value="CAT 2">CAT 2</option>
+                    <option value="GA">GA</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8a9e]" />
+                </div>
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-black text-[#061527]">Giá (VND)</label>
@@ -727,6 +793,109 @@ export function ConcertDetailPage() {
                   </tr>
                 ))}
                 {!concert.ticketTypes?.length && <tr><td colSpan="6" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">Chưa có hạng vé nào</td></tr>}
+              </tbody>
+            </table>
+          </section>
+        </div>
+      )}
+
+      {activeTab === 'gates' && (
+        <div className="mt-5 space-y-5">
+          <section className="rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
+            <div className="border-b border-[#d8e0ea] px-5 py-4">
+              <p className="text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">Quản lý cổng check-in</p>
+              <h2 className="mt-1 text-2xl font-black text-[#061527]">Thêm cổng</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:grid-cols-4">
+              <label className="block sm:col-span-2">
+                <span className="mb-1.5 block text-sm font-black text-[#061527]">Tên cổng</span>
+                <input
+                  type="text"
+                  value={newGateName}
+                  onChange={(e) => setNewGateName(e.target.value)}
+                  placeholder="VD: Cổng 1, Cổng VIP..."
+                  className={inputClass}
+                />
+              </label>
+              <label className="block sm:col-span-1">
+                <span className="mb-1.5 block text-sm font-black text-[#061527]">Sức chứa</span>
+                <input
+                  type="number"
+                  value={newGateCapacity}
+                  onChange={(e) => setNewGateCapacity(e.target.value)}
+                  placeholder="1000"
+                  className={inputClass}
+                />
+              </label>
+              <label className="block sm:col-span-1">
+                <span className="mb-1.5 block text-sm font-black text-[#061527]">Loại cổng</span>
+                <div className="relative">
+                  <select
+                    value={newGateType}
+                    onChange={(e) => setNewGateType(e.target.value)}
+                    className={`${inputClass} appearance-none pr-10 cursor-pointer`}
+                  >
+                    <option value="REGULAR">Cổng Khách mua</option>
+                    <option value="GUEST">Cổng Khách mời</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8a9e]" />
+                </div>
+              </label>
+            </div>
+            {gateFormError ? (
+              <div className="mx-5 mb-5 rounded-xl border border-[#ffd3dd] bg-[#fff0f1] px-4 py-3 text-sm font-black text-[#ef2534]">
+                {gateFormError}
+              </div>
+            ) : null}
+            <div className="border-t border-[#d8e0ea] px-5 py-4">
+              <button
+                onClick={handleCreateGate}
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#ff7118] px-5 text-sm font-black text-white transition hover:bg-[#ff5d0a]"
+              >
+                <Plus className="h-4 w-4" />
+                Thêm cổng
+              </button>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-[#cbd6e2] bg-white shadow-[0_10px_24px_rgba(15,35,58,0.07)]">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-[#cbd6e2] bg-[#f8fafc] text-left text-sm font-black uppercase tracking-[0.04em] text-[#42536a]">
+                  <th className="px-5 py-4">Tên cổng</th>
+                  <th className="px-5 py-4">Sức chứa</th>
+                  <th className="px-5 py-4">Loại cổng</th>
+                  <th className="px-5 py-4 w-24">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gates.map((gate, index) => (
+                  <tr key={index} className="border-b border-[#d8e0ea] last:border-b-0">
+                    <td className="px-5 py-5 text-sm font-black text-[#061527]">{gate.name}</td>
+                    <td className="px-5 py-5 text-sm font-bold text-[#52637a]">{gate.capacity}</td>
+                    <td className="px-5 py-5 text-sm font-bold text-[#52637a]">
+                      <span className={`inline-flex rounded-lg px-2 py-1 text-xs font-black uppercase tracking-[0.04em] ${
+                        gate.type === 'GUEST' ? 'bg-[#fff0f1] text-[#ef2534]' : 'bg-[#eaf0fa] text-[#236bff]'
+                      }`}>
+                        {gate.type === 'GUEST' ? 'Khách mời' : 'Khách mua'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-5">
+                      <button
+                        onClick={() => handleDeleteGate(index)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#8a98aa] transition hover:bg-[#fff0f1] hover:text-[#ef2534]"
+                        title="Xóa cổng"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {!gates.length && (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-14 text-center text-sm font-bold text-[#52637a]">Chưa có cổng nào</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </section>

@@ -68,14 +68,14 @@ export class AuthController {
 			throw new AppException(ErrorCode.AuthForbidden)
 		}
 
-		const parsed = (await import('./auth.dto.js')).registerSchema.safeParse(body)
+		const parsed = (await import('./auth.dto.js')).createStaffSchema.safeParse(body)
 		if (!parsed.success) {
 			throw new AppException(ErrorCode.ValidationFailed, {
 				fields: parsed.error.flatten().fieldErrors,
 			})
 		}
 
-		return this.authService.createStaff(parsed.data.email, parsed.data.password, parsed.data.displayName, user.sub, user.role)
+		return this.authService.createStaff(parsed.data.assignedGateId, parsed.data.password, parsed.data.displayName, user.sub, user.role)
 	}
 
 	@Get('me')

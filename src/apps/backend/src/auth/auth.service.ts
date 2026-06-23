@@ -88,14 +88,7 @@ export class AuthService {
 		}
 	}
 
-	async createStaff(email: string, passwordPlain: string, displayName: string, creatorId: string, creatorRole: Role) {
-		const existingUser = await this.store.getUserByEmail(email);
-		if (existingUser) {
-			throw new AppException(ErrorCode.ValidationFailed, {
-				reason: 'email_already_exists',
-			})
-		}
-
+	async createStaff(assignedGateId: string, passwordPlain: string, displayName: string, creatorId: string, creatorRole: Role) {
 		let organizerId: string | undefined;
 		if (creatorRole === 'ORGANIZER') {
 			const creator = await this.store.getUserById(creatorId);
@@ -105,8 +98,18 @@ export class AuthService {
 			organizerId = creator.organizerId;
 		}
 
+		// Look up the gate to ensure it exists and to get its name for the email
+		const gate = await this.store.getGateById(assignedGateId)
+		if (!gate) {
+			throw new AppException(ErrorCode.ValidationFailed, { reason: 'gate_not_found' })
+		}
+
+		const timestamp = Date.now()
+		const sanitizedGateName = gate.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+		const generatedEmail = `staff_${sanitizedGateName}_${timestamp}@ticketbox.vn`
+
 		const passwordHash = await bcrypt.hash(passwordPlain, 10);
-		const user = await this.store.createUser(email, passwordHash, displayName, 'CHECK_IN_STAFF', organizerId);
+		const user = await this.store.createUser(generatedEmail, passwordHash, displayName, 'CHECK_IN_STAFF', organizerId, assignedGateId);
 
 		return {
 			user: await this.buildProfile(user.id, user.role),
