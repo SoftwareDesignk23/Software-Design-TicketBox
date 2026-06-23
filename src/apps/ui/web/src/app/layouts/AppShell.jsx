@@ -31,7 +31,7 @@ export function AppShell() {
 			>
 				Chuyển đến nội dung chính
 			</a>
-			<header className="sticky top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+			<header className="sticky top-0 z-[1000] border-b border-white/10 bg-black/60 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
 				<div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4 lg:px-10">
 					<div className="flex items-center gap-6">
 						<Link to="/" className="group flex items-center gap-3">
@@ -67,7 +67,7 @@ export function AppShell() {
 						>
 							<Search className="h-4 w-4" />
 						</button>
-						<div className="relative">
+						<div className="relative z-[1001]">
 							<button
 								type="button"
 								onClick={toggleNotifications}

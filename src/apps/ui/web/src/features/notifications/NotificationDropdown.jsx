@@ -30,7 +30,7 @@ export function NotificationDropdown() {
   }
 
   return (
-    <div className="absolute right-0 top-12 z-40 w-80 rounded-3xl border border-subtle bg-surface-1 p-4 shadow-strong">
+    <div className="absolute right-0 top-12 z-[9999] w-80 overflow-hidden rounded-3xl border border-white/15 bg-[#07070d]/95 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-primary">Notifications</h3>
         <span className="text-xs text-muted">Last 24h</span>
@@ -41,8 +41,8 @@ export function NotificationDropdown() {
             <div
               key={item.id}
               onClick={() => handleNotificationClick(item)}
-              className={`rounded-2xl border border-subtle px-3 py-3 text-sm transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
-                item.unread ? 'bg-surface-2 hover:bg-surface-3' : 'bg-transparent hover:bg-surface-2'
+              className={`rounded-2xl border px-3 py-3 text-sm transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
+                item.unread ? 'border-white/15 bg-white/[0.09] hover:bg-white/[0.13]' : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08]'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -58,7 +58,7 @@ export function NotificationDropdown() {
             </div>
           ))
         ) : (
-          <div className="rounded-2xl border border-subtle bg-surface-2 px-3 py-4 text-xs text-muted">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-4 text-xs text-muted">
             All caught up. We will alert you when the next drop opens.
           </div>
         )}
