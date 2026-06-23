@@ -16,6 +16,7 @@ import {
 } from '../services/db';
 import { decryptAES } from '../services/crypto';
 import * as Device from 'expo-device';
+import * as Network from 'expo-network';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const FRAME_SIZE = 240;
@@ -65,6 +66,9 @@ export default function ScannerScreen() {
 
   const backgroundSyncDown = async () => {
     try {
+      const isOnWifi = await hasWifiConnection();
+      if (!isOnWifi) return;
+
       const data = await checkinService.syncDown(lastUpdatedRef.current);
       if (data.changes && data.changes.length > 0) {
         await updateTicketStatuses(data.changes);
@@ -90,6 +94,13 @@ export default function ScannerScreen() {
   };
 
   const isProcessingRef = useRef(false);
+
+  const hasWifiConnection = async () => {
+    const state = await Network.getNetworkStateAsync();
+    return state.type === Network.NetworkStateType.WIFI
+      && state.isConnected === true
+      && state.isInternetReachable !== false;
+  };
 
   const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
     if (scanned || isProcessingRef.current) return;
@@ -141,20 +152,33 @@ export default function ScannerScreen() {
       ];
 
       try {
+        const isOnWifi = await hasWifiConnection();
+        if (!isOnWifi) {
+          await processOfflineCheckin(payload, gateInfo, attendeeDetails);
+          return;
+        }
+
         const result = await checkinService.verifyTicket(payload.ticketId);
         if (result.success) {
           Vibration.vibrate(100);
           setScanResult({ type: 'success', title: 'Vé hợp lệ', message: 'Khách có thể vào cổng.', details: attendeeDetails });
           await markTicketAsCheckedInLocally(payload.ticketId);
-          await addCheckinLog(payload.ticketId, deviceId, 'VALID');
+          await addCheckinLog(payload.ticketId, deviceId, 'VALID', true);
           await refreshUnsyncedCount();
         }
       } catch (e: any) {
         if (!e.response) {
-          // Mất mạng → fallback offline
-          await processOfflineCheckin(payload, gateInfo, attendeeDetails);
-        } else {
-          const reason = e.response?.data?.data?.reason || e.response?.data?.reason;
+          Vibration.vibrate([0, 200, 100, 200]);
+          setScanResult({
+            type: 'warning',
+            title: 'Khong dong bo duoc',
+            message: 'Thiet bi dang co Wi-Fi nhung khong goi duoc server. Vui long kiem tra ket noi hoac thu lai.',
+            details: attendeeDetails,
+          });
+          return;
+        }
+
+        const reason = e.response?.data?.data?.reason || e.response?.data?.reason;
           if (reason === 'already_checked_in') {
             Vibration.vibrate([0, 200, 100, 200]);
             setScanResult({ type: 'error', title: 'Vé đã được quét', message: 'Vé này đã check-in trước đó.', details: attendeeDetails });
@@ -173,8 +197,7 @@ export default function ScannerScreen() {
             setScanResult({ type: 'error', title: 'Từ chối check-in', message: e.response?.data?.message || 'Vé không hợp lệ.', details: attendeeDetails });
             await addCheckinLog(payload.ticketId, deviceId, 'INVALID');
           }
-          await refreshUnsyncedCount();
-        }
+        await refreshUnsyncedCount();
       }
     } finally {
       setIsProcessing(false);

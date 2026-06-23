@@ -155,15 +155,16 @@ export async function getLocalTicketStats(eventId?: string) {
 export async function addCheckinLog(
   ticketId: string,
   deviceId: string,
-  scanResult: 'VALID' | 'INVALID' | 'ALREADY_SCANNED'
+  scanResult: 'VALID' | 'INVALID' | 'ALREADY_SCANNED',
+  alreadySynced = false
 ) {
   const db = await initDb();
   const scannedAt = new Date().toISOString();
-  // Only save to sync queue if VALID (actual check-ins need to reach server)
-  const needsSync = scanResult === 'VALID' ? 0 : 1; // 0 = unsynced (needs sync), 1 = already "done"
+  // Only offline VALID scans should enter the sync queue.
+  const synced = alreadySynced || scanResult !== 'VALID' ? 1 : 0;
   await db.runAsync(
     'INSERT INTO checkin_logs (ticketId, deviceId, scannedAt, scanResult, synced) VALUES (?, ?, ?, ?, ?)',
-    ticketId, deviceId, scannedAt, scanResult, needsSync
+    ticketId, deviceId, scannedAt, scanResult, synced
   );
 }
 
