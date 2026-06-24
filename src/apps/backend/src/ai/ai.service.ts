@@ -29,6 +29,16 @@ export class AiService {
 			if (err?.message?.includes('401') || err?.message?.includes('403') || err?.message?.includes('Unauthorized')) {
 				return false;
 			}
+			if (err?.details?.reason === 'all_gemini_keys_failed') {
+				// Check if there's any server error (transient_provider_error) in attempts
+				const attempts = err.details.attempts || [];
+				const hasServerError = attempts.some((a: any) => a.reason === 'transient_provider_error' || a.reason === 'unknown_provider_error');
+				// If it's just quota exceeded or invalid keys, don't trip circuit breaker
+				return hasServerError;
+			}
+			if (err?.details?.reason === 'ai_generation_failed') {
+				return false;
+			}
 			return true;
 		}
 	})
