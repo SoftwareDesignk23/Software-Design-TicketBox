@@ -51,10 +51,11 @@ export async function applyCoupon(bookingId, code) {
 }
 
 // Renamed internally but keeping the same function name to avoid breaking many files
-export async function createReservation(showId, items) {
+export async function createReservation(showId, items, idempotencyKey) {
   const response = await apiClient.post('/bookings/reservations', {
     showId,
     items,
+    ...(idempotencyKey ? { idempotencyKey } : {}),
   });
   return response.data?.data || response.data;
 }

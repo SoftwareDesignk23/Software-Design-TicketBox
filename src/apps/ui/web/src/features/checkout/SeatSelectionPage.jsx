@@ -30,6 +30,16 @@ export function SeatSelectionPage() {
   const [isReserving, setIsReserving] = useState(false)
   const navigate = useNavigate()
 
+  // Tạo idempotencyKey 1 lần, lưu sessionStorage để survive qua refresh
+  const [idempotencyKey, setIdempotencyKey] = useState(() => {
+    const storageKey = `idem:${eventId}`
+    const existing = sessionStorage.getItem(storageKey)
+    if (existing) return existing
+    const newKey = crypto.randomUUID()
+    sessionStorage.setItem(storageKey, newKey)
+    return newKey
+  })
+
   const { data: userTickets } = useQuery({
     queryKey: ['tickets'],
     queryFn: fetchTickets,
@@ -252,7 +262,12 @@ export function SeatSelectionPage() {
         }))
       }
 
-      const res = await createReservation(selectedShow, items)
+      const res = await createReservation(selectedShow, items, idempotencyKey)
+      // Booking thành công → xóa key cũ, tạo key mới cho lần đặt tiếp theo
+      sessionStorage.removeItem(`idem:${eventId}`)
+      const newKey = crypto.randomUUID()
+      sessionStorage.setItem(`idem:${eventId}`, newKey)
+      setIdempotencyKey(newKey)
       navigate(`/checkout?bookingId=${res.id}&eventId=${eventId}&ticketTypeId=${zone?.id || selectedZone}&quantity=${isGaZone ? gaQuantity : selectedSeats.length}`)
     } catch (err) {
       toast.error('Không thể giữ chỗ. Vé có thể đã được người khác mua hoặc bạn chưa đăng nhập.')
