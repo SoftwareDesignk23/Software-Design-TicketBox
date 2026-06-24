@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service.js'
-import { createConcertSchema, updateConcertSchema, createTicketTypeSchema, updateTicketTypeSchema, createShowSchema, assignArtistSchema } from './concerts.dto.js'
+import {
+	createConcertSchema,
+	updateConcertSchema,
+	createTicketTypeSchema,
+	updateTicketTypeSchema,
+	createShowSchema,
+	assignArtistSchema,
+} from './concerts.dto.js'
 import type { Role } from '../auth/auth.types.js'
 import { AppException } from '../exception/app-exception.js'
 import { ErrorCode } from '../exception/error-code.js'
@@ -22,7 +29,7 @@ const concertResponseSelect = {
 			address: true,
 			mapUrl: true,
 			capacity: true,
-		}
+		},
 	},
 	organizer: {
 		select: {
@@ -42,7 +49,7 @@ const concertResponseSelect = {
 		},
 		orderBy: {
 			startsAt: 'asc' as const,
-		}
+		},
 	},
 	artists: {
 		select: {
@@ -53,9 +60,9 @@ const concertResponseSelect = {
 					name: true,
 					avatarUrl: true,
 					bio: true,
-				}
-			}
-		}
+				},
+			},
+		},
 	},
 	sponsors: {
 		select: {
@@ -65,9 +72,9 @@ const concertResponseSelect = {
 					id: true,
 					name: true,
 					logoUrl: true,
-				}
-			}
-		}
+				},
+			},
+		},
 	},
 	ticketTypes: {
 		select: {
@@ -81,7 +88,7 @@ const concertResponseSelect = {
 			benefits: true,
 			rows: true,
 			seatsPerRow: true,
-		}
+		},
 	},
 	gates: {
 		select: {
@@ -89,8 +96,8 @@ const concertResponseSelect = {
 			name: true,
 			capacity: true,
 			type: true,
-		}
-	}
+		},
+	},
 } as const
 
 @Injectable()
@@ -105,43 +112,72 @@ export class ConcertsService {
 		return parseInt(this.config.get<string>('CACHE_TTL') || '300', 10)
 	}
 
-	async listConcerts() {
-		const cacheKey = 'concerts:list:published'
-		const cached = await this.redis.get(cacheKey)
-		if (cached) {
-			return JSON.parse(cached)
+	private async getWithCacheMutex<T>(
+		cacheKey: string,
+		fetchData: () => Promise<T>,
+		baseTtlSeconds: number,
+	): Promise<T> {
+		let cached = await this.redis.get(cacheKey)
+		if (cached) return JSON.parse(cached)
+
+		const lockKey = `lock:${cacheKey}`
+		// Try to acquire lock for 5 seconds to prevent Thundering Herd
+		const acquired = await this.redis.set(lockKey, '1', 'PX', 5000, 'NX')
+
+		if (acquired) {
+			try {
+				const data = await fetchData()
+				// Jitter TTL: base + random(0 to 60 seconds) to prevent simultaneous expiration
+				const jitter = Math.floor(Math.random() * 60)
+				await this.redis.set(cacheKey, JSON.stringify(data), 'EX', baseTtlSeconds + jitter)
+				return data
+			} finally {
+				await this.redis.del(lockKey)
+			}
+		} else {
+			// Did not acquire lock, wait 200ms and try reading cache again
+			await new Promise((resolve) => setTimeout(resolve, 200))
+			cached = await this.redis.get(cacheKey)
+			if (cached) return JSON.parse(cached)
+
+			// Fallback: query DB directly if still missing to avoid hanging
+			return fetchData()
 		}
+	}
 
-		const concerts = await this.prisma.concert.findMany({
-			where: { status: 'PUBLISHED' },
-			select: concertResponseSelect,
-		})
-
-		await this.redis.set(cacheKey, JSON.stringify(concerts), 'EX', this.cacheTtl)
-		return concerts
+	async listConcerts() {
+		return this.getWithCacheMutex(
+			'concerts:list:published',
+			async () => {
+				return this.prisma.concert.findMany({
+					where: { status: 'PUBLISHED' },
+					select: concertResponseSelect,
+				})
+			},
+			this.cacheTtl,
+		)
 	}
 
 	async getConcertById(id: string) {
-		const cacheKey = `concerts:detail:${id}`
-		const cached = await this.redis.get(cacheKey)
-		if (cached) {
-			return JSON.parse(cached)
-		}
+		return this.getWithCacheMutex(
+			`concerts:detail:${id}`,
+			async () => {
+				const concert = await this.prisma.concert.findFirst({
+					where: {
+						id,
+						status: 'PUBLISHED',
+					},
+					select: concertResponseSelect,
+				})
 
-		const concert = await this.prisma.concert.findFirst({
-			where: {
-				id,
-				status: 'PUBLISHED',
+				if (!concert) {
+					throw new AppException(ErrorCode.ConcertNotFound)
+				}
+
+				return concert
 			},
-			select: concertResponseSelect,
-		})
-
-		if (!concert) {
-			throw new AppException(ErrorCode.ConcertNotFound)
-		}
-
-		await this.redis.set(cacheKey, JSON.stringify(concert), 'EX', this.cacheTtl)
-		return concert
+			this.cacheTtl,
+		)
 	}
 
 	async getShowSeats(showId: string) {
@@ -151,7 +187,7 @@ export class ConcertsService {
 				seat: {
 					include: {
 						section: true,
-					}
+					},
 				},
 				ticketType: {
 					select: {
@@ -159,17 +195,17 @@ export class ConcertsService {
 						name: true,
 						colorCode: true,
 						price: true,
-					}
-				}
+					},
+				},
 			},
 			orderBy: [
 				{ seat: { section: { sortOrder: 'asc' } } },
 				{ seat: { row: 'asc' } },
-				{ seat: { number: 'asc' } }
-			]
+				{ seat: { number: 'asc' } },
+			],
 		})
 
-		const lockKeys = seats.map(s => `seat_lock:${s.id}`)
+		const lockKeys = seats.map((s) => `seat_lock:${s.id}`)
 		if (lockKeys.length > 0) {
 			const locks = await this.redis.mget(lockKeys)
 			seats.forEach((seat, index) => {
@@ -216,7 +252,7 @@ export class ConcertsService {
 			},
 			select: concertResponseSelect,
 		})
-		
+
 		await this.redis.del('concerts:list:published')
 		return created
 	}
@@ -288,21 +324,25 @@ export class ConcertsService {
 		const result = createTicketTypeSchema.safeParse(body)
 		if (!result.success) throw new AppException(ErrorCode.ConcertValidationFailed)
 
-		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true, venueId: true } })
+		const concert = await this.prisma.concert.findUnique({
+			where: { id: concertId },
+			select: { organizerId: true, venueId: true },
+		})
 		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
-		
+
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
-			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+			if (concert.organizerId !== user?.organizerId)
+				throw new AppException(ErrorCode.ConcertForbidden)
 		}
 
-		let finalTotalQuantity = result.data.totalQuantity;
+		let finalTotalQuantity = result.data.totalQuantity
 		if (result.data.isSeated && result.data.rows && result.data.seatsPerRow) {
-			finalTotalQuantity = result.data.rows * result.data.seatsPerRow;
+			finalTotalQuantity = result.data.rows * result.data.seatsPerRow
 		}
 
 		const ticketType = await this.prisma.ticketType.create({
-			data: { 
+			data: {
 				name: result.data.name,
 				price: result.data.price,
 				totalQuantity: finalTotalQuantity || 1,
@@ -310,54 +350,54 @@ export class ConcertsService {
 				maxPerOrder: result.data.maxPerOrder,
 				rows: result.data.isSeated ? result.data.rows : null,
 				seatsPerRow: result.data.isSeated ? result.data.seatsPerRow : null,
-				concertId 
-			}
+				concertId,
+			},
 		})
 
 		if (result.data.isSeated && result.data.rows && result.data.seatsPerRow) {
-			const sectionName = `Khu ${ticketType.name} - ${concertId}`;
+			const sectionName = `Khu ${ticketType.name} - ${concertId}`
 			let section = await this.prisma.seatSection.findUnique({
-				where: { venueId_name: { venueId: concert.venueId, name: sectionName } }
-			});
+				where: { venueId_name: { venueId: concert.venueId, name: sectionName } },
+			})
 			if (!section) {
 				section = await this.prisma.seatSection.create({
-					data: { venueId: concert.venueId, name: sectionName, capacity: finalTotalQuantity || 0 }
-				});
+					data: { venueId: concert.venueId, name: sectionName, capacity: finalTotalQuantity || 0 },
+				})
 			}
 
 			// Generate seats based on rows and seatsPerRow
-			const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+			const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 			const getRowLabel = (index: number) => {
-				if (index < 26) return alphabet[index];
-				return alphabet[Math.floor(index / 26) - 1] + alphabet[index % 26];
-			};
+				if (index < 26) return alphabet[index]
+				return alphabet[Math.floor(index / 26) - 1] + alphabet[index % 26]
+			}
 
-			const seatsData: any[] = [];
+			const seatsData: any[] = []
 			for (let i = 0; i < result.data.rows; i++) {
-				const rowLabel = getRowLabel(i);
+				const rowLabel = getRowLabel(i)
 				for (let j = 1; j <= result.data.seatsPerRow; j++) {
 					seatsData.push({
 						sectionId: section.id,
 						label: `${rowLabel}${j}`,
 						row: rowLabel,
-						number: j
-					});
+						number: j,
+					})
 				}
 			}
-			await this.prisma.seat.createMany({ data: seatsData, skipDuplicates: true });
-			
-			const seatsInDb = await this.prisma.seat.findMany({ where: { sectionId: section.id } });
+			await this.prisma.seat.createMany({ data: seatsData, skipDuplicates: true })
+
+			const seatsInDb = await this.prisma.seat.findMany({ where: { sectionId: section.id } })
 
 			// Assign these seats to all EXISTING shows for this concert
-			const existingShows = await this.prisma.concertShow.findMany({ where: { concertId } });
+			const existingShows = await this.prisma.concertShow.findMany({ where: { concertId } })
 			for (const show of existingShows) {
-				const showSeatsData = seatsInDb.map(seat => ({
+				const showSeatsData = seatsInDb.map((seat) => ({
 					showId: show.id,
 					seatId: seat.id,
 					ticketTypeId: ticketType.id,
 					status: 'AVAILABLE' as const,
-				}));
-				await this.prisma.showSeat.createMany({ data: showSeatsData, skipDuplicates: true });
+				}))
+				await this.prisma.showSeat.createMany({ data: showSeatsData, skipDuplicates: true })
 			}
 		}
 
@@ -366,32 +406,38 @@ export class ConcertsService {
 	}
 
 	async deleteTicketType(concertId: string, ticketTypeId: string, userId: string, role: Role) {
-		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true, venueId: true } })
+		const concert = await this.prisma.concert.findUnique({
+			where: { id: concertId },
+			select: { organizerId: true, venueId: true },
+		})
 		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
-		
+
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
-			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+			if (concert.organizerId !== user?.organizerId)
+				throw new AppException(ErrorCode.ConcertForbidden)
 		}
 
 		const ticketType = await this.prisma.ticketType.findUnique({ where: { id: ticketTypeId } })
 		if (!ticketType) return { deleted: false }
 
 		if (ticketType.soldQuantity > 0) {
-			throw new AppException(ErrorCode.ConcertValidationFailed, { reason: 'cannot_delete_ticket_with_sales' })
+			throw new AppException(ErrorCode.ConcertValidationFailed, {
+				reason: 'cannot_delete_ticket_with_sales',
+			})
 		}
 
 		// Delete related ShowSeats
 		await this.prisma.showSeat.deleteMany({
-			where: { ticketTypeId }
+			where: { ticketTypeId },
 		})
 
 		// Delete related SeatSection if it was a seated section
 		if (ticketType.rows && ticketType.seatsPerRow) {
-			const sectionName = `Khu ${ticketType.name} - ${concertId}`;
+			const sectionName = `Khu ${ticketType.name} - ${concertId}`
 			await this.prisma.seatSection.deleteMany({
-				where: { venueId: concert.venueId, name: sectionName }
-			});
+				where: { venueId: concert.venueId, name: sectionName },
+			})
 		}
 
 		await this.prisma.ticketType.delete({ where: { id: ticketTypeId } })
@@ -399,16 +445,26 @@ export class ConcertsService {
 		return { deleted: true }
 	}
 
-	async updateTicketType(concertId: string, ticketTypeId: string, body: unknown, userId: string, role: Role) {
+	async updateTicketType(
+		concertId: string,
+		ticketTypeId: string,
+		body: unknown,
+		userId: string,
+		role: Role,
+	) {
 		const result = updateTicketTypeSchema.safeParse(body)
 		if (!result.success) throw new AppException(ErrorCode.ConcertValidationFailed)
 
-		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true, venueId: true } })
+		const concert = await this.prisma.concert.findUnique({
+			where: { id: concertId },
+			select: { organizerId: true, venueId: true },
+		})
 		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
-		
+
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
-			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+			if (concert.organizerId !== user?.organizerId)
+				throw new AppException(ErrorCode.ConcertForbidden)
 		}
 
 		const existingTT = await this.prisma.ticketType.findUnique({ where: { id: ticketTypeId } })
@@ -417,65 +473,70 @@ export class ConcertsService {
 		let finalTotalQuantity = result.data.totalQuantity
 		if (result.data.isSeated && result.data.rows && result.data.seatsPerRow) {
 			finalTotalQuantity = result.data.rows * result.data.seatsPerRow
-			
-			if (existingTT.rows !== result.data.rows || existingTT.seatsPerRow !== result.data.seatsPerRow) {
+
+			if (
+				existingTT.rows !== result.data.rows ||
+				existingTT.seatsPerRow !== result.data.seatsPerRow
+			) {
 				if (existingTT.soldQuantity > 0) {
-					throw new AppException(ErrorCode.ConcertValidationFailed, { reason: 'cannot_change_seats_with_sales' })
+					throw new AppException(ErrorCode.ConcertValidationFailed, {
+						reason: 'cannot_change_seats_with_sales',
+					})
 				}
-				
-				const sectionName = `Khu ${result.data.name || existingTT.name} - ${concertId}`;
+
+				const sectionName = `Khu ${result.data.name || existingTT.name} - ${concertId}`
 				let section = await this.prisma.seatSection.findUnique({
-					where: { venueId_name: { venueId: concert.venueId, name: sectionName } }
-				});
+					where: { venueId_name: { venueId: concert.venueId, name: sectionName } },
+				})
 				if (!section) {
 					section = await this.prisma.seatSection.create({
-						data: { venueId: concert.venueId, name: sectionName, capacity: finalTotalQuantity }
-					});
+						data: { venueId: concert.venueId, name: sectionName, capacity: finalTotalQuantity },
+					})
 				} else {
-				    await this.prisma.seatSection.update({
-				        where: { id: section.id },
-				        data: { capacity: finalTotalQuantity }
-				    });
+					await this.prisma.seatSection.update({
+						where: { id: section.id },
+						data: { capacity: finalTotalQuantity },
+					})
 				}
 
 				await this.prisma.seat.deleteMany({ where: { sectionId: section.id } })
 
-				const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+				const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 				const getRowLabel = (index: number) => {
-					if (index < 26) return alphabet[index];
-					return alphabet[Math.floor(index / 26) - 1] + alphabet[index % 26];
-				};
+					if (index < 26) return alphabet[index]
+					return alphabet[Math.floor(index / 26) - 1] + alphabet[index % 26]
+				}
 
-				const seatsData: any[] = [];
+				const seatsData: any[] = []
 				for (let i = 0; i < result.data.rows; i++) {
-					const rowLabel = getRowLabel(i);
+					const rowLabel = getRowLabel(i)
 					for (let j = 1; j <= result.data.seatsPerRow; j++) {
 						seatsData.push({
 							sectionId: section.id,
 							label: `${rowLabel}${j}`,
 							row: rowLabel,
-							number: j
-						});
+							number: j,
+						})
 					}
 				}
-				await this.prisma.seat.createMany({ data: seatsData, skipDuplicates: true });
-				
-				const seatsInDb = await this.prisma.seat.findMany({ where: { sectionId: section.id } });
+				await this.prisma.seat.createMany({ data: seatsData, skipDuplicates: true })
 
-				const existingShows = await this.prisma.concertShow.findMany({ where: { concertId } });
+				const seatsInDb = await this.prisma.seat.findMany({ where: { sectionId: section.id } })
+
+				const existingShows = await this.prisma.concertShow.findMany({ where: { concertId } })
 				for (const show of existingShows) {
-					const showSeatsData = seatsInDb.map(seat => ({
+					const showSeatsData = seatsInDb.map((seat) => ({
 						showId: show.id,
 						seatId: seat.id,
 						ticketTypeId: ticketTypeId,
 						status: 'AVAILABLE' as const,
-					}));
-					await this.prisma.showSeat.createMany({ data: showSeatsData, skipDuplicates: true });
+					}))
+					await this.prisma.showSeat.createMany({ data: showSeatsData, skipDuplicates: true })
 				}
 			}
 		}
 
-		const { isSeated, ...updateData } = result.data;
+		const { isSeated, ...updateData } = result.data
 		const ticketType = await this.prisma.ticketType.update({
 			where: { id: ticketTypeId },
 			data: {
@@ -483,7 +544,7 @@ export class ConcertsService {
 				totalQuantity: finalTotalQuantity,
 				rows: result.data.isSeated ? result.data.rows : existingTT.rows,
 				seatsPerRow: result.data.isSeated ? result.data.seatsPerRow : existingTT.seatsPerRow,
-			}
+			},
 		})
 		await this.redis.del(`concerts:detail:${concertId}`)
 		return ticketType
@@ -493,35 +554,39 @@ export class ConcertsService {
 		const result = createShowSchema.safeParse(body)
 		if (!result.success) throw new AppException(ErrorCode.ConcertValidationFailed)
 
-		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true, venueId: true } })
+		const concert = await this.prisma.concert.findUnique({
+			where: { id: concertId },
+			select: { organizerId: true, venueId: true },
+		})
 		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
-		
+
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
-			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+			if (concert.organizerId !== user?.organizerId)
+				throw new AppException(ErrorCode.ConcertForbidden)
 		}
 
 		const show = await this.prisma.concertShow.create({
-			data: { ...result.data, concertId }
+			data: { ...result.data, concertId },
 		})
 
 		// Generate ShowSeats for all existing TicketTypes that are seated
-		const ticketTypes = await this.prisma.ticketType.findMany({ where: { concertId } });
+		const ticketTypes = await this.prisma.ticketType.findMany({ where: { concertId } })
 		for (const tt of ticketTypes) {
-			const sectionName = `Khu ${tt.name} - ${concertId}`;
+			const sectionName = `Khu ${tt.name} - ${concertId}`
 			const section = await this.prisma.seatSection.findUnique({
-				where: { venueId_name: { venueId: concert.venueId, name: sectionName } }
-			});
+				where: { venueId_name: { venueId: concert.venueId, name: sectionName } },
+			})
 			if (section) {
-				const seats = await this.prisma.seat.findMany({ where: { sectionId: section.id } });
+				const seats = await this.prisma.seat.findMany({ where: { sectionId: section.id } })
 				if (seats.length > 0) {
-					const showSeatsData = seats.map(seat => ({
+					const showSeatsData = seats.map((seat) => ({
 						showId: show.id,
 						seatId: seat.id,
 						ticketTypeId: tt.id,
 						status: 'AVAILABLE' as const,
-					}));
-					await this.prisma.showSeat.createMany({ data: showSeatsData, skipDuplicates: true });
+					}))
+					await this.prisma.showSeat.createMany({ data: showSeatsData, skipDuplicates: true })
 				}
 			}
 		}
@@ -534,46 +599,56 @@ export class ConcertsService {
 		const result = assignArtistSchema.safeParse(body)
 		if (!result.success) throw new AppException(ErrorCode.ConcertValidationFailed)
 
-		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true } })
+		const concert = await this.prisma.concert.findUnique({
+			where: { id: concertId },
+			select: { organizerId: true },
+		})
 		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
-		
+
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
-			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+			if (concert.organizerId !== user?.organizerId)
+				throw new AppException(ErrorCode.ConcertForbidden)
 		}
 
 		const existingAssignment = await this.prisma.concertArtist.findUnique({
-			where: { concertId_artistId: { concertId, artistId: result.data.artistId } }
+			where: { concertId_artistId: { concertId, artistId: result.data.artistId } },
 		})
 
 		if (existingAssignment) {
-			throw new AppException(ErrorCode.ConcertValidationFailed, { reason: 'Nghệ sĩ này đã được thêm vào sự kiện' })
+			throw new AppException(ErrorCode.ConcertValidationFailed, {
+				reason: 'Nghệ sĩ này đã được thêm vào sự kiện',
+			})
 		}
 
 		const artistAssignment = await this.prisma.concertArtist.create({
 			data: {
 				concertId,
 				artistId: result.data.artistId,
-				role: result.data.role
-			}
+				role: result.data.role,
+			},
 		})
 		await this.redis.del(`concerts:detail:${concertId}`)
 		return artistAssignment
 	}
 
 	async removeArtist(concertId: string, artistId: string, userId: string, role: Role) {
-		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true } })
+		const concert = await this.prisma.concert.findUnique({
+			where: { id: concertId },
+			select: { organizerId: true },
+		})
 		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
-		
+
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
-			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+			if (concert.organizerId !== user?.organizerId)
+				throw new AppException(ErrorCode.ConcertForbidden)
 		}
 
 		await this.prisma.concertArtist.delete({
 			where: {
-				concertId_artistId: { concertId, artistId }
-			}
+				concertId_artistId: { concertId, artistId },
+			},
 		})
 		await this.redis.del(`concerts:detail:${concertId}`)
 		return { deleted: true }
@@ -582,7 +657,7 @@ export class ConcertsService {
 	async getConcertGates(concertId: string) {
 		const gates = await this.prisma.gate.findMany({
 			where: { concertId },
-			orderBy: { name: 'asc' }
+			orderBy: { name: 'asc' },
 		})
 		return gates
 	}
@@ -592,12 +667,16 @@ export class ConcertsService {
 		const result = updateConcertGatesSchema.safeParse(body)
 		if (!result.success) throw new AppException(ErrorCode.ConcertValidationFailed)
 
-		const concert = await this.prisma.concert.findUnique({ where: { id: concertId }, select: { organizerId: true } })
+		const concert = await this.prisma.concert.findUnique({
+			where: { id: concertId },
+			select: { organizerId: true },
+		})
 		if (!concert) throw new AppException(ErrorCode.ConcertNotFound)
-		
+
 		if (role !== 'ADMIN') {
 			const user = await this.prisma.user.findUnique({ where: { id: userId } })
-			if (concert.organizerId !== user?.organizerId) throw new AppException(ErrorCode.ConcertForbidden)
+			if (concert.organizerId !== user?.organizerId)
+				throw new AppException(ErrorCode.ConcertForbidden)
 		}
 
 		// Delete existing gates and recreate
@@ -606,29 +685,29 @@ export class ConcertsService {
 		// However, for simplicity, if tickets are already assigned, dropping the gate will lose the ticket's gate assignment.
 		// Since gates usually aren't modified after ticket sales, or if they are, it's fine to reassign.
 		// To be perfectly safe, upsert by name.
-		
+
 		const currentGates = await this.prisma.gate.findMany({ where: { concertId } })
-		const incomingNames = result.data.gates.map(g => g.name)
-		
-		const toDelete = currentGates.filter(g => !incomingNames.includes(g.name))
+		const incomingNames = result.data.gates.map((g) => g.name)
+
+		const toDelete = currentGates.filter((g) => !incomingNames.includes(g.name))
 		if (toDelete.length > 0) {
 			await this.prisma.gate.deleteMany({
-				where: { id: { in: toDelete.map(g => g.id) } }
+				where: { id: { in: toDelete.map((g) => g.id) } },
 			})
 		}
 
 		const updatedGates: any[] = []
 		for (const g of result.data.gates) {
-			const existing = currentGates.find(cg => cg.name === g.name)
+			const existing = currentGates.find((cg) => cg.name === g.name)
 			if (existing) {
 				const updated = await this.prisma.gate.update({
 					where: { id: existing.id },
-					data: { capacity: g.capacity, type: g.type }
+					data: { capacity: g.capacity, type: g.type },
 				})
 				updatedGates.push(updated)
 			} else {
 				const created = await this.prisma.gate.create({
-					data: { concertId, name: g.name, capacity: g.capacity, type: g.type }
+					data: { concertId, name: g.name, capacity: g.capacity, type: g.type },
 				})
 				updatedGates.push(created)
 			}
