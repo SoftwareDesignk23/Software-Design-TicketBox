@@ -17,6 +17,7 @@ async function bootstrap() {
 		exclude: ['health'],
 	})
 
-	await app.listen(process.env.PORT ?? 3000)
+	app.enableShutdownHooks()
+	await app.listen(process.env.PORT ?? 3000, '0.0.0.0')
 }
 bootstrap()

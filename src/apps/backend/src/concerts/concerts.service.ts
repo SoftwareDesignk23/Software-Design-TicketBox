@@ -135,10 +135,12 @@ export class ConcertsService {
 				await this.redis.del(lockKey)
 			}
 		} else {
-			// Did not acquire lock, wait 200ms and try reading cache again
-			await new Promise((resolve) => setTimeout(resolve, 200))
-			cached = await this.redis.get(cacheKey)
-			if (cached) return JSON.parse(cached)
+			// Did not acquire lock, poll cache for up to 5 seconds (25 x 200ms)
+			for (let i = 0; i < 25; i++) {
+				await new Promise((resolve) => setTimeout(resolve, 200))
+				cached = await this.redis.get(cacheKey)
+				if (cached) return JSON.parse(cached)
+			}
 
 			// Fallback: query DB directly if still missing to avoid hanging
 			return fetchData()
@@ -149,6 +151,7 @@ export class ConcertsService {
 		return this.getWithCacheMutex(
 			'concerts:list:published',
 			async () => {
+				console.log('[DB QUERY] Đang truy vấn Database để lấy danh sách Concerts!')
 				return this.prisma.concert.findMany({
 					where: { status: 'PUBLISHED' },
 					select: concertResponseSelect,

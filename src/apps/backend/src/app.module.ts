@@ -33,7 +33,7 @@ import { AppThrottlerGuard } from './common/guards/app-throttler.guard.js'
 		ThrottlerModule.forRoot([
 			{
 				ttl: 60000,
-				limit: 100, // 100 requests per minute
+				limit: 100, // 100 request per minute
 			},
 		]),
 		ScheduleModule.forRoot(),
@@ -65,4 +65,3 @@ import { AppThrottlerGuard } from './common/guards/app-throttler.guard.js'
 	],
 })
 export class AppModule {}
-

@@ -13,7 +13,10 @@ export class RedisService extends Redis.default implements OnModuleInit, OnModul
 		this.on('error', (err) => console.error('Redis error', err))
 	}
 
-	onModuleDestroy() {
+	async onModuleDestroy() {
+		console.log('🧹 Đang xóa toàn bộ Cache Redis trước khi tắt App...')
+		await this.flushall()
 		this.disconnect()
+		console.log('✅ Đã xóa Cache và ngắt kết nối Redis.')
 	}
 }
