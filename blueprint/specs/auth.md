@@ -1,22 +1,41 @@
-# Đặc tả hiện trạng: Xác thực và phân quyền
+# Đặc tả: Xác thực & Phân quyền (Auth + RBAC)
 
 ## Mô tả
-Hệ thống đăng nhập bằng email/mật khẩu, dùng JWT và refresh token quay vòng. Các vai trò gồm `AUDIENCE`, `ORGANIZER`, `CHECK_IN_STAFF`, `ADMIN`.
+Hệ thống dùng JWT access token ngắn hạn và refresh token quay vòng để xác thực. Phân quyền theo RBAC với vai trò cụ thể cho khán giả, ban tổ chức, nhân sự soát vé và admin. Mọi API bảo vệ phải đi qua middleware/guard kiểm tra vai trò và phạm vi event.
 
-## Luồng hiện tại
-- Access token có `iss`, `aud`, `sub`, `role`, `sid`, `iat` và thường có `exp`.
-- Access token mặc định 15 phút; refresh token mặc định 14 ngày và được lưu dạng hash trong `RefreshSession`.
-- Refresh tạo session/token mới; phát hiện reuse sẽ revoke cả token family.
-- Logout revoke refresh session.
-- `JwtAuthGuard` và `RolesGuard` bảo vệ route theo token và role.
-- `ConcertScopeGuard` có sẵn nhưng hiện chỉ được dùng trong demo controller, chưa áp dụng rộng cho các module nghiệp vụ.
-- Organizer/Admin có thể tạo check-in staff và gán staff vào một gate.
+## Yêu cầu chi tiết
+- JWT có issuer, audience, subject, role, iat, exp.
+- Refresh token rotate và lưu dạng hash.
+- API guard enforce role + event scope.
+- Error response chuẩn cho 401/403.
 
-## Ngoại lệ và giới hạn
-- Access token của `CHECK_IN_STAFF` được phát hành không có thời hạn để phục vụ offline.
-- Chưa có đăng nhập bằng phone/OTP.
-- Event scope không nằm trong JWT và nhiều API kiểm tra ownership thủ công trong service.
-- Một số API AI, CSV và admin chưa kiểm tra ownership đầy đủ.
+## Luồng chính
+1. Người dùng đăng nhập bằng email/phone + OTP hoặc mật khẩu.
+2. Auth trả `access_token` (JWT) và `refresh_token` (rotating).
+3. Client đính kèm access token vào request API bảo vệ.
+4. Hết hạn access token → gọi refresh, hệ thống rotate refresh token.
+5. Logout → revoke refresh token và đóng session.
 
-## Điểm cần lưu ý
-Access token staff không hết hạn làm tăng rủi ro nếu token bị lộ; việc vô hiệu hóa tài khoản không tự động thu hồi token access đã phát hành.
+## Vai trò và quyền
+- `AUDIENCE`: xem concert, đặt/mua vé, nhận e-ticket, xem lịch sử.
+- `ORGANIZER`: quản trị concert, cấu hình vé, upload PDF, import CSV, xem doanh thu.
+- `CHECK_IN_STAFF`: quét QR, sync check-in cho event được phân công.
+- `ADMIN`: quản trị hệ thống, audit log, quản lý user/role.
+
+## Kịch bản lỗi
+- Thiếu/không hợp lệ JWT → `401 Unauthorized`.
+- Có JWT nhưng thiếu quyền → `403 Forbidden`.
+- Refresh token reused → từ chối và revoke token family.
+- Truy cập event không được phân công → `403`.
+
+## Ràng buộc
+- JWT claim bắt buộc: `iss`, `aud`, `sub`, `role`, `iat`, `exp`.
+- Access token TTL 15-30 phút; refresh token TTL 7-30 ngày.
+- Refresh token lưu dạng hash + metadata (user_id, session_id, expiry).
+- Authorization guard kiểm tra cả role và `event_scope`.
+
+## Tiêu chí chấp nhận
+- Tất cả API bảo vệ từ chối request không có token.
+- Người không có role phù hợp không truy cập được chức năng quản trị.
+- Staff chỉ thao tác trong event được phân công.
+- Refresh token cũ không thể dùng lại.

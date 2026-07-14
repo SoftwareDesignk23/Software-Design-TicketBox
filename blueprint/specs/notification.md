@@ -1,24 +1,36 @@
-# Đặc tả hiện trạng: Notification System
+# Đặc tả: Notification System
 
 ## Mô tả
-Hệ thống hỗ trợ notification `IN_APP` và `EMAIL`, nhận sự kiện thanh toán qua RabbitMQ, gửi reminder T-24h bằng cron và phát notification in-app qua Socket.IO.
+Hệ thống thông báo event-driven, hỗ trợ in-app, email, nhắc nhở trễ và retry có dead-letter.
 
-## Luồng hiện tại
-- Payment success publish event `payment.success`.
-- Consumer tạo đồng thời notification in-app và email.
-- Mỗi notification được lưu PostgreSQL với trạng thái `PENDING`, sau đó `SENT` hoặc `FAILED`.
-- Provider được gọi tối đa 3 lần với exponential backoff.
-- Message consumer lỗi được đưa vào DLX/DLQ và handler thử publish lại tối đa theo `x-death`.
-- Reminder chạy mỗi giờ, tìm show bắt đầu trong cửa sổ 24–25 giờ và gửi email cho chủ vé `ISSUED`.
-- API cho phép lấy 50 notification gần nhất và đánh dấu đã đọc.
+## Yêu cầu chi tiết
+- Consume domain events và tạo notification jobs.
+- Routing rules map event → template + channel + recipient.
+- Idempotent theo event_id + channel + recipient.
+- In-app notification: lưu, đọc, unread count, isolate theo user.
+- Email: render template, validate variables, track states.
+- Delayed reminders: schedule, re-check eligibility, cancel khi state đổi.
+- Provider abstraction cho SMS/Zalo OA tương lai.
+- Retry với backoff, DLQ và audit attempt.
 
-## Giới hạn hiện tại
-- Không có idempotency theo event/recipient/channel; retry hoặc reminder có thể tạo bản ghi trùng.
-- Không có bảng audit attempt; chỉ lưu trạng thái cuối và log console.
-- Template/routing còn hard-code, chưa có user preference.
-- In-app provider chỉ mock thành công; realtime được emit sau khi DB cập nhật.
-- Chưa có SMS/Zalo provider.
-- Không có unread-count endpoint riêng hoặc API hủy reminder đã lên lịch.
+## Luồng chính
+1. Domain event (booking/payment) emit vào broker.
+2. Notification service consume và tạo job theo routing rules.
+3. Render template và gửi qua provider.
+4. Persist trạng thái và attempt log.
+5. Delayed reminder được schedule theo T-24h.
 
-## Điểm cần lưu ý
-Socket.IO cho phép client tự gửi `userId` để join room mà không xác thực socket, có nguy cơ xem notification realtime của người dùng khác.
+## Kịch bản lỗi
+- Provider tạm thời lỗi → retry backoff.
+- Template thiếu biến → fail non-retryable.
+- Job retry quá ngưỡng → dead-letter.
+
+## Ràng buộc
+- Idempotent theo event_id + recipient + channel.
+- Provider abstraction để mở rộng SMS/Zalo OA.
+- Respect user preferences cho optional notifications.
+
+## Tiêu chí chấp nhận
+- Mỗi event tạo đúng số job theo routing.
+- Retry hoạt động và audit đầy đủ.
+- Delayed reminder được cancel khi trạng thái thay đổi.
