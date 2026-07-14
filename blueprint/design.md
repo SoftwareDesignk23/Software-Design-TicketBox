@@ -179,7 +179,7 @@ Mô hình **Hybrid**:
 ### Ràng buộc nhất quán chính
 - `reservations` và `ticket_inventory` cập nhật theo cùng transaction hoặc theo Redis atomic + DB confirm.
 - `payments` chỉ finalize `bookings` một lần (idempotency).
-- `checkin_scans` idempotent theo `scan_id` và `ticket_id`.
+- Check-in hiện kiểm tra theo trạng thái vé và log `ACCEPTED`; chưa có `scan_id`, `batch_id` hoặc idempotency key cho batch đồng bộ.
 
 Các entity chính (rút gọn):
 - `users` (id, email, phone, status)
@@ -189,7 +189,7 @@ Các entity chính (rút gọn):
 - `reservations` (status, expires_at), `bookings`
 - `payments`, `payment_attempts`, `payment_idempotency`
 - `notifications`, `notification_jobs`, `notification_templates`
-- `checkin_scans`, `checkin_sync_batches`, `checkin_conflicts`
+- `CheckInLog` lưu `ticketId`, `staffId`, `deviceId`, `scannedAt`, `status`, `isOfflineSync`; chưa có bảng sync batch hoặc conflict riêng.
 - `guestlist_imports`, `guestlist_entries`, `guestlist_errors`
 - `artist_files`, `artist_extracts`, `artist_bio_drafts`, `artist_bio_versions`
 - `admin_audit_logs`
@@ -222,9 +222,11 @@ Các entity chính (rút gọn):
 	- Delayed reminder T-24h.
 	- Retry queue và dead-letter.
 - **Check-in Module**:
-	- QR verify (signed payload), local sync.
-	- Conflict resolution first-valid-check-in.
-	- Device + staff identity tracking.
+	- QR là JWT ký RS256; mobile xác thực bằng public key cấu hình qua biến môi trường.
+	- Danh sách vé được tải vào SQLite không mã hóa để phục vụ kiểm tra offline.
+	- Kiểm tra vé theo sự kiện, trạng thái sử dụng và cổng được phân cho nhân viên.
+	- Đồng bộ log `VALID` qua Wi-Fi; backend trả kết quả từng vé và áp dụng first-valid-check-in.
+	- Có lưu device và staff ở log backend, nhưng chưa có idempotency theo scan/batch và chưa có audit record conflict riêng.
 - **AI Bio Module**:
 	- PDF upload → extract → clean → generate → review/publish.
 	- Log chất lượng extract, lỗi parsing.
@@ -248,16 +250,19 @@ Các điểm lỗi và xử lý:
 - Callback trễ → idempotent update.
 
 ### Luồng soát vé offline và đồng bộ
-1. Mobile tải manifest và key xác thực trước sự kiện.
-2. Khi mất mạng, app quét QR, kiểm tra local, lưu scan log.
-3. Khi có mạng, app sync batch về server.
-4. Server áp dụng policy “first-valid-check-in”, ghi conflict nếu trùng.
-5. Trả kết quả sync và cập nhật trạng thái vé.
+1. Mobile đăng nhập và tải danh sách vé của sự kiện; public key xác thực QR được lấy từ cấu hình ứng dụng, không tải theo manifest.
+2. App xác thực chữ ký JWT RS256, kiểm tra đúng sự kiện, trạng thái vé và đúng cổng.
+3. Khi không có Wi-Fi, vé hợp lệ được đánh dấu `CHECKED_IN` trong SQLite và tạo log `VALID` chưa đồng bộ.
+4. Khi có Wi-Fi, app tải trạng thái mới và gửi các log chưa đồng bộ lên server.
+5. Server áp dụng policy “first-valid-check-in” và trả kết quả từng vé (`SYNCED`, `INVALID_GATE`, `NOT_FOUND`, `CONFLICT_ALREADY_CHECKED_IN`).
+6. Hiện tại app không lưu outcome riêng từng scan; request thành công sẽ khiến toàn bộ log đã gửi được đánh dấu `synced`.
 
 Các điểm lỗi và xử lý:
 - QR giả mạo → từ chối tại chỗ.
 - Trùng vé local → từ chối ngay.
-- Trùng vé cross-device → trả conflict, audit log.
+- Sai cổng → từ chối ở cả online và offline.
+- Trùng vé cross-device → trả conflict trong response; chưa ghi audit log conflict riêng.
+- Sync chỉ tự chạy trên Wi-Fi, theo chu kỳ 15 giây; chưa có retry backoff.
 
 ### Luồng nhập CSV khách mời
 1. Admin upload CSV hoặc scheduler nhận file theo lịch.
@@ -275,7 +280,7 @@ Các điểm lỗi và xử lý:
 - **RBAC** với vai trò `AUDIENCE`, `ORGANIZER`, `CHECK_IN_STAFF`, `ADMIN`.
 - **Auth**: JWT access token + refresh rotation; revoke khi logout.
 - **API Guard**: kiểm tra role + scope (event_id) ở backend.
-- **UI Guard**: ẩn route admin cho audience; mobile chỉ cho staff.
+- **UI Guard**: ẩn route admin cho audience; mobile check-in hiện cho phép `CHECK_IN_STAFF`, `ORGANIZER` và `ADMIN`.
 
 ## Thiết kế các cơ chế bảo vệ hệ thống
 ### Kiểm soát tải đột biến
