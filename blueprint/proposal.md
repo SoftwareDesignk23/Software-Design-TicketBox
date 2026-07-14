@@ -13,13 +13,13 @@ Các concert lớn tại Việt Nam thu hút hàng chục nghìn người truy c
 ## Người dùng và nhu cầu
 - **Khán giả**: xem concert, chọn vé theo sơ đồ chỗ ngồi, thanh toán, nhận QR e-ticket, nhận thông báo.
 - **Ban tổ chức**: tạo/điều chỉnh/hủy concert, cấu hình loại vé, xem doanh thu, quản lý nội dung và tài nguyên (artist bio, guest list).
-- **Nhân sự soát vé**: quét QR tại cổng, làm việc được trong điều kiện mất mạng và đồng bộ về sau.
+- **Nhân sự soát vé**: đăng nhập và tải dữ liệu vé trước, sau đó có thể quét QR khi mất Wi-Fi; dữ liệu được đồng bộ khi Wi-Fi hoạt động trở lại.
 
 ## Phạm vi
 Bao gồm:
 - Web App mua vé với sơ đồ ghế SVG và cập nhật vé theo thời gian thực.
 - Admin Dashboard quản trị concert, cấu hình vé, thống kê doanh thu, audit log.
-- Mobile App soát vé offline-first, đồng bộ sau khi có mạng.
+- Mobile App hỗ trợ quét offline sau khi đã tải dữ liệu vé, kiểm tra đúng sự kiện/trạng thái/cổng và đồng bộ log qua Wi-Fi.
 - Booking/Reservation/Queueing chống tranh chấp vé, giới hạn per-user chính xác.
 - Tích hợp thanh toán VNPAY/MoMo với idempotency, timeout, circuit breaker.
 - Notification hệ thống: in-app, email, nhắc nhở trước sự kiện.
@@ -37,7 +37,7 @@ Không bao gồm:
 - Tải đột biến dẫn đến quá tải API và DB.
 - Tranh chấp vé khi nhiều người đặt cùng lúc.
 - Cổng thanh toán không ổn định dẫn đến treo giao dịch hoặc trừ tiền hai lần.
-- Soát vé offline có nguy cơ trùng vé nếu không có cơ chế đồng bộ và conflict resolution.
+- Soát vé offline có nguy cơ trùng vé giữa nhiều thiết bị. Backend hiện áp dụng first-valid-check-in và trả conflict khi đồng bộ, nhưng chưa có idempotency theo scan/batch, audit log conflict riêng hoặc xử lý outcome từng scan ở mobile.
 - Import CSV một chiều phải chịu lỗi dữ liệu và trùng lặp mà không gián đoạn hệ thống.
 - Caching sai TTL hoặc invalidation làm hiển thị sai vé còn lại.
 
