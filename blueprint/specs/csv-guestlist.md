@@ -1,23 +1,36 @@
-# Đặc tả hiện trạng: CSV Guestlist Import
+# Đặc tả: CSV Guestlist Import
 
 ## Mô tả
-Admin/Organizer tạo job import bằng `showId` và `fileUrl`. Job có thể chạy thủ công hoặc được cron publish lên RabbitMQ lúc 02:00 hằng ngày.
+Nhập danh sách khách mời VIP theo lịch hoặc thủ công, xử lý lỗi dòng, dedup và audit đầy đủ.
 
-## Luồng hiện tại
-1. Tạo `BackgroundJob` loại `CSV_GUEST_LIST`, trạng thái `PENDING`.
-2. Worker tải CSV từ URL và xử lý tuần tự theo chunk 100 dòng.
-3. Mỗi dòng yêu cầu email; user được upsert theo email.
-4. Dedup bằng cách tìm ticket cùng `ownerId + showId`.
-5. Worker khóa một ghế bằng `FOR UPDATE SKIP LOCKED`, tạo booking miễn phí, ticket QR và gán gate phù hợp.
-6. Kết quả job lưu tổng số xử lý, thành công và danh sách dòng lỗi.
-7. Notification vé được publish qua routing key `payment.success`.
+## Yêu cầu chi tiết
+- Scheduled nightly drop + manual upload.
+- Batch processing async.
+- Validate row và isolate lỗi.
+- Idempotent dedup trong file và giữa các lần import.
+- Commit partial success, không rollback toàn batch.
+- Import ledger lưu tổng, success, fail, error detail.
+- Retry transient và hỗ trợ reprocess manual.
 
-## Giới hạn hiện tại
-- Không có idempotency theo file hash và event.
-- Không có API reprocess riêng cho dòng lỗi hoặc retry transient tự động.
-- Không có import ledger/table lỗi riêng; kết quả nằm trong JSON của `BackgroundJob`.
-- Không kiểm tra organizer có quyền với `showId`.
-- Backend tải trực tiếp `fileUrl` được cung cấp, chưa giới hạn host/URL.
+## Luồng chính
+1. Nhận file CSV theo lịch hoặc upload thủ công.
+2. Tạo import job, chia batch.
+3. Validate từng dòng, ghi lỗi riêng.
+4. Dedup theo email/phone + event.
+5. Upsert dữ liệu VIP.
+6. Ghi import ledger và error log.
 
-## Điểm cần lưu ý
-`fileUrl` không được kiểm soát có thể tạo rủi ro SSRF; thiếu ownership check cũng cho phép organizer tạo job cho show ngoài phạm vi.
+## Kịch bản lỗi
+- File lỗi định dạng → reject.
+- Lỗi từng dòng → skip và tiếp tục.
+- Lỗi DB tạm thời → retry.
+
+## Ràng buộc
+- Import chạy async bằng worker.
+- Idempotent theo file hash + event.
+- Cho phép reprocess dòng lỗi.
+
+## Tiêu chí chấp nhận
+- Import không bị dừng vì lỗi dòng.
+- Không tạo duplicate VIP.
+- Có báo cáo tổng hợp import.

@@ -1,41 +1,43 @@
-# TicketBox — Phạm vi dự án hiện tại
+# TicketBox — Project Proposal
 
-## Bối cảnh
-TicketBox là hệ thống bán và soát vé concert phục vụ mục tiêu học tập/demo full-stack. Dự án mô phỏng quy trình từ quản lý concert, đặt chỗ, thanh toán, phát hành QR đến check-in online/offline.
+## Bối cảnh và vấn đề
+Các concert lớn tại Việt Nam thu hút hàng chục nghìn người truy cập cùng thời điểm khi mở bán vé. Hệ thống hiện tại thường sập trong vài phút đầu, phát sinh tình trạng trừ tiền nhưng không có vé, và scalper dùng bot vét vé để bán lại. Nhiều kênh bán vé thủ công (Zalo OA, Google Form, chuyển khoản tay) thiếu minh bạch và dễ gian lận. TicketBox được xây dựng để số hóa toàn bộ quy trình bán vé, đảm bảo công bằng và vận hành ổn định trong tải cực lớn.
 
-## Người dùng
-- **AUDIENCE**: đăng ký/đăng nhập, xem concert, chọn vé/ghế, tạo booking, thanh toán, xem booking và vé.
-- **ORGANIZER**: quản lý concert thuộc organizer, ticket type, show, gate, artist, staff, AI Bio và CSV guestlist.
-- **CHECK_IN_STAFF**: tải dữ liệu vé, quét QR theo gate, làm việc offline sau khi chuẩn bị dữ liệu và đồng bộ qua Wi-Fi.
-- **ADMIN**: quản lý toàn hệ thống, organizer, staff, venue, concert và job.
+## Mục tiêu
+- Số hóa end-to-end: từ mở bán, thanh toán, nhận e-ticket đến soát vé tại cổng.
+- Chịu tải đột biến: tối thiểu 80.000 người/5 phút đầu mở bán, đặc biệt 70% dồn vào phút đầu.
+- Công bằng và chống gian lận: chặn bot, giới hạn vé per-user, chống oversell.
+- An toàn thanh toán: không trừ tiền hai lần, xử lý timeout ổn định, có cơ chế suy giảm chức năng hợp lý.
+- Mở rộng kênh thông báo và tích hợp (Zalo OA/SMS trong tương lai) mà không thay đổi lớn.
+- Tăng tiện ích sử dụng
+## Người dùng và nhu cầu
+- **Khán giả**: xem concert, chọn vé theo sơ đồ chỗ ngồi, thanh toán, nhận QR e-ticket, nhận thông báo.
+- **Ban tổ chức**: tạo/điều chỉnh/hủy concert, cấu hình loại vé, xem doanh thu, quản lý nội dung và tài nguyên (artist bio, guest list).
+- **Nhân sự soát vé**: đăng nhập và tải dữ liệu vé trước, sau đó có thể quét QR khi mất Wi-Fi; dữ liệu được đồng bộ khi Wi-Fi hoạt động trở lại.
 
-## Phạm vi đã triển khai
-- Web khách hàng, Admin Dashboard và Mobile Check-in.
-- Concert, show, ticket type, seat, gate và coupon.
-- Booking 15 phút, khóa ghế Redis, PostgreSQL transaction, cron hoàn tài nguyên và Socket.IO cập nhật ghế.
-- VNPAY sandbox: tạo URL, xác thực IPN, cập nhật booking và phát hành QR ticket.
-- MoMo ở mức test/mock, chưa hoàn tất IPN.
-- Notification in-app/email qua RabbitMQ, retry/DLQ và reminder T-24h.
-- Check-in QR RS256, SQLite offline, kiểm tra event/duplicate/gate và sync Wi-Fi.
-- CSV guestlist job theo lịch/thủ công và AI Artist Bio job.
-- Cache Redis cho list/detail concert; global throttling cố định.
-- Upload tài nguyên qua Cloudinary.
+## Phạm vi
+Bao gồm:
+- Web App mua vé với sơ đồ ghế SVG và cập nhật vé theo thời gian thực.
+- Admin Dashboard quản trị concert, cấu hình vé, thống kê doanh thu, audit log.
+- Mobile App hỗ trợ quét offline sau khi đã tải dữ liệu vé, kiểm tra đúng sự kiện/trạng thái/cổng và đồng bộ log qua Wi-Fi.
+- Booking/Reservation/Queueing chống tranh chấp vé, giới hạn per-user chính xác.
+- Tích hợp thanh toán VNPAY/MoMo với idempotency, timeout, circuit breaker.
+- Notification hệ thống: in-app, email, nhắc nhở trước sự kiện.
+- AI Artist Bio: upload PDF, trích xuất, làm sạch, sinh bio bằng AI, lưu bản nháp.
+- CSV guestlist import theo lịch + thủ công, xử lý lỗi/dup.
+- Bảo vệ API: rate limiting + anti-bot.
+- Caching Redis cho danh sách/chi tiết concert và số vé còn lại.
 
-## Ngoài phạm vi hoặc chưa hoàn chỉnh
-- Hạ tầng production, Kubernetes/autoscaling, monitoring/tracing và load test quy mô lớn.
-- Waiting room/queue admission, distributed rate limiting, CAPTCHA/anti-bot.
-- MoMo production và chống replay/freshness đầy đủ cho payment.
-- Read model analytics, audit log immutable và event outbox.
-- Idempotency đầy đủ cho payment create, notification, CSV file và check-in batch.
-- Offline cold start của mobile, encrypted SQLite và sync outcome theo từng scan.
-- AI draft/review/publish và import-ledger/reprocess CSV chuyên biệt.
+Không bao gồm:
+- Hạ tầng production đầy đủ (K8s, autoscaling thực tế, monitoring cấp doanh nghiệp).
+- Kết nối hệ thống ngân hàng thật ở môi trường production; chỉ mô phỏng/điều hướng theo chuẩn tích hợp VNPAY/MoMo trong môi trường dev.
+- Hệ thống chống gian lận nâng cao ngoài phạm vi bot/rate limit (ví dụ device fingerprinting phức tạp, ML fraud).
 
-## Rủi ro chính
-- Cạnh tranh booking được giảm bằng Redis lock và DB transaction nhưng chưa được kiểm chứng ở tải mục tiêu lớn.
-- Booking không lưu `showId`; vé không có ghế có thể bị gán sang show đầu tiên.
-- Một số API organizer thiếu ownership check; CSV URL chưa có allowlist.
-- Notification Socket.IO chưa xác thực quyền join room.
-- State phân tán và idempotency chưa đầy đủ khi chạy nhiều backend instance.
+## Rủi ro và ràng buộc
+- Tải đột biến dẫn đến quá tải API và DB.
+- Tranh chấp vé khi nhiều người đặt cùng lúc.
+- Cổng thanh toán không ổn định dẫn đến treo giao dịch hoặc trừ tiền hai lần.
+- Soát vé offline có nguy cơ trùng vé giữa nhiều thiết bị. Backend hiện áp dụng first-valid-check-in và trả conflict khi đồng bộ, nhưng chưa có idempotency theo scan/batch, audit log conflict riêng hoặc xử lý outcome từng scan ở mobile.
+- Import CSV một chiều phải chịu lỗi dữ liệu và trùng lặp mà không gián đoạn hệ thống.
+- Caching sai TTL hoặc invalidation làm hiển thị sai vé còn lại.
 
-## Mục tiêu phát triển tiếp theo
-Hoàn thiện tính đúng đắn và bảo mật của payment/authorization trước, sau đó bổ sung idempotency, observability, distributed protection và kiểm thử tải nếu đưa hệ thống gần production.

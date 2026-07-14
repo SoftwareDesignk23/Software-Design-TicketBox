@@ -1,25 +1,41 @@
-# Đặc tả hiện trạng: Thanh toán
+# Đặc tả: Thanh toán & Chống trừ tiền hai lần
 
 ## Mô tả
-Backend tạo bản ghi `Payment` cho booking đang `PENDING_PAYMENT` và chọn provider `VNPAY` hoặc `MOMO`. Luồng hoàn tất booking/tạo ticket hiện chỉ được triển khai qua webhook VNPAY.
+Tích hợp VNPAY/MoMo với idempotency key, bảo vệ webhook, xử lý timeout/circuit breaker, đảm bảo booking chỉ finalize đúng một lần.
 
-## VNPAY hiện tại
-- Sinh URL thanh toán có HMAC SHA-512.
-- Endpoint GET `/payments/webhook/vnpay_ipn` xác thực checksum, payment ID, amount và trạng thái `PENDING`.
-- Giao dịch thành công cập nhật payment/booking, tạo ticket QR, gán gate và publish notification.
-- Giao dịch thất bại hủy booking, hoàn ghế, inventory và coupon.
-- Payment không còn `PENDING` sẽ không được xử lý lại.
+## Yêu cầu chi tiết
+- VNPAY: tạo URL ký số, verify return, map status.
+- MoMo: create request, verify IPN, map status.
+- Idempotency cho create/confirm payment.
+- Dedup theo provider transaction reference.
+- Timeout expire attempt và release reservation.
+- Circuit breaker per provider, graceful degradation.
 
-## MoMo hiện tại
-- Provider gọi endpoint test với retry và circuit breaker, nhưng trả mock URL để phục vụ demo.
-- `verifyWebhook()` luôn trả `true` và chưa có controller/IPN MoMo để finalize booking.
+## Luồng chính
+1. Client gửi yêu cầu tạo payment với `idempotency_key`.
+2. Payment module kiểm tra key:
+	- Key đã có → trả kết quả cũ.
+	- Key mới → tạo payment attempt.
+3. Tạo URL/redirect tới VNPAY/MoMo.
+4. Nhận return/IPN/webhook:
+	- Verify chữ ký.
+	- Map trạng thái provider → internal state.
+5. Success → finalize booking và phát hành e-ticket.
+6. Fail/timeout → expire attempt + release reservation.
 
-## Giới hạn hiện tại
-- API tạo payment không nhận idempotency key; gọi lặp tạo nhiều bản ghi payment.
-- Chưa lưu `providerRef`, freshness hoặc replay token ngoài kiểm tra trạng thái payment.
-- Không có cron expire riêng cho payment attempt; booking cron xử lý booking hết hạn.
-- Circuit breaker là in-memory theo instance.
-- Với booking không chọn ghế, code lấy show đầu tiên của concert để tạo ticket vì Booking không lưu `showId`.
+## Kịch bản lỗi
+- Provider timeout → retry bounded, trả pending.
+- Callback trễ → idempotent update.
+- Signature mismatch → reject và audit.
+- Amount mismatch → mark suspicious, không finalize.
 
-## Điểm cần lưu ý
-MoMo chưa phải luồng thanh toán hoàn chỉnh. Việc suy ra show đầu tiên cho vé GA có thể phát hành vé sai suất diễn.
+## Ràng buộc
+- Idempotency key TTL 10-30 phút.
+- Circuit breaker per provider với trạng thái `Closed/Open/Half-Open`.
+- Webhook/IPN có signature + replay protection + freshness check.
+- Dedup theo provider transaction reference.
+
+## Tiêu chí chấp nhận
+- Một booking chỉ finalize một lần.
+- Request lặp không tạo giao dịch mới.
+- Hệ thống vẫn hoạt động khi provider lỗi.
