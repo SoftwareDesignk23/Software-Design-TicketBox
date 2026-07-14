@@ -6,6 +6,7 @@ import { clearSession, restoreSession } from '../services/auth';
 type AuthState = {
   status: 'loading' | 'authenticated' | 'forbidden' | 'unauthenticated';
   displayName: string;
+  assignedGateId: string | null;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -13,6 +14,7 @@ type AuthState = {
 export const AuthContext = createContext<AuthState>({
   status: 'loading',
   displayName: '',
+  assignedGateId: null,
   refresh: async () => {},
   logout: async () => {},
 });
@@ -46,6 +48,7 @@ export function ErrorBoundary({ retry }: { error: Error; retry: () => void }) {
 export default function RootLayout() {
   const [status, setStatus] = useState<AuthState['status']>('loading');
   const [displayName, setDisplayName] = useState('');
+  const [assignedGateId, setAssignedGateId] = useState<string | null>(null);
 
   const checkAuth = useCallback(async () => {
     setStatus('loading');
@@ -62,6 +65,7 @@ export default function RootLayout() {
       }
 
       setDisplayName(result.user.displayName);
+      setAssignedGateId(result.user.assignedGateId ?? null);
       setStatus('authenticated');
     } catch (e) {
       setStatus('unauthenticated');
@@ -75,6 +79,7 @@ export default function RootLayout() {
   const logout = useCallback(async () => {
     await clearSession();
     setDisplayName('');
+    setAssignedGateId(null);
     setStatus('unauthenticated');
   }, []);
 
@@ -108,7 +113,7 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthContext.Provider value={{ status, displayName, refresh: checkAuth, logout }}>
+    <AuthContext.Provider value={{ status, displayName, assignedGateId, refresh: checkAuth, logout }}>
       <Stack screenOptions={{ headerShown: false }} />
     </AuthContext.Provider>
   );

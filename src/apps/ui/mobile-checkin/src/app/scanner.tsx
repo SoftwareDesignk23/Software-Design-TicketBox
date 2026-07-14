@@ -17,6 +17,7 @@ import {
 import { decryptAES } from '../services/crypto';
 import * as Device from 'expo-device';
 import * as Network from 'expo-network';
+import { useAuth } from './_layout';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const FRAME_SIZE = 240;
@@ -32,6 +33,7 @@ type ScanResult = {
 
 export default function ScannerScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
+  const { assignedGateId } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [unsyncedCount, setUnsyncedCount] = useState(0);
@@ -227,6 +229,27 @@ export default function ScannerScreen() {
     if (ticketInfo.status === 'CHECKED_IN') {
       Vibration.vibrate([0, 200, 100, 200]);
       setScanResult({ type: 'error', title: 'Vé đã được sử dụng', message: 'Vé này đã check-in trong dữ liệu offline.', details: attendeeDetails });
+      return;
+    }
+    if (assignedGateId && !ticketInfo.gateId) {
+      Vibration.vibrate([0, 200, 100, 200]);
+      setScanResult({
+        type: 'warning',
+        title: 'Chưa có dữ liệu cổng',
+        message: 'Không thể kiểm tra cổng của vé trong dữ liệu offline. Vui lòng tải lại dữ liệu vé khi có mạng.',
+        details: attendeeDetails,
+      });
+      return;
+    }
+    if (assignedGateId && assignedGateId !== ticketInfo.gateId) {
+      Vibration.vibrate([0, 200, 100, 200]);
+      setScanResult({
+        type: 'error',
+        title: 'Sai cổng',
+        message: 'Vé này không thuộc cổng được phân cho nhân viên hiện tại.',
+        details: attendeeDetails,
+      });
+      await addCheckinLog(payload.ticketId, deviceId, 'INVALID');
       return;
     }
     await markTicketAsCheckedInLocally(payload.ticketId);

@@ -18,6 +18,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS valid_tickets (
       ticketId TEXT PRIMARY KEY,
       code TEXT,
+      gateId TEXT,
       gate TEXT,
       attendeeName TEXT,
       attendeeEmail TEXT,
@@ -40,6 +41,9 @@ export async function initDb() {
   try {
     await db.execAsync(`ALTER TABLE valid_tickets ADD COLUMN eventId TEXT;`);
   } catch (_) {}
+  try {
+    await db.execAsync(`ALTER TABLE valid_tickets ADD COLUMN gateId TEXT;`);
+  } catch (_) {}
 
   return db;
 }
@@ -47,6 +51,7 @@ export async function initDb() {
 export type LocalTicket = {
   ticketId: string;
   code: string;
+  gateId: string;
   gate: string;
   attendeeName: string;
   attendeeEmail: string;
@@ -57,6 +62,7 @@ export type LocalTicket = {
 
 export async function upsertValidTickets(tickets: {
   id: string;
+  gateId?: string | null;
   gate: string | null;
   status: string;
   code?: string;
@@ -69,10 +75,11 @@ export async function upsertValidTickets(tickets: {
     for (const t of tickets) {
       await db.runAsync(
         `INSERT OR REPLACE INTO valid_tickets 
-         (ticketId, code, gate, attendeeName, attendeeEmail, status, eventId, lastUpdated) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (ticketId, code, gateId, gate, attendeeName, attendeeEmail, status, eventId, lastUpdated) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         t.id,
         t.code || '',
+        t.gateId || '',
         t.gate || '',
         t.attendeeName || '',
         t.attendeeEmail || '',

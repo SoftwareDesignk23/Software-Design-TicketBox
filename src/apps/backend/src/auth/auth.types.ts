@@ -42,6 +42,7 @@ export interface AuthenticatedUserProfile {
 	email: string
 	displayName: string
 	role: Role
+	assignedGateId?: string | null
 	assignments: AssignmentSummary
 }
 

@@ -5,6 +5,7 @@ type AuthUser = {
   id: string;
   displayName: string;
   role: string;
+  assignedGateId?: string | null;
 };
 
 export async function restoreSession(): Promise<{

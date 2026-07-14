@@ -205,6 +205,7 @@ export class AuthService {
 			email: user.email,
 			displayName: user.displayName,
 			role: user.role,
+			assignedGateId: user.assignedGateId,
 			assignments: await this.store.getAssignmentSummary(user.id),
 		}
 	}
