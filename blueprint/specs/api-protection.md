@@ -1,31 +1,19 @@
-# Đặc tả: API Protection System
+# Đặc tả hiện trạng: API Protection
 
 ## Mô tả
-Bảo vệ backend trước traffic spike và bot bằng rate limiting phân tán và anti-bot heuristics.
+Backend dùng `@nestjs/throttler` làm global guard cho request HTTP.
 
-## Yêu cầu chi tiết
-- Redis Lua script cho rate limit phân tán, atomic.
-- Token bucket cho endpoint đọc, sliding window cho checkout/reserve/payment.
-- Rate limit theo IP và user_id.
-- Bot heuristic → CAPTCHA hoặc drop.
-- Trả 429 kèm Retry-After, không forward request vào backend.
+## Cấu hình hiện tại
+- Giới hạn chung: 100 request trong 60 giây.
+- Guard bỏ qua context không phải HTTP.
+- Throttler dùng storage mặc định trong tiến trình; Redis hiện không được nối vào rate limiter.
 
-## Luồng chính
-1. Gateway/backend nhận request.
-2. Kiểm tra rate limit theo IP và user_id.
-3. Nếu vượt ngưỡng → trả 429 với Retry-After.
-4. Nếu nghi ngờ bot → route CAPTCHA hoặc drop.
+## Giới hạn hiện tại
+- Không có Redis Lua, token bucket hoặc sliding window riêng theo endpoint.
+- Không kết hợp khóa theo `IP + user_id` ở tầng ứng dụng.
+- Không có anti-bot heuristic, CAPTCHA, waiting room hoặc chính sách riêng cho admin.
+- Không có degradation mode khi Redis/DB gặp sự cố.
+- Chưa có bằng chứng tải cho mục tiêu traffic cao.
 
-## Kịch bản lỗi
-- Redis rate limit down → bật chế độ bảo vệ DB (giảm QPS, waiting room).
-- False positive bot → cho phép retry sau thời gian ngắn.
-
-## Ràng buộc
-- Token Bucket cho burst read.
-- Sliding Window cho checkout/reserve/payment.
-- Lua script Redis để atomic.
-
-## Tiêu chí chấp nhận
-- Request vượt ngưỡng bị chặn ở gateway.
-- Retry-After luôn chính xác.
-- Không làm nghẽn các endpoint admin nội bộ.
+## Điểm cần lưu ý
+Rate limit trong tiến trình không đồng bộ giữa nhiều instance backend, nên không tạo giới hạn phân tán khi scale ngang.

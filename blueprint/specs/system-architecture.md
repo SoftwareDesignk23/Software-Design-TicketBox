@@ -1,30 +1,23 @@
-# Đặc tả: High-Throughput & Event Architecture
+# Đặc tả hiện trạng: Kiến trúc hệ thống
 
 ## Mô tả
-Các yêu cầu phi chức năng cho hệ thống throughput cao và event-driven notification.
+Backend NestJS là modular monolith dùng PostgreSQL, Redis, RabbitMQ, cron và Socket.IO. Frontend gồm web khách hàng, admin dashboard và mobile check-in.
 
-## Yêu cầu chi tiết
-- Reservation xử lý dưới tải cao, mục tiêu không oversell.
-- Availability broadcast real-time qua WebSocket/SSE.
-- Rate limit bảo vệ API trong phút đầu mở bán.
-- Event notifications phải async qua broker.
-- Retry + DLQ cho notification failures.
+## Thành phần hiện có
+- PostgreSQL/Prisma lưu dữ liệu giao dịch.
+- Redis dùng cho cache concert, mutex booking và khóa ghế.
+- RabbitMQ dùng cho payment-success notification, AI Bio job và CSV job.
+- Socket.IO phát cập nhật trạng thái ghế và notification in-app.
+- Cron giải phóng booking hết hạn, gửi reminder và chạy CSV nightly.
+- Global throttler giới hạn 100 request/phút trong mỗi instance.
 
-## Luồng chính
-1. Inventory cập nhật qua Redis atomic.
-2. Availability publish qua WebSocket/SSE.
-3. Payment success emit event → notification pipeline.
+## Giới hạn hiện tại
+- Chưa có waiting queue hoặc admission control.
+- Inventory cập nhật trong PostgreSQL transaction, không dùng Redis atomic script.
+- Event availability qua WebSocket không có version/order key.
+- Không có outbox; publish RabbitMQ thất bại sau transaction có thể làm mất event notification.
+- Redis/rate limit/circuit breaker chủ yếu giữ state theo instance hoặc phụ thuộc một Redis chung, chưa có bằng chứng vận hành ở quy mô 80.000 user/5 phút.
+- Không có reconciliation job tổng quát giữa Redis và PostgreSQL.
 
-## Kịch bản lỗi
-- Redis lệch DB → reconciliation.
-- Broker down → fallback retry và buffering.
-
-## Ràng buộc
-- 80.000 user/5 phút đầu.
-- Event ordering theo version.
-- Message broker bắt buộc cho notification.
-
-## Tiêu chí chấp nhận
-- Không oversell trong peak load.
-- Availability realtime có version.
-- Event notifications không block request chính.
+## Điểm cần lưu ý
+Mục tiêu high-throughput là định hướng, chưa phải mức đã được kiểm chứng bằng load test hoặc hạ tầng production.

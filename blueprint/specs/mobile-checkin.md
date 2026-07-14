@@ -1,34 +1,23 @@
-# Đặc tả: Mobile Check-in App
+# Đặc tả hiện trạng: Mobile Check-in App
 
 ## Mô tả
-Ứng dụng mobile cho nhân sự soát vé, hỗ trợ offline-first, local validation, sync nền và UX scan nhanh.
+Ứng dụng Expo/React Native hỗ trợ tải vé về SQLite, xác thực QR JWT RS256, quét online hoặc offline và đồng bộ log qua Wi-Fi.
 
-## Yêu cầu chi tiết
-- Offline event readiness: download manifest + keys.
-- Connectivity-aware state: online/degraded/offline.
-- Local scan log persistence + sync state.
-- QR parse + signature verify.
-- Duplicate detection local + cross-device.
-- Fast UX với feedback âm thanh/visual.
+## Luồng hiện tại
+- `CHECK_IN_STAFF`, `ORGANIZER`, `ADMIN` có thể đăng nhập ứng dụng.
+- App gọi `/auth/me`, tải sự kiện và danh sách vé; public key QR lấy từ biến môi trường.
+- Online chỉ được nhận diện khi có Wi-Fi. Khi online, app gọi `/checkin/verify`.
+- Offline, app kiểm tra vé trong SQLite, trạng thái duplicate và gate của staff.
+- Phản hồi dùng rung và thẻ trạng thái; không có âm thanh riêng.
+- Cứ 15 giây app thử tải trạng thái và gửi log `VALID` chưa đồng bộ.
 
-## Luồng chính
-1. Staff đăng nhập và tải event manifest.
-2. Scan QR → parse + verify signature.
-3. Lưu scan log local (provisional).
-4. Connectivity restore → sync batch.
-5. Nhận per-scan outcome, cập nhật UI.
+## Giới hạn hiện tại
+- Không có event manifest hoặc key tải động.
+- SQLite không mã hóa.
+- Không có trạng thái connectivity `degraded` riêng.
+- Không có retry backoff hoặc outcome được lưu theo từng scan.
+- Khởi động lại hoàn toàn offline không hoạt động vì restore session gọi `/auth/me`.
+- Không có cam kết/đo lường phản hồi dưới 1 giây.
 
-## Kịch bản lỗi
-- Không có manifest → chặn offline scan.
-- Duplicate local → báo lỗi ngay.
-- Sync fail → retry backoff.
-
-## Ràng buộc
-- Local DB mã hóa.
-- UX scan phản hồi < 1s.
-- Chỉ role CHECK_IN_STAFF.
-
-## Tiêu chí chấp nhận
-- Scan offline không cần mạng.
-- Sync trả kết quả chi tiết từng scan.
-- Duplicate luôn bị chặn.
+## Điểm cần lưu ý
+Sau khi request sync thành công, app đánh dấu toàn bộ log đã gửi là `synced` mà không xử lý các outcome `INVALID_GATE`, `NOT_FOUND` hoặc conflict riêng lẻ.

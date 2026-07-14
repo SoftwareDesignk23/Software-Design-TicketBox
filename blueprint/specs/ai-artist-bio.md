@@ -1,39 +1,22 @@
-# Đặc tả: AI Artist Bio
+# Đặc tả hiện trạng: AI Artist Bio
 
 ## Mô tả
-Cho phép ban tổ chức upload PDF press kit, trích xuất văn bản, làm sạch, sinh bio bằng AI và lưu bản nháp để duyệt trước khi công bố.
+`ADMIN` hoặc `ORGANIZER` gửi PDF press kit cùng `concertId` và tên provider. Backend tạo `BackgroundJob`, publish RabbitMQ và worker trích xuất nội dung trước khi gọi AI.
 
-## Yêu cầu chi tiết
-- Upload PDF chỉ cho organizer của event.
-- Validate type/size, lưu metadata (checksum, filename, uploader, timestamp).
-- Trích xuất text, ghi chất lượng (char count, low-text warning).
-- Làm sạch: normalize whitespace, dedup, remove noise, chunk theo giới hạn AI.
-- AI output theo schema (title, short, long, highlights) và lưu draft.
-- Job state: queued, extracting, cleaning, generating, completed, failed, retrying, cancelled.
-- Cho phép retry và cancel job nếu an toàn.
-- Không tự publish, luôn cần review.
+## Luồng hiện tại
+1. Controller chỉ chấp nhận MIME `application/pdf` nếu có file.
+2. PDF được lưu tạm trên filesystem; job có trạng thái `PENDING`.
+3. Worker Python trích xuất text và ảnh đại diện; ảnh được chuyển sang storage.
+4. AI sinh JSON gồm `name` và `bio`, có retry và circuit breaker.
+5. Hệ thống tạo hoặc cập nhật trực tiếp `Artist`, liên kết artist với concert và đánh dấu job `COMPLETED` hoặc `FAILED`.
 
-## Luồng chính
-1. Organizer upload PDF hợp lệ.
-2. Hệ thống lưu file và tạo job background.
-3. Worker extract text, lưu artifact + chất lượng.
-4. Text cleaning (normalize, dedup, remove noise).
-5. Gọi AI sinh bio theo schema chuẩn.
-6. Lưu draft + metadata (model, prompt, version).
-7. Organizer review và publish.
+## Giới hạn hiện tại
+- Không kiểm tra kích thước file, checksum hoặc metadata upload đầy đủ.
+- Không kiểm tra organizer có sở hữu `concertId` được gửi lên hay không.
+- Trạng thái job chỉ gồm `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`; không có cancel/retry API.
+- Không lưu artifact text, quality score, model/prompt version hoặc source link.
+- Không có draft/review/publish; kết quả AI cập nhật thẳng bản ghi Artist.
+- Khi AI thất bại, job vẫn có thể tạo artist tên ngẫu nhiên và hoàn tất.
 
-## Kịch bản lỗi
-- PDF lỗi/không hỗ trợ → job fail với lý do rõ ràng.
-- Text quá ít → đánh dấu low-quality và không gọi AI.
-- AI trả output sai schema → retry hoặc fail theo policy.
-
-## Ràng buộc
-- Upload chỉ cho organizer của event.
-- File size và type validation bắt buộc.
-- Draft không tự publish; luôn cần organizer approve.
-- Lưu metadata đầy đủ để audit.
-
-## Tiêu chí chấp nhận
-- Upload tạo job và theo dõi trạng thái.
-- Bio draft luôn có metadata và source link.
-- Organizer kiểm soát publish.
+## Điểm cần lưu ý
+Thiếu kiểm tra ownership và cơ chế duyệt khiến organizer có thể tác động tới concert không thuộc phạm vi và nội dung AI được ghi trực tiếp.
