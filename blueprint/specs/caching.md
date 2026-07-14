@@ -1,38 +1,20 @@
-# Đặc tả: Caching cho Concert & Availability
+# Đặc tả hiện trạng: Caching Concert
 
 ## Mô tả
-Áp dụng cache-aside Redis cho danh sách/chi tiết concert và số vé còn lại. Mục tiêu giảm tải DB dưới traffic cao và vẫn đảm bảo số vé hiển thị đủ chính xác để tránh bán quá.
+Redis cache-aside hiện được dùng cho danh sách concert đã publish và chi tiết concert.
 
-## Yêu cầu chi tiết
-- Cache-aside cho list/detail/availability.
-- TTL phân tầng, availability TTL ngắn.
-- Invalidate chủ động sau giao dịch.
-- Thundering herd protection.
-- Degradation mode khi Redis down.
+## Luồng hiện tại
+- Key danh sách: `concerts:list:published`.
+- Key chi tiết: `concerts:detail:{id}`.
+- TTL mặc định lấy từ `CACHE_TTL`, mặc định 300 giây, cộng jitter tối đa 59 giây.
+- Cache miss dùng mutex Redis `SET NX PX 5000`; request không lấy được lock sẽ poll cache tối đa 5 giây rồi đọc DB.
+- Các thao tác tạo/cập nhật/xóa concert và cấu hình liên quan xóa các key list/detail tương ứng.
 
-## Luồng chính
-1. Client gọi API list/detail concert.
-2. API đọc Redis:
-	- Cache hit → trả dữ liệu.
-	- Cache miss → đọc DB, trả dữ liệu, ghi cache.
-3. Khi có giao dịch thành công:
-	- Emit event invalidate hoặc decrement availability.
-4. Client nhận cập nhật qua WebSocket/SSE nếu có.
+## Giới hạn hiện tại
+- Chưa cache availability hoặc số vé còn lại.
+- Không có stale-while-revalidate.
+- Không có fallback rõ ràng khi Redis mất kết nối; thao tác Redis lỗi có thể làm request thất bại trước khi đọc DB.
+- Chưa đo cache-hit ratio hoặc cam kết độ lệch availability.
 
-## Kịch bản lỗi
-- Redis outage → fallback DB + tăng rate limit hoặc waiting room.
-- Thundering herd → dùng distributed mutex hoặc stale-while-revalidate.
-- Cache stale → TTL ngắn cho availability + invalidate chủ động.
-
-## Ràng buộc
-- Key chuẩn: `concert:list`, `concert:{id}:detail`, `concert:{id}:availability`.
-- TTL gợi ý:
-  - list: 30-60 phút.
-  - detail: 15-30 phút.
-  - availability: 10-30 giây hoặc invalidate ngay.
-- Cache-aside bắt buộc cho list/detail.
-
-## Tiêu chí chấp nhận
-- Cache hit > 80% cho list/detail trong giờ cao điểm.
-- Availability sai lệch không vượt TTL đã định.
-- Redis down không làm API sập toàn bộ.
+## Điểm cần lưu ý
+`RedisService.onModuleDestroy()` gọi `flushall()`, vì vậy khi một instance backend tắt có thể xóa toàn bộ key trong Redis dùng chung.
