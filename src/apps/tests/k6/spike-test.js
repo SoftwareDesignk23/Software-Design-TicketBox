@@ -11,7 +11,7 @@ export const options = {
   ],
 };
 
-const BASE_URL = 'http://localhost:3000/api/v1';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000/api/v1';
 
 export default function () {
   // Request 1: Get all concerts
