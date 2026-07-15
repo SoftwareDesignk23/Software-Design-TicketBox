@@ -4,42 +4,42 @@
 **Phạm vi:** Các HTTP controller trong backend  
 **Nguồn quyền:** JwtAuthGuard, RolesGuard, ConcertScopeGuard và kiểm tra role trực tiếp trong controller/service
 
-## Ký hiệu
+## Quy ước trạng thái
 
-| Ký hiệu | Ý nghĩa |
+| Trạng thái | Ý nghĩa |
 |---|---|
-| ✅ | Được phép theo guard/logic hiện tại |
-| ❌ | Bị từ chối |
-| 🌐 | Endpoint công khai, không yêu cầu access token |
-| ⚠️ | Qua được guard nhưng còn điều kiện hoặc lỗi triển khai cần lưu ý |
+| Có | Được phép theo guard và logic hiện tại |
+| Không | Bị từ chối |
+| Công khai | Không yêu cầu access token |
+| Có điều kiện | Qua được guard nhưng còn điều kiện hoặc vấn đề triển khai cần lưu ý |
 
 ## Matrix role - permission
 
 | Nhóm chức năng | Endpoint tiêu biểu | Public | AUDIENCE | ORGANIZER | CHECK_IN_STAFF | ADMIN |
 |---|---|:---:|:---:|:---:|:---:|:---:|
-| Health check | GET / | 🌐 | 🌐 | 🌐 | 🌐 | 🌐 |
-| Đăng nhập | POST /auth/login | 🌐 | 🌐 | 🌐 | 🌐 | 🌐 |
-| Đăng ký audience | POST /auth/register | 🌐 | 🌐 | 🌐 | 🌐 | 🌐 |
-| Đăng ký role đặc quyền | POST /auth/register với role khác AUDIENCE | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Refresh/logout | POST /auth/refresh, /auth/logout | 🌐 | 🌐 | 🌐 | 🌐 | 🌐 |
-| Xem hồ sơ hiện tại | GET /auth/me | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Tạo nhân viên check-in | POST /auth/staff | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Xem concert, show, ghế, cổng | GET /concerts và các endpoint đọc công khai | 🌐 | 🌐 | 🌐 | 🌐 | 🌐 |
-| Quản lý concert, show, ticket type, artist, gate | POST/PATCH/DELETE/PUT /concerts/... | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Quản lý coupon | /concerts/:id/coupons | ❌ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
-| Tạo và quản lý booking cá nhân | /bookings/... | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Xem vé cá nhân | GET /tickets | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Tạo payment | POST /payments/create | ❌ | ✅ | ❌ | ❌ | ❌ |
-| VNPAY IPN webhook | GET /payments/webhook/vnpay_ipn | 🌐 | 🌐 | 🌐 | 🌐 | 🌐 |
-| Check-in online/offline sync | /checkin/sync, /events, /tickets, /sync-down, /verify | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Import Guest List CSV | POST /csv/import | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Gửi notification | POST /notifications/send | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Xem/đánh dấu notification của chính mình | GET /notifications, POST /notifications/:id/read | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Yêu cầu AI tạo artist bio | POST /ai/bio/request | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Upload file | POST /storage/upload | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Dashboard, jobs, guest list, artist, venue | /admin/... | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Quản lý organizer | /admin/users, trừ các route staff | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Xem/cập nhật/xóa staff | /admin/users/staff... | ❌ | ❌ | ✅ | ❌ | ✅ |
+| Health check | GET / | Công khai | Công khai | Công khai | Công khai | Công khai |
+| Đăng nhập | POST /auth/login | Công khai | Công khai | Công khai | Công khai | Công khai |
+| Đăng ký audience | POST /auth/register | Công khai | Công khai | Công khai | Công khai | Công khai |
+| Đăng ký role đặc quyền | POST /auth/register với role khác AUDIENCE | Không | Không | Không | Không | Có |
+| Refresh/logout | POST /auth/refresh, /auth/logout | Công khai | Công khai | Công khai | Công khai | Công khai |
+| Xem hồ sơ hiện tại | GET /auth/me | Không | Có | Có | Có | Có |
+| Tạo nhân viên check-in | POST /auth/staff | Không | Không | Có | Không | Có |
+| Xem concert, show, ghế, cổng | GET /concerts và các endpoint đọc công khai | Công khai | Công khai | Công khai | Công khai | Công khai |
+| Quản lý concert, show, ticket type, artist, gate | POST/PATCH/DELETE/PUT /concerts/... | Không | Không | Có | Không | Có |
+| Quản lý coupon | /concerts/:id/coupons | Không | Có điều kiện | Có điều kiện | Có điều kiện | Có điều kiện |
+| Tạo và quản lý booking cá nhân | /bookings/... | Không | Có | Không | Không | Không |
+| Xem vé cá nhân | GET /tickets | Không | Có | Không | Không | Không |
+| Tạo payment | POST /payments/create | Không | Có | Không | Không | Không |
+| VNPAY IPN webhook | GET /payments/webhook/vnpay_ipn | Công khai | Công khai | Công khai | Công khai | Công khai |
+| Check-in online/offline sync | /checkin/sync, /events, /tickets, /sync-down, /verify | Không | Không | Có | Có | Có |
+| Import Guest List CSV | POST /csv/import | Không | Không | Có | Không | Có |
+| Gửi notification | POST /notifications/send | Không | Không | Có | Không | Có |
+| Xem/đánh dấu notification của chính mình | GET /notifications, POST /notifications/:id/read | Không | Có | Có | Có | Có |
+| Yêu cầu AI tạo artist bio | POST /ai/bio/request | Không | Không | Có | Không | Có |
+| Upload file | POST /storage/upload | Không | Không | Có | Không | Có |
+| Dashboard, jobs, guest list, artist, venue | /admin/... | Không | Không | Có | Không | Có |
+| Quản lý organizer | /admin/users, trừ các route staff | Không | Không | Không | Không | Có |
+| Xem/cập nhật/xóa staff | /admin/users/staff... | Không | Không | Có | Không | Có |
 
 ## Chi tiết theo role
 
