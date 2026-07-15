@@ -1,0 +1,148 @@
+services:
+  # ==========================================
+  # INFRASTRUCTURE SERVICES
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: ticketbox-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ticketbox
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: ticketbox_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketbox -d ticketbox_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: ticketbox-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass MySecurePassword123 --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "MySecurePassword123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: ticketbox-rabbitmq
+    restart: always
+    hostname: rabbitmq-host
+    environment:
+      - RABBITMQ_DEFAULT_USER=myuser
+      - RABBITMQ_DEFAULT_PASS=mypassword
+      - RABBITMQ_DEFAULT_VHOST=myvhost
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_logs:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    container_name: ticketbox-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # APPLICATION SERVICES
+  # ==========================================
+  backend:
+    build:
+      context: ./src/apps/backend
+    container_name: ticketbox-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    # Lấy các key/secret từ file .env thật của project
+    env_file:
+      - ./src/apps/backend/.env
+    # Đè lại các biến URL để chạy thông qua internal docker network (gọi theo service name)
+    environment:
+      - DATABASE_URL=postgresql://ticketbox:mysecretpassword@postgres:5432/ticketbox_db?schema=public
+      - DIRECT_URL=postgresql://ticketbox:mysecretpassword@postgres:5432/ticketbox_db
+      - REDIS_URL=redis://:MySecurePassword123@redis:6379
+      - RABBITMQ_URL=amqp://myuser:mypassword@rabbitmq:5672/myvhost
+      - ENDPOINT_B2=minio:9000
+
+  web:
+    build:
+      context: ./src/apps/ui/web
+      args:
+        # API URL gọi từ phía browser của Client nên sẽ phải là localhost
+        VITE_API_BASE_URL: http://localhost:3000/api/v1
+    container_name: ticketbox-web
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  admin:
+    build:
+      context: ./src/apps/ui/admin-dashboard
+      args:
+        # API URL gọi từ phía browser của Client
+        VITE_API_BASE_URL: http://localhost:3000/api/v1
+    container_name: ticketbox-admin
+    restart: always
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+
+  mobile:
+    build:
+      context: ./src/apps/ui/mobile-checkin
+    container_name: ticketbox-mobile
+    restart: always
+    ports:
+      # Map cổng 8081 của Expo ra ngoài host là 8082 (do 8081 đã dùng cho Admin)
+      - "8082:8081"
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  rabbitmq_logs:
+  minio_data:
