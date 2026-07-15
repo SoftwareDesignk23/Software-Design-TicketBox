@@ -80,7 +80,7 @@ services:
   # ==========================================
   backend:
     build:
-      context: ./src/apps/backend
+      context: ./apps/backend
     container_name: ticketbox-backend
     restart: always
     depends_on:
@@ -96,7 +96,7 @@ services:
       - "3000:3000"
     # Lấy các key/secret từ file .env thật của project
     env_file:
-      - ./src/apps/backend/.env
+      - ./apps/backend/.env
     # Đè lại các biến URL để chạy thông qua internal docker network (gọi theo service name)
     environment:
       - DATABASE_URL=postgresql://ticketbox:mysecretpassword@postgres:5432/ticketbox_db?schema=public
@@ -107,7 +107,7 @@ services:
 
   web:
     build:
-      context: ./src/apps/ui/web
+      context: ./apps/ui/web
       args:
         # API URL gọi từ phía browser của Client nên sẽ phải là localhost
         VITE_API_BASE_URL: http://localhost:3000/api/v1
@@ -120,7 +120,7 @@ services:
 
   admin:
     build:
-      context: ./src/apps/ui/admin-dashboard
+      context: ./apps/ui/admin-dashboard
       args:
         # API URL gọi từ phía browser của Client
         VITE_API_BASE_URL: http://localhost:3000/api/v1
@@ -133,7 +133,7 @@ services:
 
   mobile:
     build:
-      context: ./src/apps/ui/mobile-checkin
+      context: ./apps/ui/mobile-checkin
     container_name: ticketbox-mobile
     restart: always
     ports:

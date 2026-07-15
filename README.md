@@ -82,6 +82,8 @@ sudo usermod -aG docker $USER
 ```bash
 cd apps/backend
 npm install
+# Khởi tạo bảng và nạp dữ liệu mẫu (Chỉ cần chạy lần đầu tiên)
+npx prisma migrate dev
 npm run start:dev
 ```
 
@@ -115,12 +117,20 @@ npm run start
 Toàn bộ hệ thống (Hạ tầng, Backend, Web Frontend, Admin Dashboard, Mobile Check-in) đã được gom lại thành một file `docker-compose.yaml` ở thư mục gốc. Điều này giúp chạy mọi thứ chỉ với 1 lệnh duy nhất.
 
 **1. Khởi động toàn bộ dự án:**
-Mở terminal ở thư mục gốc của dự án (`src`):
+Mở terminal ở thư mục gốc của dự án (`src` - nơi chứa file `docker-compose.yaml`):
 ```bash
 docker-compose up --build -d
 ```
+*Lệnh này sẽ tải image, build code và tự động kết nối Backend với cơ sở dữ liệu/infra, cũng như truyền API URL (localhost:3000) vào Frontend Web.*
 
-**2. Truy cập các ứng dụng:**
+**2. Khởi tạo Database (Chỉ làm ở lần đầu tiên):**
+Vì hệ thống Backend đang chạy ngầm trong Docker và Database hoàn toàn trống, bạn cần gõ lệnh sau để tạo bảng và nạp dữ liệu mẫu (seed):
+```bash
+docker exec -it ticketbox-backend npx prisma migrate deploy
+docker exec -it ticketbox-backend npx prisma db seed
+```
+
+**3. Truy cập các ứng dụng:**
 - **Web Khán giả:** http://localhost:8080
 - **Admin Dashboard:** http://localhost:8081
 - **Backend API:** http://localhost:3000
