@@ -1,47 +1,68 @@
-# Đặc tả hiện trạng: Soát vé offline và đồng bộ
+# Đặc tả: Soát vé online, offline và đồng bộ
 
 ## Mô tả
-Ứng dụng mobile cho phép nhân viên quét QR khi có hoặc không có Wi-Fi. QR là JWT ký RS256 và được xác thực bằng public key cấu hình trong `EXPO_PUBLIC_JWT_PUBLIC_KEY`. Trước khi làm việc offline, ứng dụng tải danh sách vé của sự kiện vào SQLite cục bộ.
+Ứng dụng mobile cho phép nhân viên quét vé khi online hoặc offline. Mã QR là JWT ký bằng RS256 và được xác thực bằng public key cấu hình trong ứng dụng. Dữ liệu vé được tải về SQLite để phục vụ kiểm tra khi thiết bị không có kết nối Wi-Fi.
 
-## Dữ liệu và điều kiện hiện tại
-- Public key được đóng gói qua biến môi trường của ứng dụng, không tải động theo manifest sự kiện.
-- SQLite cục bộ lưu danh sách vé và log quét; cơ sở dữ liệu hiện không được mã hóa.
-- Vé offline được kiểm tra theo `ticketId`, sự kiện, trạng thái đã check-in và cổng được phân cho nhân viên.
-- Chỉ log `VALID` chưa đồng bộ được đưa vào hàng đợi gửi lên server.
-- Ứng dụng xem thiết bị là online chỉ khi có kết nối Wi-Fi dùng được; mạng di động không kích hoạt luồng online.
+## Yêu cầu chi tiết
+- Các API check-in yêu cầu JWT và vai trò `CHECK_IN_STAFF`, `ORGANIZER` hoặc `ADMIN`.
+- Ứng dụng xác thực chữ ký QR bằng `EXPO_PUBLIC_JWT_PUBLIC_KEY`.
+- Vé phải thuộc sự kiện đang được quét.
+- Khi online, backend kiểm tra vé, trạng thái check-in và cổng được phân cho nhân viên.
+- Khi offline, ứng dụng kiểm tra vé trong SQLite, trạng thái vé và cổng được phân cho nhân viên.
+- Chỉ lượt quét offline có kết quả `VALID` được đưa vào hàng đợi đồng bộ.
+- Ứng dụng sử dụng kết nối Wi-Fi khả dụng để thực hiện luồng online và đồng bộ.
 
-## Luồng quét
-1. Nhân viên đăng nhập khi có thể kết nối server và tải danh sách vé của sự kiện.
-2. Khi quét QR, ứng dụng:
-   - Xác thực chữ ký JWT RS256 bằng public key cục bộ.
-   - Đọc `ticketId`, `eventId` và thông tin hiển thị trong payload.
-   - Từ chối QR không hợp lệ hoặc vé thuộc sự kiện khác.
-3. Nếu có Wi-Fi, ứng dụng gọi API `/checkin/verify`; backend kiểm tra vé, trạng thái check-in và cổng của nhân viên.
-4. Nếu không có Wi-Fi, ứng dụng kiểm tra dữ liệu SQLite:
-   - Vé phải tồn tại trong dữ liệu đã tải.
-   - Vé chưa có trạng thái `CHECKED_IN`.
-   - `gateId` của vé phải trùng `assignedGateId` của nhân viên nếu tài khoản được gán cổng.
-   - Vé hợp lệ được đánh dấu `CHECKED_IN` cục bộ và tạo log `VALID` chưa đồng bộ.
+## Chuẩn bị dữ liệu offline
+1. Nhân viên đăng nhập và chọn sự kiện được phép truy cập.
+2. Ứng dụng gọi `GET /checkin/tickets?eventId=...` để tải danh sách vé.
+3. Mỗi vé được lưu trong SQLite với mã vé, sự kiện, cổng, người tham dự và trạng thái hiện tại.
+4. Dữ liệu đã tải được dùng để kiểm tra và hiển thị vé khi offline.
 
-## Luồng đồng bộ hiện tại
-- Cứ 15 giây, ứng dụng thử đồng bộ khi có Wi-Fi.
-- Ứng dụng tải thay đổi trạng thái từ server và gửi các log `VALID` chưa đồng bộ.
-- Backend trả kết quả cho từng vé như `SYNCED`, `INVALID_GATE`, `NOT_FOUND` hoặc `CONFLICT_ALREADY_CHECKED_IN`.
-- Backend áp dụng quy tắc vé đã có log `ACCEPTED` trước thì lần gửi sau bị trả conflict.
-- Hiện tại ứng dụng chưa lưu kết quả riêng của từng log; sau khi request thành công, toàn bộ log đã gửi được đánh dấu `synced`.
-- Sync hiện chưa có `scanId`, `batchId`, idempotency key hoặc retry backoff.
+## Luồng quét vé
+1. Ứng dụng xác thực chữ ký JWT RS256 và đọc payload QR.
+2. QR không hợp lệ hoặc không có `ticketId` bị từ chối.
+3. Vé có `eventId` khác sự kiện đang quét bị cảnh báo sai sự kiện.
+4. Nếu có Wi-Fi khả dụng, ứng dụng gọi `POST /checkin/verify`.
+5. Nếu không có Wi-Fi, ứng dụng kiểm tra vé trong SQLite.
+
+## Kiểm tra online
+1. Backend tìm vé theo `ticketId` trong Prisma transaction.
+2. Nếu nhân viên có `assignedGateId`, cổng của vé phải trùng cổng được phân công.
+3. Vé có trạng thái `CHECKED_IN` bị từ chối.
+4. Vé hợp lệ được ghi một `CheckInLog` có trạng thái `ACCEPTED`.
+5. Vé được cập nhật thành `CHECKED_IN` cùng thời điểm check-in.
+6. Ứng dụng cập nhật trạng thái vé trong SQLite và lưu log cục bộ đã đồng bộ.
+
+## Kiểm tra offline
+1. Vé phải tồn tại trong dữ liệu SQLite đã tải.
+2. Vé chưa được mang trạng thái `CHECKED_IN`.
+3. Nếu nhân viên có `assignedGateId`, dữ liệu vé phải có `gateId` và cổng này phải trùng cổng được phân công.
+4. Vé hợp lệ được cập nhật thành `CHECKED_IN` trong SQLite.
+5. Ứng dụng tạo log `VALID` chưa đồng bộ để gửi lên server khi có Wi-Fi.
+
+## Đồng bộ dữ liệu
+- Khi màn hình quét hoạt động, ứng dụng thử đồng bộ định kỳ mỗi 15 giây và cho phép nhân viên đồng bộ thủ công.
+- `GET /checkin/sync-down?lastUpdated=...` trả về trạng thái mới nhất của các vé có log sau mốc thời gian đã gửi.
+- Ứng dụng cập nhật trạng thái vé cục bộ từ dữ liệu sync-down.
+- `POST /checkin/sync` nhận các log quét offline chưa đồng bộ.
+- Backend kiểm tra lại sự tồn tại của vé, cổng nhân viên và các log check-in đã được chấp nhận.
+- Quy tắc xử lý xung đột là lượt check-in hợp lệ đầu tiên được chấp nhận.
+- Kết quả từng vé có thể là `SYNCED`, `INVALID_GATE`, `NOT_FOUND` hoặc `CONFLICT_ALREADY_CHECKED_IN`.
+- Sau khi request đồng bộ thành công, ứng dụng đánh dấu các log đã gửi là đã đồng bộ.
 
 ## Kịch bản lỗi
-- QR sai chữ ký hoặc không đọc được payload → từ chối.
+- QR sai chữ ký hoặc không đọc được payload → từ chối quét.
 - Vé thuộc sự kiện khác → cảnh báo sai sự kiện.
-- Vé đã check-in trên thiết bị → từ chối ngay.
-- Vé sai cổng → từ chối ở cả online và offline.
-- Vé đã được thiết bị khác check-in → backend trả `CONFLICT_ALREADY_CHECKED_IN` khi đồng bộ.
-- Có Wi-Fi nhưng không gọi được server → hiển thị lỗi kết nối; không tự chuyển sang ghi nhận offline.
-- Dữ liệu offline cũ chưa có `gateId` → yêu cầu tải lại dữ liệu vé.
+- Vé không tồn tại trong dữ liệu offline → cảnh báo chưa có dữ liệu vé.
+- Vé đã check-in → từ chối quét.
+- Vé không có dữ liệu cổng khi nhân viên được phân cổng → yêu cầu tải lại dữ liệu vé.
+- Vé sai cổng → từ chối ở cả luồng online và offline.
+- Vé đã được thiết bị khác check-in trước → trả `CONFLICT_ALREADY_CHECKED_IN` khi đồng bộ.
+- Thiết bị có Wi-Fi nhưng không gọi được server → thông báo lỗi kết nối.
 
-## Giới hạn hiện tại
-- Muốn chuẩn bị offline phải đăng nhập và tải dữ liệu vé trước khi mất kết nối.
-- Khôi phục phiên khi mở lại ứng dụng vẫn gọi `/auth/me`, nên chưa hỗ trợ khởi động hoàn toàn khi offline.
-- Log SQLite chỉ gồm `ticketId`, `deviceId`, `scannedAt`, `scanResult` và `synced`.
-- Conflict được trả về trong response nhưng chưa có bảng conflict hoặc audit log conflict riêng.
+## Tiêu chí chấp nhận
+- Vé hợp lệ được chấp nhận và chuyển thành `CHECKED_IN` khi quét online.
+- Vé hợp lệ có trong SQLite được ghi nhận khi quét offline.
+- Vé sai sự kiện, sai cổng hoặc đã check-in không được chấp nhận.
+- Log hợp lệ được đồng bộ lên server khi thiết bị có Wi-Fi.
+- Khi nhiều thiết bị gửi cùng một vé, backend chỉ chấp nhận lượt check-in hợp lệ đầu tiên.

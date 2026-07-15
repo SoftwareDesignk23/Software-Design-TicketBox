@@ -1,38 +1,41 @@
-# Đặc tả: Caching cho Concert & Availability
+# Đặc tả: Caching cho Concert
 
 ## Mô tả
-Áp dụng cache-aside Redis cho danh sách/chi tiết concert và số vé còn lại. Mục tiêu giảm tải DB dưới traffic cao và vẫn đảm bảo số vé hiển thị đủ chính xác để tránh bán quá.
+Hệ thống áp dụng cache-aside bằng Redis cho danh sách concert đã publish và chi tiết concert nhằm giảm số lần truy vấn PostgreSQL.
 
 ## Yêu cầu chi tiết
-- Cache-aside cho list/detail/availability.
-- TTL phân tầng, availability TTL ngắn.
-- Invalidate chủ động sau giao dịch.
-- Thundering herd protection.
-- Degradation mode khi Redis down.
+- Danh sách concert đã publish được cache với key `concerts:list:published`.
+- Chi tiết concert được cache với key `concerts:detail:{id}`.
+- TTL cơ sở được đọc từ biến môi trường `CACHE_TTL`, mặc định là 300 giây.
+- TTL thực tế được cộng jitter ngẫu nhiên từ 0 đến 59 giây.
+- Cache miss sử dụng Redis mutex để hạn chế nhiều request cùng truy vấn DB.
+- Các thao tác thay đổi concert và dữ liệu liên quan chủ động xóa cache tương ứng.
 
 ## Luồng chính
-1. Client gọi API list/detail concert.
-2. API đọc Redis:
-	- Cache hit → trả dữ liệu.
-	- Cache miss → đọc DB, trả dữ liệu, ghi cache.
-3. Khi có giao dịch thành công:
-	- Emit event invalidate hoặc decrement availability.
-4. Client nhận cập nhật qua WebSocket/SSE nếu có.
+1. Client gọi API danh sách hoặc chi tiết concert.
+2. Backend đọc dữ liệu theo cache key trong Redis.
+3. Cache hit → parse JSON và trả dữ liệu.
+4. Cache miss → thử tạo mutex `lock:{cacheKey}` bằng `SET NX`.
+5. Request giữ mutex đọc PostgreSQL, ghi kết quả vào Redis với TTL và trả dữ liệu.
+6. Request không giữ được mutex chờ cache tối đa 5 giây.
+7. Sau thời gian chờ, nếu cache vẫn chưa có dữ liệu thì request đọc trực tiếp PostgreSQL.
+8. Khi concert hoặc cấu hình liên quan thay đổi, backend xóa key cache bị ảnh hưởng.
 
 ## Kịch bản lỗi
-- Redis outage → fallback DB + tăng rate limit hoặc waiting room.
-- Thundering herd → dùng distributed mutex hoặc stale-while-revalidate.
-- Cache stale → TTL ngắn cho availability + invalidate chủ động.
+- Concert chi tiết không tồn tại hoặc không ở trạng thái `PUBLISHED` → trả lỗi không tìm thấy concert.
+- Mutex đang được request khác giữ → poll cache mỗi 200 mili giây, tối đa 25 lần.
+- Sau khi poll vẫn cache miss → đọc trực tiếp từ PostgreSQL.
 
 ## Ràng buộc
-- Key chuẩn: `concert:list`, `concert:{id}:detail`, `concert:{id}:availability`.
-- TTL gợi ý:
-  - list: 30-60 phút.
-  - detail: 15-30 phút.
-  - availability: 10-30 giây hoặc invalidate ngay.
-- Cache-aside bắt buộc cho list/detail.
+- Mutex cache có TTL 5 giây.
+- Request giữ mutex phải xóa mutex trong khối `finally`.
+- Dữ liệu cache được serialize dưới dạng JSON.
+- API danh sách chỉ cache concert có trạng thái `PUBLISHED`.
+- API chi tiết chỉ cache concert có trạng thái `PUBLISHED`.
 
 ## Tiêu chí chấp nhận
-- Cache hit > 80% cho list/detail trong giờ cao điểm.
-- Availability sai lệch không vượt TTL đã định.
-- Redis down không làm API sập toàn bộ.
+- Cache hit trả dữ liệu mà không truy vấn PostgreSQL.
+- Cache miss ghi kết quả truy vấn vào Redis với TTL.
+- Nhiều request cache miss cùng key được điều phối bằng mutex.
+- Tạo, cập nhật hoặc xóa concert làm mất hiệu lực cache danh sách và chi tiết liên quan.
+- Thay đổi ticket type, show, artist hoặc gate làm mất hiệu lực cache chi tiết concert.
