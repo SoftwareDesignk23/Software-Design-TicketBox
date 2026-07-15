@@ -2,7 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-07-15
-- Người quyết định: Chưa xác định
+- Người quyết định: Nguyễn Hưng Thịnh
 - Phạm vi: Toàn bộ backend modular monolith và dữ liệu nghiệp vụ bền vững
 - Liên quan: ADR-003, ADR-004, ADR-009, `blueprint/design.md`, `blueprint/specs/system-architecture.md`
 

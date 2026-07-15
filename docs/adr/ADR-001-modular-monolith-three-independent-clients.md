@@ -2,7 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-07-15
-- Người quyết định: Nguyễn Phúc Hậu
+- Người quyết định: Nguyễn Hưng Thịnh
 - Phạm vi: Kiến trúc tổng thể TicketBox
 - Liên quan: ADR-002, ADR-003, ADR-007, ADR-009, `blueprint/specs/system-architecture.md`, `blueprint/design.md`
 

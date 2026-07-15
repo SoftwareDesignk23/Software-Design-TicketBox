@@ -2,7 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-07-15
-- Người quyết định: Lê Thành Công
+- Người quyết định: Nguyễn Hưng Thịnh
 - Phạm vi: Toàn hệ thống, trọng tâm `AuthModule` và các REST API được bảo vệ
 - Liên quan: `blueprint/specs/auth.md`, `blueprint/design.md`, `openspec/changes/authentication-and-rbac/design.md`, ADR-004
 

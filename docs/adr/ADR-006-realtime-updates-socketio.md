@@ -2,7 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-07-15
-- Người quyết định: Nguyễn Phúc Hậu
+- Người quyết định: Lê Thành Công
 - Phạm vi: Cập nhật ghế và thông báo in-app từ backend tới web client
 - Liên quan: ADR-001, ADR-003, ADR-004, ADR-007, `blueprint/specs/system-architecture.md`
 

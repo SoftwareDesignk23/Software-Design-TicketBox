@@ -2,7 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-07-15
-- Người quyết định: Chưa xác định
+- Người quyết định: Nguyễn Phúc Hậu
 - Phạm vi: Phát hành, phân phối, hiển thị và xác minh QR vé
 - Liên quan: ADR-003, ADR-009, `blueprint/specs/checkin.md`, `blueprint/design.md`
 

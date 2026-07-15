@@ -2,7 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-07-15
-- Người quyết định: Nguyễn Phúc Hậu
+- Người quyết định: Lê Thành Công
 - Phạm vi: Backend TicketBox, các luồng thông báo và background job
 - Liên quan: ADR-002, ADR-004, `blueprint/specs/notification.md`, `blueprint/specs/system-architecture.md`
 

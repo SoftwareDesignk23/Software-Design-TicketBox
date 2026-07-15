@@ -2,7 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-07-15
-- Người quyết định: Nguyễn Hưng Thịnh
+- Người quyết định: Nguyễn Hưng Thịnh, Nguyễn Phúc Hậu
 - Phạm vi: `BookingModule`, `PaymentModule`, `ConcertsModule`, Redis và PostgreSQL
 - Liên quan: `blueprint/specs/booking.md`, `blueprint/design.md`, `openspec/changes/ticket-booking-system/design.md`
 
