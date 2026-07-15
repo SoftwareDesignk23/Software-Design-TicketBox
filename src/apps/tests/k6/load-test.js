@@ -15,9 +15,11 @@ export const options = {
   summaryTrendStats: ["avg", "min", "med", "max", "p(90)", "p(95)"],
 };
 
+const BASE_URL = __ENV.BASE_URL || "http://localhost:3000/api/v1";
+
 export default function () {
   // URL của API danh sách concert
-  const url = "http://localhost:3000/api/v1/concerts";
+  const url = `${BASE_URL}/concerts`;
 
   const params = {
     headers: {
